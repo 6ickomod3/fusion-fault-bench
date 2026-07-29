@@ -698,8 +698,11 @@ record preservation; it cannot authenticate a coherently rewritten resource
 record or prove that computation occurred. Likewise, distinct paths, inodes,
 and volatile run-record hashes are consistency controls, not cryptographic
 proof of two executions. Both limitations are literal fields in
-`ffb.repeat-verification/v1`. The release Git revision and public CI log are
-the provenance/authenticity boundary, and public wording must not claim more.
+`ffb.repeat-verification/v1`. Git history and the scientific source revision
+are the local provenance boundary. A public CI record is a content-addressed,
+tracked operator attestation linked to an external log; the offline validator
+does not query GitHub or independently authenticate that log. Public wording
+must not claim more.
 
 The final pre-execution scientific review additionally made three existing
 gates concrete: the independent profile check regenerates all 600 main-profile
@@ -708,3 +711,122 @@ slices, and held-out motion slices; the calibration-cancellation negative
 control numerically applies the corrupted extrinsic to both generation and
 reconstruction and verifies its self-cancellation; and independently indexed
 eligible truth and velocity rows must exactly match their full latent arrays.
+
+## 14. Pre-result release-curation amendment
+
+This amendment was frozen on 2026-07-29 before the release matrix was executed
+or any result was inspected. It fixes the public curation rules and prevents a
+post-result choice of experiments, methods, severities, directions, or
+outcomes.
+
+The public M3 release is exactly `m3-procedural-v0.1.0`. It requires the frozen
+eight-entry `m3-procedural-v1` matrix and rejects smoke evidence. The curator
+strictly reloads both complete run roots, independently rebuilds matrix and
+repeat eligibility, and exact-compares the persisted evidence before copying
+anything. The fixed matrix implies the following literal completeness gates in
+matrix order:
+
+| Experiment | Omitted sequence rows | Curated aggregate rows | Curated crossover rows |
+|---|---:|---:|---:|
+| LiDAR additive bias | 11,000 | 66 | 2 |
+| Camera noise, correctly reported | 5,000 | 30 | 1 |
+| Camera noise, underreported | 5,000 | 30 | 1 |
+| Camera calibration translation | 11,000 | 66 | 2 |
+| Camera calibration yaw | 11,000 | 66 | 2 |
+| Camera timestamp offset | 11,000 | 66 | 2 |
+| Camera dropout | 14,400 | 72 | 0 |
+| Common-mode position bias | 3,300 | 33 | 0 |
+| **Total** | **71,700** | **429** | **10** |
+
+Every aggregate and crossover row is copied byte-for-byte in source order,
+including the zero-byte crossover members for dropout and common mode. The
+curator has no result predicate. Raw `sequence-metrics.ndjson` is the sole
+scientific member omitted from Git. For every experiment, the release retains
+its exact source SHA-256 and byte length from the payload index and an
+independently manifest-derived row count. Public validation can authenticate
+that commitment but cannot recompute an aggregate or inspect an omitted row
+without regenerating the source artifact.
+
+Each curated scientific member is cross-bound to the source payload index,
+procedural artifact digest, matrix-validation entry, repeat-verification
+member pair, both volatile run-record digests, both `_SUCCESS` records, the
+deterministic run ID, manifest digest, and profile digest. All sixteen run
+records must share one source revision, lockfile digest, package version, full
+runtime environment, and specific named CPU; every run must be clean and
+successful. Each root must also use the exact seven-token logical command:
+
+```text
+ffb procedural matrix run examples/matrices/m3-procedural-v1.json
+  --output-dir reports/generated/<distinct-normalized-root>
+```
+
+The two output roots must be distinct, non-nested normalized paths. The
+release reports both measured wall times and both peak-memory observations;
+it never selects a minimum, maximum, or preferred run.
+
+The aggregate-only package contains the canonical matrix, all eight manifests,
+all three matrix-declared profiles, all curated aggregate/crossover and
+validation records, both run records and success markers per experiment,
+matrix/repeat evidence, a machine-readable completeness summary, README,
+verification guide, claim-evidence ledger, and three deterministic vector
+figures. It also includes the exact Git-bound human-readable adversarial
+results-review report:
+
+1. every signed `fused-minus-healthy` raw point and pointwise interval, plus
+   the preregistered PAVA curve, in separate panels and native physical units;
+2. every dropout method and probability, displaying coverage and undefined
+   rate before conditional localization loss and never imputing zero loss; and
+3. every common-mode camera, LiDAR, and fusion absolute-loss point and
+   interval, annotated with the independently validated disagreement
+   invariance blind spot.
+
+Dropout and common-mode rows are explicitly not crossover inputs. Observed,
+not-observed, undetermined, negative, and contrary outcomes remain publishable.
+No physical severity axes are normalized or pooled.
+
+Curation uses a two-stage official-identity freeze. First, the tracked tool
+derives a candidate only after the strict both-root gate. After independent
+results review, that exact canonical identity is committed under
+`examples/release-identities/`. It pins the scientific source revision,
+lockfile, package, full environment, matrix and artifact-set digests, ordered
+artifact digests, all sixteen run-record digests, and exact matrix/repeat
+evidence bytes. The public builder and validator require this external
+Git-bound identity and reject a release whose files and internal indexes were
+coherently rehashed to different identities.
+
+A final pre-execution integrity review made the external gates explicit. The
+identity candidate cannot be derived from a bare CI run number or an unbound
+review label. It requires two canonical, clean, tracked JSON attestations:
+`docs/reviews/m3-public-ci-attestation.json`, which records the exact lowercase
+`ci` workflow, public run URL, successful conclusion, scientific source
+revision, and smoke-matrix digest; and
+`docs/reviews/m3-results-review-attestation.json`, which records a passing
+independent review across semantics, geometry, leakage, statistics, selection,
+claims, and privacy and binds the reviewed artifact-set digest. The latter
+also pins the SHA-256 and byte length of
+`docs/reviews/m3-results-review.md`; that exact Markdown is copied into the
+release and checked against its tracked source. The official identity and
+release index bind the canonical attestation bytes and their Git paths.
+
+These attestations are declarations, not synthesized facts. Their literal
+scope says the offline validator neither queries GitHub nor cryptographically
+authenticates the reviewer. External inspection of the public CI URL and
+human-readable review remains part of release review.
+
+The release index contains the exact sorted file allowlist, byte lengths, and
+SHA-256 values. Build is atomic and no-overwrite. Validation rejects symlink
+ancestors or members, hard-linked or non-regular members, unlisted or missing
+files, unsafe or duplicate paths, noncanonical JSON/NDJSON, altered row order,
+altered or omitted rows, member or tree cap violations, and any regenerated
+document or figure mismatch. Security-sensitive reads pin a no-follow file
+descriptor and compare pre-open, opened, and post-read metadata.
+
+The resource measurements remain self-reported by the tracked `wait4` driver
+and cannot be independently recomputed from the curated package. Distinct
+paths, inodes, commands, run records, and success markers are consistency
+evidence, not cryptographic proof that two executions occurred. The Git-bound
+official identity and scientific source revision are the local provenance
+boundary. The public CI and independent-review records are exact,
+content-addressed, tracked declarations with external references, not facts
+independently authenticated by the offline validator. CI smoke is explicitly
+not release evidence.
