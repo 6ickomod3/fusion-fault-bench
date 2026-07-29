@@ -24,6 +24,22 @@ from fusion_fault_bench.contracts.geometry_validation_v1 import (
     GeometryValidationManifestV1,
     GeometryValidationV1,
 )
+from fusion_fault_bench.contracts.health_artifact_v1 import (
+    HealthFitReferenceV1,
+    health_payload_index_json_schema,
+)
+from fusion_fault_bench.contracts.health_result_v1 import (
+    HealthAggregateMetricV1,
+    HealthFitSummaryV1,
+    HealthSequenceContrastV1,
+    HealthSequenceEventV1,
+    HealthSequenceLossV1,
+    HealthThresholdCandidateV1,
+    HealthValidationV1,
+)
+from fusion_fault_bench.contracts.health_v1 import (
+    health_benchmark_intent_json_schema,
+)
 from fusion_fault_bench.contracts.io import load_manifest
 from fusion_fault_bench.contracts.manifest_v1alpha1 import manifest_json_schema
 from fusion_fault_bench.contracts.matrix_v1 import experiment_matrix_json_schema
@@ -48,6 +64,14 @@ from fusion_fault_bench.contracts.result_v1alpha1 import (
 )
 from fusion_fault_bench.geometry_artifacts import load_geometry_validation_artifact
 from fusion_fault_bench.geometry_runner import run_geometry_validation
+from fusion_fault_bench.health_artifacts import (
+    load_health_evaluation_artifact,
+    load_health_fit_artifact,
+)
+from fusion_fault_bench.health_runner import (
+    evaluate_health_benchmark_artifact,
+    fit_health_benchmark_artifact,
+)
 from fusion_fault_bench.procedural_artifacts import load_procedural_artifact
 from fusion_fault_bench.procedural_runner import run_procedural_matrix
 from fusion_fault_bench.runner import run_analytic_experiment
@@ -60,6 +84,18 @@ SCHEMA_BUILDERS: dict[str, SchemaBuilder] = {
     "geometry-manifest": lambda: GeometryValidationManifestV1.model_json_schema(by_alias=True),
     "geometry-payload-index": lambda: GeometryPayloadIndexV1.model_json_schema(by_alias=True),
     "geometry-validation": lambda: GeometryValidationV1.model_json_schema(by_alias=True),
+    "health-aggregate": lambda: HealthAggregateMetricV1.model_json_schema(by_alias=True),
+    "health-fit-reference": lambda: HealthFitReferenceV1.model_json_schema(by_alias=True),
+    "health-fit-summary": lambda: HealthFitSummaryV1.model_json_schema(by_alias=True),
+    "health-intent": health_benchmark_intent_json_schema,
+    "health-payload-index": health_payload_index_json_schema,
+    "health-sequence-event": lambda: HealthSequenceEventV1.model_json_schema(by_alias=True),
+    "health-sequence-contrast": lambda: HealthSequenceContrastV1.model_json_schema(by_alias=True),
+    "health-sequence-loss": lambda: HealthSequenceLossV1.model_json_schema(by_alias=True),
+    "health-threshold-candidate": lambda: HealthThresholdCandidateV1.model_json_schema(
+        by_alias=True
+    ),
+    "health-validation": lambda: HealthValidationV1.model_json_schema(by_alias=True),
     "manifest": manifest_json_schema,
     "m3-matrix-validation": m3_matrix_validation_json_schema,
     "matrix": experiment_matrix_json_schema,
@@ -196,6 +232,76 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Strictly validate a complete M3 artifact.",
     )
     procedural_bundle_validate.add_argument("path", type=Path, metavar="DEST")
+
+    health = commands.add_parser(
+        "health",
+        help="Fit, evaluate, or inspect the frozen M4 health benchmark.",
+    )
+    health_commands = health.add_subparsers(
+        dest="health_command",
+        required=True,
+    )
+    health_fit = health_commands.add_parser(
+        "fit",
+        help="Fit the frozen M4 calibration and threshold policy.",
+    )
+    health_fit.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        metavar="DEST",
+    )
+    health_evaluate = health_commands.add_parser(
+        "evaluate",
+        help="Apply one authenticated M4 fit to the frozen test matrix.",
+    )
+    health_evaluate.add_argument("path", type=Path, metavar="FIT")
+    health_evaluate.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        metavar="DEST",
+    )
+    health_bundle = health_commands.add_parser(
+        "bundle",
+        help="Inspect an M4 health artifact.",
+    )
+    health_bundle_commands = health_bundle.add_subparsers(
+        dest="health_bundle_kind",
+        required=True,
+    )
+    health_fit_bundle = health_bundle_commands.add_parser(
+        "fit",
+        help="Inspect a fit artifact.",
+    )
+    health_fit_bundle_commands = health_fit_bundle.add_subparsers(
+        dest="health_fit_bundle_command",
+        required=True,
+    )
+    health_fit_bundle_validate = health_fit_bundle_commands.add_parser(
+        "validate",
+        help="Strictly validate a complete M4 fit artifact.",
+    )
+    health_fit_bundle_validate.add_argument("path", type=Path, metavar="DEST")
+    health_evaluation_bundle = health_bundle_commands.add_parser(
+        "evaluation",
+        help="Inspect an evaluation artifact.",
+    )
+    health_evaluation_bundle_commands = health_evaluation_bundle.add_subparsers(
+        dest="health_evaluation_bundle_command",
+        required=True,
+    )
+    health_evaluation_bundle_validate = health_evaluation_bundle_commands.add_parser(
+        "validate",
+        help="Strictly validate a fit-bound M4 evaluation artifact.",
+    )
+    health_evaluation_bundle_validate.add_argument("path", type=Path, metavar="DEST")
+    health_evaluation_bundle_validate.add_argument(
+        "--fit-artifact",
+        type=Path,
+        required=True,
+        metavar="FIT",
+    )
     return parser
 
 
@@ -263,6 +369,41 @@ def _run(args: argparse.Namespace) -> int:
             print(f"completed procedural matrix artifact_count={len(artifacts)}")
             return 0
         artifact = load_procedural_artifact(args.path)
+        print(
+            f"valid {artifact.payload_index.artifact_contract} "
+            f"artifact_sha256={artifact.artifact_sha256} "
+            f"run_sha256={artifact.run_sha256}"
+        )
+        return 0
+
+    if args.command == "health":
+        if args.health_command == "fit":
+            artifact = fit_health_benchmark_artifact(output_dir=args.output_dir)
+            print(
+                f"wrote {args.output_dir.as_posix()} "
+                f"artifact_sha256={artifact.artifact_sha256} "
+                f"run_sha256={artifact.run_sha256}"
+            )
+            return 0
+        if args.health_command == "evaluate":
+            artifact = evaluate_health_benchmark_artifact(
+                args.path,
+                output_dir=args.output_dir,
+            )
+            print(
+                f"wrote {args.output_dir.as_posix()} "
+                f"artifact_sha256={artifact.artifact_sha256} "
+                f"run_sha256={artifact.run_sha256}"
+            )
+            return 0
+        if args.health_bundle_kind == "fit":
+            artifact = load_health_fit_artifact(args.path)
+        else:
+            fit_artifact = load_health_fit_artifact(args.fit_artifact)
+            artifact = load_health_evaluation_artifact(
+                args.path,
+                fit_artifact=fit_artifact,
+            )
         print(
             f"valid {artifact.payload_index.artifact_contract} "
             f"artifact_sha256={artifact.artifact_sha256} "

@@ -184,6 +184,151 @@ def test_procedural_schemas_are_exposed(capsys) -> None:
         assert schema
 
 
+def test_health_cli_fits_and_evaluates_with_path_free_success_output(
+    tmp_path,
+    monkeypatch,
+    capsys,
+) -> None:
+    fit = SimpleNamespace(
+        artifact_sha256="e" * 64,
+        run_sha256="f" * 64,
+        payload_index=SimpleNamespace(artifact_contract="ffb.health-fit-payload/v1"),
+    )
+    evaluation = SimpleNamespace(
+        artifact_sha256="1" * 64,
+        run_sha256="2" * 64,
+        payload_index=SimpleNamespace(artifact_contract="ffb.health-eval-payload/v1"),
+    )
+    monkeypatch.setattr(
+        "fusion_fault_bench.cli.fit_health_benchmark_artifact",
+        lambda **_kwargs: fit,
+    )
+    assert (
+        main(
+            [
+                "health",
+                "fit",
+                "--output-dir",
+                "reports/generated/m4-health-fit",
+            ]
+        )
+        == 0
+    )
+    fit_output = capsys.readouterr().out
+    assert fit_output.startswith(
+        f"wrote reports/generated/m4-health-fit artifact_sha256={'e' * 64}"
+    )
+
+    monkeypatch.setattr(
+        "fusion_fault_bench.cli.evaluate_health_benchmark_artifact",
+        lambda *_args, **_kwargs: evaluation,
+    )
+    assert (
+        main(
+            [
+                "health",
+                "evaluate",
+                "reports/generated/m4-health-fit",
+                "--output-dir",
+                "reports/generated/m4-health-evaluation",
+            ]
+        )
+        == 0
+    )
+    evaluation_output = capsys.readouterr().out
+    assert evaluation_output.startswith(
+        f"wrote reports/generated/m4-health-evaluation artifact_sha256={'1' * 64}"
+    )
+    assert str(tmp_path) not in fit_output + evaluation_output
+
+
+def test_health_cli_strictly_validates_fit_bound_bundles_without_echoing_paths(
+    tmp_path,
+    monkeypatch,
+    capsys,
+) -> None:
+    fit = SimpleNamespace(
+        artifact_sha256="3" * 64,
+        run_sha256="4" * 64,
+        payload_index=SimpleNamespace(artifact_contract="ffb.health-fit-payload/v1"),
+    )
+    evaluation = SimpleNamespace(
+        artifact_sha256="5" * 64,
+        run_sha256="6" * 64,
+        payload_index=SimpleNamespace(artifact_contract="ffb.health-eval-payload/v1"),
+    )
+    loaded: list[object] = []
+
+    def load_fit(path):
+        loaded.append(path)
+        return fit
+
+    def load_evaluation(path, *, fit_artifact):
+        loaded.extend((path, fit_artifact))
+        return evaluation
+
+    monkeypatch.setattr("fusion_fault_bench.cli.load_health_fit_artifact", load_fit)
+    monkeypatch.setattr(
+        "fusion_fault_bench.cli.load_health_evaluation_artifact",
+        load_evaluation,
+    )
+    private_fit = tmp_path / "private-fit"
+    private_evaluation = tmp_path / "private-evaluation"
+
+    assert (
+        main(
+            [
+                "health",
+                "bundle",
+                "fit",
+                "validate",
+                str(private_fit),
+            ]
+        )
+        == 0
+    )
+    fit_output = capsys.readouterr().out
+    assert fit_output.startswith("valid ffb.health-fit-payload/v1 ")
+    assert str(tmp_path) not in fit_output
+
+    assert (
+        main(
+            [
+                "health",
+                "bundle",
+                "evaluation",
+                "validate",
+                str(private_evaluation),
+                "--fit-artifact",
+                str(private_fit),
+            ]
+        )
+        == 0
+    )
+    evaluation_output = capsys.readouterr().out
+    assert evaluation_output.startswith("valid ffb.health-eval-payload/v1 ")
+    assert str(tmp_path) not in evaluation_output
+    assert loaded == [private_fit, private_fit, private_evaluation, fit]
+
+
+def test_health_schemas_are_exposed(capsys) -> None:
+    for name in (
+        "health-aggregate",
+        "health-fit-reference",
+        "health-fit-summary",
+        "health-intent",
+        "health-payload-index",
+        "health-sequence-contrast",
+        "health-sequence-event",
+        "health-sequence-loss",
+        "health-threshold-candidate",
+        "health-validation",
+    ):
+        assert main(["schema", "show", name]) == 0
+        schema = json.loads(capsys.readouterr().out)
+        assert schema
+
+
 def test_geometry_cli_never_echoes_rejected_dataset_arguments() -> None:
     secret_path = "/Users/private-owner/datasets/nuScenes"
     base = [
