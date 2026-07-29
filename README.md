@@ -1,49 +1,112 @@
 # Fusion Fault Bench
 
-Fusion Fault Bench is a CPU-first framework for studying when camera-LiDAR
-fusion stops helping under controlled sensor faults, and whether an observable
-sensor-health signal can select a safer fallback.
+**When does camera-LiDAR fusion become worse than trusting the modality
+declared healthy in a controlled single-sensor fault?**
 
-The project operates on object-level and bird's-eye-view measurements generated
-from known latent scenes. It does **not** train a 3D detector or claim to
-simulate photorealistic camera images or LiDAR point clouds.
+Fusion Fault Bench is a deterministic estimator-output benchmark for answering
+that question under controlled calibration, timing, uncertainty, bias, and
+dropout faults. It uses paired counterfactual sequences, explicit covariance,
+sequence-level inference, and predeclared crossover rules.
 
-## Core questions
+The benchmark runs on CPU. That is a reproducibility property, not the research
+contribution.
 
-1. When does fixed fusion become worse than the best available unimodal
-   estimator?
-2. Which observable temporal and cross-modal signals identify the faulty
-   modality?
-3. How much fault-induced loss can a health-aware fallback recover without
-   regressing clean performance?
+## What it evaluates
 
-## Planned scope
+```text
+Latent matched-object states
+          |
+          v
+Camera and LiDAR estimator outputs
+  - actual error model
+  - reported covariance
+  - true/reported pose and time
+          |
+          v
+Manifest-defined proxy fault
+          |
+          v
+Camera-only | LiDAR-only | fixed fusion | health gate | oracles
+          |
+          v
+Matched-center loss | signed healthy-modality delta | crossover
+```
 
-- Seeded procedural temporal scenes.
-- nuScenes-mini replay using annotations, sensor calibration, ego poses, and
-  timestamps as latent geometry.
-- Camera and LiDAR measurement models with explicit uncertainty.
-- Deterministic dropout, degradation, calibration, and timing faults.
-- Camera-only, LiDAR-only, fixed-fusion, robust-fusion, and fallback baselines.
-- Fusion-benefit, harmful-fusion-gap, crossover-severity, health-calibration,
-  and uncertainty analyses.
-- Reproducible manifests, CPU tests, machine-readable results, and a concise
-  technical report.
+The v0.1 contract restricts evaluation to known object IDs and BEV centers in a
+common front-camera/LiDAR region of interest. This is designed to isolate fusion
+behavior from detection and data association. A later version may add set
+prediction and Hungarian association after the matched-center benchmark is
+validated.
 
-## Explicit non-goals
+## Why the contract is narrow
 
-- GPU training or inference.
-- Reproducing a BEV neural detector.
-- Raw-sensor or photorealistic simulation.
-- Estimating real fleet fault rates.
-- Safety-certification or production-readiness claims.
+Fusion can appear robust or harmful simply because an evaluator chose a
+convenient covariance, field of view, loss aggregation, or fault insertion
+point. This project fixes those choices before running the benchmark:
+
+- physical observations use the true pose and timestamp;
+- calibration and timing faults modify estimator-consumed metadata;
+- actual error and reported uncertainty remain separate;
+- clean and faulted conditions reuse latent scenes and random draws;
+- losses are aggregated by complete sequence;
+- inference uses a signed delta from the designated healthy modality;
+- crossover fitting and uncertainty rules are predeclared.
+
+See the frozen
+[v0.1 benchmark contract](docs/benchmark-contract-v0.1.md).
+
+## Quickstart
+
+```bash
+uv sync --locked --group dev
+uv run ffb --version
+uv run ffb manifest validate \
+  examples/manifests/analytic-bias-v1alpha1.json
+uv run pytest
+```
+
+The current M0 tools require no GPU, model checkpoint, or dataset. The planned
+analytic and procedural paths retain that property. nuScenes-mini is
+user-provided and optional for the planned geometry and latent-scene grounding.
+
+## Evidence status
+
+**Current release scope: M0 contract and reproducibility foundation. There are
+no scientific findings yet.**
+
+| Component | Status |
+|---|---|
+| Versioned manifest and result contracts | Validated |
+| Canonical manifest fingerprinting | Validated |
+| Analytic fusion/fault vertical slice | Planned |
+| SE(3) and nuScenes projection grounding | Planned |
+| Temporal procedural benchmark | Planned |
+| Health-aware fallback | Planned |
+| Released quantitative results | None |
+
+Results enter this README only after they trace to a released manifest,
+software revision, aggregate record, named CPU run, uncertainty interval, and
+reproduction command.
 
 ## Documentation
 
-- [Project plan](docs/project-plan.md)
+- [Benchmark card](docs/benchmark-card.md)
+- [Benchmark contract v0.1](docs/benchmark-contract-v0.1.md)
+- [Evaluation protocol](docs/evaluation-protocol.md)
+- [Reproducibility](docs/reproducibility.md)
 - [Dataset preparation](docs/dataset-preparation.md)
+- [Limitations](docs/limitations.md)
+- [Results](docs/results.md)
+- [Project plan](docs/project-plan.md)
 
-## Status
+## Explicit non-goals
 
-Planning and repository bootstrap. Results and performance claims will be added
-only after the corresponding experiments are implemented and reproduced.
+- Raw camera or point-cloud simulation.
+- Training or reproducing a neural BEV detector.
+- Estimating naturally occurring or fleet-level fault rates.
+- Planning, collisions, or closed-loop policy evaluation.
+- Production-safety, certification, or real-world robustness claims.
+
+The Apache-2.0 license covers project code only. nuScenes and other external
+assets remain governed by their own terms; see
+[Data and model terms](DATA_AND_MODEL_TERMS.md).

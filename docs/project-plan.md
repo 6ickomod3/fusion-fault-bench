@@ -1,33 +1,39 @@
 # Fusion Fault Bench: Project Plan
 
+The normative definitions for the first release are specified in
+[Benchmark Contract v0.1](benchmark-contract-v0.1.md). This roadmap contains
+later extensions; where it is broader, the benchmark contract controls v0.1.
+
 ## 1. Project statement
 
-Fusion Fault Bench is a deterministic, CPU-only framework for evaluating
-camera-LiDAR fusion under controlled sensor faults. It generates paired
-multimodal measurements from known latent scenes, quantifies when fusion becomes
-harmful, and evaluates sensor-health-aware fallback policies.
+Fusion Fault Bench is a deterministic framework for evaluating object-level
+camera-LiDAR estimator fusion under controlled proxy faults. It generates paired
+multimodal estimator outputs from known latent scenes, quantifies when fixed
+fusion has higher matched-center loss than a designated healthy modality, and
+evaluates observable health-aware fallback policies.
 
 The central question is:
 
-> Can an evaluator detect when camera and LiDAR observations no longer support
-> reliable fusion, attribute the unhealthy modality, and choose a fallback with
-> a measured clean-versus-fault tradeoff?
+> Under a declared estimator-output model, when does fusion increase benchmark
+> loss, can observable evidence attribute the inconsistency, and can a fallback
+> recover loss with a measured clean-versus-fault tradeoff?
 
 This project focuses on the sensor-observation and fusion layer. Agent behavior,
 planning quality, collision metrics, and closed-loop policy evaluation are
-outside its scope.
+outside its scope. CPU-only reproduction is a design property, not the research
+claim.
 
 ## 2. Goals
 
-- Build deterministic procedural temporal scenes and a nuScenes-mini replay
-  adapter.
-- Simulate object-level camera and LiDAR measurements using explicit geometry,
-  timing, and uncertainty models.
+- Build analytic cases, deterministic procedural temporal scenes, and a
+  nuScenes-mini latent-scene replay adapter.
+- Simulate object-level camera and LiDAR estimator outputs using explicit
+  geometry, timing, actual error, and reported-uncertainty models.
 - Inject reproducible dropout, degradation, extrinsic, and temporal faults.
-- Compare unimodal estimation, fixed fusion, robust fusion, and health-aware
-  fallback.
-- Define fusion-benefit, harmful-fusion-gap, and crossover-severity analyses
-  with uncertainty intervals.
+- Compare unimodal estimation, fixed fusion, health-aware fallback,
+  fault-target-drop policy, and a performance oracle.
+- Define signed healthy-modality delta, fusion-benefit, harmful-fusion-gap, and
+  predeclared crossover analyses with sequence-clustered uncertainty intervals.
 - Validate sensor-health scores on scene-disjoint data and unseen fault
   severities.
 - Publish reproducible configurations, manifests, tests, results, limitations,
@@ -46,8 +52,8 @@ outside its scope.
 
 ## 4. Research questions
 
-1. At what fault severity does fixed fusion stop outperforming the best
-   available unimodal estimator?
+1. At what configured fault severity does fixed fusion have higher
+   matched-center loss than the modality designated healthy?
 2. Which temporal and cross-modal consistency signals best identify camera
    faults, LiDAR faults, and ambiguous common-mode failures?
 3. Can a health-aware policy recover fault-induced loss without causing an
@@ -62,80 +68,93 @@ or a documented evaluator blind spot is a valid outcome.
 
 ```text
 Latent temporal scene
+  +-- Analytic Gaussian oracle
   +-- Seeded procedural generator
   `-- nuScenes-mini annotation replay
              |
              v
-Nominal measurement models
-  +-- Camera projection, bearing, and noisy depth
-  `-- LiDAR position, extent, and range
+Estimator-output models
+  +-- Actual sampling error
+  `-- Reported covariance, pose, and timestamp
              |
              v
 Manifest-driven fault injection
              |
              v
-Camera-only / LiDAR-only / fixed fusion / robust fusion / fallback
+Camera-only / LiDAR-only / fixed fusion / health fallback / oracles
              |
              v
-Task loss / fusion risk / health quality / uncertainty / reports
+Matched-center loss / signed contrasts / health quality / uncertainty / reports
 ```
 
 Every run will be defined by an immutable manifest containing the scenario,
-sequence seed, timestamps, sensor configuration, fault parameters, experiment
-configuration version, and software revision.
+sequence seed, sensor configuration, fault parameters, estimand, and experiment
+schema version. Runtime timestamps, software revision, platform, and local paths
+belong in a separate run-provenance record and do not affect the intent digest.
 
 ### 5.1 Latent scenes
 
-Two scene sources are planned:
+Three scene sources are planned:
 
-- **Procedural mode:** Seeded sequences of moving 3D cuboids with object class,
-  size, pose, velocity, ego motion, misses, and false observations.
+- **Analytic mode:** One-object Gaussian cases with known expected fixed-fusion
+  loss and bias crossover.
+- **Procedural mode:** Seeded sequences of matched moving BEV centers with
+  constant velocity and controlled scene-layout families. Detection misses,
+  false positives, extents, and unknown association are deferred to v0.2.
 - **nuScenes replay mode:** nuScenes-mini annotations, ego poses, timestamps,
-  camera intrinsics, and sensor extrinsics provide real scene geometry. Sensor
-  observations remain simulated.
+  camera intrinsics, and sensor extrinsics provide recorded latent geometry and
+  motion. Sensor estimator outputs remain simulated.
 
 Procedural scenes provide controlled coverage. nuScenes replay tests whether
-conclusions transfer to a less synthetic scene distribution.
+findings persist when latent geometry, motion, calibration, and timing are drawn
+from ten recorded mini scenes; it is exploratory grounding, not real-sensor
+transfer validation.
 
 ### 5.2 Camera measurement model
 
-- Project cuboid centers and corners through a calibrated pinhole camera.
-- Apply image-bound and field-of-view filtering.
-- Produce bearing, projected-box, estimated-depth, and uncertainty fields.
-- Support range-dependent covariance, missed observations, false positives,
-  and confidence degradation.
+- v0.1 analytic mode produces a noisy ego-BEV center with separate actual and
+  reported covariance.
+- Geometry mode projects centers through a calibrated pinhole camera, applies
+  image bounds, and produces bearing/depth with covariance propagated into
+  ego-BEV coordinates.
+- Camera support defines the common front-camera/LiDAR scoring region.
 
 ### 5.3 LiDAR measurement model
 
-- Produce noisy bird's-eye-view position and object-extent measurements.
-- Support range-dependent variance, sparsity, bias, missed observations, and
-  false positives.
+- Produce noisy ego-BEV center estimates with separate actual and reported
+  covariance.
+- Restrict nominal LiDAR eligibility to the same object-frame support as the
+  front camera.
 - Preserve sensor pose and field-of-regard assumptions explicitly in config.
 
-These are measurement-level models, not raw-sensor simulators.
+These are estimator-output models, not raw-sensor simulators.
 
 ## 6. Fault model
 
-Primary experiments use scene-persistent single-sensor faults. Burst and
-compound faults follow only after the one-factor experiments are valid.
+Primary experiments use sequence-persistent, single-axis proxy faults. Burst,
+compound, and frame-varying faults follow only after the one-factor experiments
+are valid.
 
 | Family | Initial cases |
 |---|---|
-| Dropout | Missing observations, burst dropout, full modality loss |
-| Degradation | Increased variance, misses, outliers, depth/range bias |
-| Extrinsic | Translation bias and roll/pitch/yaw bias |
-| Temporal | Timestamp skew, stale observations, repeated frames |
+| Bias | Additive estimator-output position bias with nominal covariance |
+| Uncertainty | Increased noise with either correct or underreported covariance |
+| Dropout | Partial or complete modality unavailability |
+| Extrinsic metadata | Camera translation and yaw error |
+| Temporal metadata | Timestamp offset or omitted latency compensation |
 
-Extrinsic corruption will use an explicit convention such as
+Physical observations are generated with the true pose and timestamp. An
+extrinsic fault modifies only estimator-consumed metadata:
 
 \[
-T_{\mathrm{used}} = \exp(\hat{\xi}) T_{\mathrm{true}},
+\widetilde T_{e\leftarrow c}=\Delta T_e T^{\mathrm{true}}_{e\leftarrow c}.
 \]
 
-with the coordinate frame and left/right multiplication convention documented
-and tested. Severity grids will be declared in versioned configurations before
-the corresponding benchmark is run. They are controlled stress-test settings,
-not estimates of real fault priors.
+All transforms use right-handed frames, column vectors, and
+\(T_{a\leftarrow b}p_b=p_a\). Fault generation and reconstruction may not reuse
+the same corrupted transform because that would cancel the injected error.
+Severity grids are declared before the benchmark and are controlled stress-test
+settings, not estimates of real fault priors.
 
 ## 7. Baselines
 
@@ -144,78 +163,92 @@ The initial comparison set is intentionally interpretable:
 1. Camera-only estimation.
 2. LiDAR-only estimation.
 3. Fixed covariance-weighted information fusion.
-4. Robust fusion using clipped or Huber-weighted innovations.
-5. Rule-based health gating using normalized innovation squared.
-6. Optional calibrated CPU classifier using observable health features.
-7. Oracle-health fallback using injected fault labels as an upper bound.
+4. Rule-based health gating using pre-update normalized innovation squared.
+5. Fault-label oracle that drops the injected-fault modality.
+6. Performance oracle that selects the lowest-loss method with hindsight.
 
-Oracle object correspondence will be used first to isolate fusion behavior.
-Hungarian association will be added as a separate experiment so association
-failure is measured rather than silently conflated with geometric error.
+Known object correspondence is used in v0.1 to isolate fusion behavior.
+Robust fusion, learned health classification, Hungarian association, set loss,
+and false detections are v0.2 candidates added only after the matched-center
+task is valid.
 
 ## 8. Sensor-health estimator
 
-A constant-velocity temporal predictor will produce sensor-specific innovation
-residuals. Candidate observable features include:
+A constant-velocity temporal predictor will form a prediction before consuming
+the current measurements. Sensor-specific or leave-one-sensor-out state tracks
+produce innovation residuals while recording which measurements update them.
+Candidate observable features include:
 
 - Per-sensor normalized innovation squared mean, maximum, variance, and trend.
-- Cross-modal position and extent disagreement.
+- Cross-modal position disagreement.
 - Missing-observation rate.
-- Association failure rate.
 - Timestamp inconsistency.
 - Temporal jerk and track inconsistency.
 
-The learned option is a small CPU model that predicts healthy, camera-fault, or
-LiDAR-fault probabilities. Fault type, severity, seed, and manifest fields are
-prohibited inputs. Probability calibration and decision thresholds are selected
-on validation data only.
+The primary v0.1 policy is rule-based and includes an unknown/ambiguous outcome.
+An optional later CPU model may predict healthy, camera-fault, LiDAR-fault, or
+ambiguous probabilities. Fault type, severity, seed, split, and manifest fields
+are prohibited inputs. Probability calibration and thresholds are selected on
+validation data only.
 
 ## 9. Metrics
 
-Let \(L_C\), \(L_L\), and \(L_F\) be lower-is-better task losses for camera,
-LiDAR, and fixed fusion. The primary task loss is planned to be GOSPA or an
-equivalently explicit Hungarian-matched loss, with localization, missed-object,
-and false-object components reported separately.
+Let \(L_{m,j}(s)\) be the mean squared BEV center error for method \(m\),
+complete sequence \(j\), and severity \(s\). Population method loss
+\(\bar L_m(s)\) is the mean of sequence losses. The v0.1 primary task is
+matched-center MSE in \(\mathrm{m}^2\).
 
-### 9.1 Fusion benefit
+### 9.1 Primary signed contrast
 
-\[
-\mathrm{FB}(s) = \min(L_C(s), L_L(s)) - L_F(s).
-\]
-
-A positive value means fusion improves over the best unimodal estimator.
-
-### 9.2 Harmful-fusion gap
-
-For a single-sensor fault with known healthy modality \(H\):
+For a single-sensor fault with a predeclared healthy modality \(H\):
 
 \[
-\mathrm{HFG}(s) = \max(0, L_F(s) - L_H(s)).
+D_H(s)=\frac{1}{N}\sum_j\left(L_{F,j}(s)-L_{H,j}(s)\right).
 \]
 
-### 9.3 Crossover severity
+Negative values mean fixed fusion helps; positive values mean it is harmful.
+Inference and intervals operate on this signed quantity.
+
+### 9.2 Fusion benefit
 
 \[
-s^* = \inf\{s : \mathrm{FB}(s) \le 0\}.
+\mathrm{FB}(s) =
+\min\left(\bar L_C(s),\bar L_L(s)\right)-\bar L_F(s).
 \]
 
-Crossover will be estimated with paired sequence bootstrap intervals and a
-predeclared monotonic fitting rule when appropriate. If no supported crossing
-occurs, the result is "not observed" rather than a forced estimate.
+The minimum is taken over population method means, never per object, frame, or
+sequence.
 
-### 9.4 Fallback evaluation
+### 9.3 Harmful-fusion gap
+
+\(\mathrm{HFG}(s)=\max(0,D_H(s))\) is derived only after inference so
+beneficial evidence is not truncated.
+
+### 9.4 Crossover severity
+
+Crossover is the first zero of a predeclared nondecreasing isotonic fit to
+\(D_H(s)\), computed separately for each fault family and physical axis. Raw
+points remain visible. Complete sequences are paired-bootstrap resampled and
+the curve is refit in each replicate. The result may be **not observed** or
+**undetermined** rather than a forced threshold.
+
+### 9.5 Fallback evaluation
 
 - Gain over always using fixed fusion.
 - Clean-condition regression.
 - Fraction of oracle-recoverable loss recovered.
-- Regret relative to the oracle fallback.
-- Risk-coverage behavior when abstention is allowed.
+- Gap to the fault-target-drop policy and performance oracle.
+- Loss-coverage behavior when abstention is allowed.
 
-### 9.5 Health evaluation
+The oracle-recovery fraction is reported only when its aggregate denominator is
+positive and above a declared numerical tolerance.
 
-- AUROC and AUPRC.
+### 9.6 Health evaluation
+
+- Event-level attribution including unknown/ambiguous.
+- Time to detect, time to recover, and false alerts per clean sequence.
+- Frame AUROC and AUPRC as secondary diagnostics.
 - Brier score and expected calibration error.
-- Fault-attribution confusion matrix.
 - Performance on unseen severities and held-out fault families.
 - Runtime, peak memory, and throughput on named CPU hardware.
 
@@ -224,14 +257,14 @@ occurs, the result is "not observed" rather than a forced estimate.
 - Split complete temporal sequences, never individual frames.
 - Use paired clean and faulted versions of the same latent scene.
 - Reuse the same stochastic-noise realization across competing fusion methods.
-- Generate procedural train, validation, and test sets from disjoint seeds.
+- Keep every variant of one latent sequence in the same split.
+- Hold out layout families, range/velocity slices, fault families, and severity
+  intervals in addition to using disjoint seeds.
 - Train health estimators on procedural scenarios before nuScenes replay.
-- Treat nuScenes replay as a separate scene-distribution test.
+- Treat nuScenes-mini replay as exploratory latent-geometry grounding.
 - Tune thresholds and probability calibration on validation data only.
 - Predeclare fault families, severities, seeds, primary metrics, and exclusions.
 - Use paired bootstrap confidence intervals over sequences.
-- Run broad sweeps with oracle association, then repeat selected cases with
-  Hungarian association.
 - Report non-monotonic responses and failed hypotheses.
 
 Required negative controls include:
@@ -245,93 +278,121 @@ when both modalities are wrong in the same way.
 
 ## 11. Work plan and acceptance criteria
 
-### M0: Reproducible project foundation
+### M0: Freeze estimands and reproducible foundation
+
+Status: **complete**. The contract foundation passed its adversarial release
+gate; no quantitative benchmark result is implied.
 
 Deliver:
 
-- Public project plan and data-preparation guide.
+- Normative v0.1 benchmark contract, public benchmark card, and claim policy.
 - Privacy-safe Git configuration.
-- Pinned CPU environment design.
-- Initial experiment and result schemas.
+- Pinned executable CPU environment and CI.
+- Strict alpha experiment, run, and metric schemas.
+- Canonical manifest serialization and digest CLI.
+- Public methodology plus ignored private learning system.
 
 Accept when:
 
 - Private interview material and datasets are verified as ignored.
 - A clean checkout contains no local data or secrets.
+- Transform, fault-insertion, uncertainty, ROI, task-loss, aggregation,
+  bootstrap, and crossover semantics are frozen.
+- Lint, strict source type checking, tests, schema drift checks, and package
+  builds pass from the lockfile.
 - All planned claims are labeled as hypotheses rather than results.
 
-### M1: Geometry and reproducibility
+### M1: Analytic end-to-end vertical slice
 
 Deliver:
 
-- Named coordinate frames, SE(3), and camera projection utilities.
-- Procedural fixtures and manifest schema.
-- CPU property and unit tests.
+- One-object 2D Gaussian camera/LiDAR generator.
+- Camera bias and uncertainty-reporting faults.
+- Camera-only, LiDAR-only, fixed-information fusion, target-drop policy, and
+  performance-oracle semantics.
+- Matched-center MSE, signed healthy-modality contrast, paired intervals, and
+  predeclared crossover.
+- Machine-readable run and metric records.
 
 Accept when:
 
-- Transform composition and inverse tests pass.
-- Projection agrees with independent fixtures or the nuScenes devkit within a
-  declared tolerance.
-- Analytic yaw-error and timing-error checks pass.
-- Re-running a manifest produces identical measurements and metrics.
+- Independent Gaussian fusion mean, covariance, and expected MSE match
+  closed-form results.
+- The population contract-grid/PAVA crossover matches an independent analytic
+  grid calculation at the fixed tolerance; the continuous model root is
+  reported separately as a discretization reference.
+- Correctly reported increased noise is distinguished from overconfidence.
+- Metric signs, oracle semantics, no-crossing, and undetermined cases pass.
+- Re-running a manifest produces byte-identical raw records.
 
-### M2: Measurement simulation
+### M2: Geometry and nuScenes grounding
 
 Deliver:
 
-- Procedural temporal scenes.
-- Camera and LiDAR measurement models.
-- Single-factor fault implementations.
+- Named frames, SE(3), quaternion, and camera projection utilities.
+- Minimal nuScenes-mini metadata adapter and referential-integrity validator.
+- One-sample global-to-ego-to-camera projection diagnostic.
+- Front-camera/common-LiDAR ROI implementation.
 
 Accept when:
 
-- Zero-noise measurements recover latent geometry within numerical tolerance.
-- Empirical noise moments match configured moments within declared tolerance.
-- Every fault has an identity case and a severity-response test.
-- Smoke experiments run in CPU-only continuous integration.
+- Transform composition, inverse, and round-trip property tests pass.
+- nuScenes scalar-first quaternion and sensor-to-ego conventions are tested.
+- Projection agrees with an independent fixture or official devkit path within
+  a declared tolerance.
+- Camera bearing/depth covariance propagation agrees with Monte Carlo.
+- No dataset content or absolute local path enters tracked artifacts.
 
-### M3: Fusion baselines and decision metrics
+### M3: Temporal procedural benchmark
 
 Deliver:
 
-- Unimodal, fixed-fusion, robust-fusion, and oracle baselines.
-- Matched-object loss decomposition.
-- Fusion metrics, bootstrap intervals, and crossover estimation.
+- Constant-velocity matched-center sequences and declared layout families.
+- Camera and LiDAR estimator-output models in the common ROI.
+- Calibration translation/yaw, timestamp-offset, bias, and
+  uncertainty-reporting crossover families plus a separate dropout
+  availability control.
+- Fixed procedural experiment matrix with paired sequence records.
 
 Accept when:
 
-- Metric sign and boundary tests pass.
-- Independent Gaussian fusion behaves as analytically expected.
-- Crossover handling covers single crossing, multiple crossings, and no
-  crossing.
-- Results are stored in machine-readable, versioned records.
+- Zero-fault and zero-noise identity cases recover the latent state.
+- Empirical noise and propagated covariance match configured moments.
+- Every fault has an identity and analytic or monotonic severity-response check.
+- Procedural splits hold out declared layout and motion/range slices.
+- Smoke experiments run in CPU-only CI and fixed sweeps are deterministic.
 
 ### M4: Health-aware fallback
 
 Deliver:
 
-- Temporal innovation gate.
-- Optional calibrated CPU classifier.
-- Fixed, estimated, and oracle fallback comparison.
+- Pre-update sensor-specific or leave-one-sensor-out temporal predictors.
+- Cross-modal, camera-NIS, LiDAR-NIS, and combined health gates.
+- Healthy, camera, LiDAR, and unknown/ambiguous decisions.
+- Fixed, estimated, fault-target-drop, and performance-oracle comparisons.
 
 Accept when:
 
 - No prohibited manifest metadata enters health features.
-- Scene-disjoint and held-out-fault evaluations are present.
+- No current measurement leaks into its own innovation prediction.
+- Scene-disjoint, held-out-layout, unseen-severity, and held-out-fault
+  evaluations are present.
 - Clean regression, fault recovery, and oracle gap are reported together.
-- Negative controls and known attribution failures are documented.
+- Event attribution, time to detect/recover, and false alerts are reported.
+- Common-mode and difficult-clean attribution failures are documented.
 
 No minimum improvement is required for completion; a valid negative result is
 acceptable.
 
-### M5: nuScenes grounding
+### M5: nuScenes latent replay and selected v0.2 complexity
 
 Deliver:
 
-- nuScenes-mini metadata and replay adapter.
-- Coordinate-frame validation visualization.
-- Comparison of procedural and replay distributions.
+- nuScenes-mini matched-center temporal replay using local metadata.
+- Comparison of procedural and replay ranges, motions, visibility, and timing.
+- Repetition of the predeclared v0.1 fault matrix on eligible replay slices.
+- Only if v0.1 remains valid: selected association, miss/false-positive, set
+  loss, robust-fusion, or learned-health extensions.
 
 Accept when:
 
@@ -339,32 +400,43 @@ Accept when:
 - No dataset file is committed or redistributed.
 - Scene counts, ranges, dimensions, motion, visibility, and timing differences
   are reported rather than hidden.
+- Replay claims are limited to persistence under recorded latent geometry and
+  motion, with scene-level uncertainty.
+- Any v0.2 extension is reported separately from the v0.1 estimand.
 
 ### M6: Public report
 
 Deliver:
 
 - Fixed experiment matrix and final CPU benchmark.
-- Generated figures and concise technical report.
+- Curated aggregate figures and concise technical report.
 - One-command procedural reproduction path.
 - Resume-ready evidence table containing only measured values.
+- Complete private code tour, derivations, question bank, project narratives,
+  and failure postmortems.
 
 Accept when:
 
 - A clean CPU environment reproduces the procedural report.
 - Public figures trace back to versioned manifests.
-- The report distinguishes measurement simulation from raw-sensor simulation.
+- The report distinguishes estimator-output simulation from raw-sensor
+  simulation.
 - Limitations and related work are explicit.
+- An adversarial claims audit passes and every headline statement has released
+  evidence plus a validity boundary.
 
 ## 12. Planned repository layout
 
 ```text
 .
-|-- configs/
+|-- examples/manifests/
 |-- docs/
 |-- reports/
-|   `-- generated/          # ignored
+|   |-- generated/          # ignored raw outputs
+|   `-- releases/           # curated aggregate evidence
+|-- schemas/
 |-- src/fusion_fault_bench/
+|   |-- contracts/
 |   |-- experiments/
 |   |-- faults/
 |   |-- fusion/
@@ -377,20 +449,20 @@ Accept when:
 `-- tests/
 ```
 
-Only documentation exists at repository bootstrap. Source and test directories
-will be introduced with the first executable vertical slice.
+Foundation contracts and tests are introduced in M0. Scientific dependencies
+and modules are added only when their milestone uses them.
 
 ## 13. Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
-| Simulator appears too synthetic | Ground scene geometry in nuScenes replay and compare procedural/replay distributions |
+| Estimator-output abstraction appears too synthetic | Ground latent geometry in nuScenes replay and publish the abstraction boundary |
 | Noise priors are not realistic | Expose all priors in configs and run sensitivity analyses |
 | Cross-modal residual cannot identify the faulty sensor | Add sensor-specific temporal innovations and an oracle bound |
 | Common-mode failures remain invisible | Include a required common-mode negative control |
 | Health model learns fault-generator shortcuts | Hold out fault families and forbid manifest fields as features |
 | Crossover is unstable or absent | Use paired intervals and permit "not observed" |
-| Association obscures pose effects | Report oracle and Hungarian association separately |
+| Association obscures pose effects | Validate matched IDs first and report later Hungarian results separately |
 | Coordinate-frame error invalidates results | Make geometry tests and overlays release blockers |
 | Results overstate realism or safety | Use controlled-stress-test language and publish limitations |
 

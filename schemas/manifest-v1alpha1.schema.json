@@ -1,0 +1,1592 @@
+{
+  "$defs": {
+    "AdditivePositionBiasFault": {
+      "additionalProperties": false,
+      "description": "z_target <- z_target + direction * magnitude * axis_vector.",
+      "properties": {
+        "axis": {
+          "enum": [
+            "x",
+            "y"
+          ],
+          "title": "Axis",
+          "type": "string"
+        },
+        "direction_policy": {
+          "const": "symmetric-paired",
+          "title": "Direction Policy",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "estimator-output",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "additive-position-bias",
+          "title": "Kind",
+          "type": "string"
+        },
+        "magnitude_values_m": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Magnitude Values M",
+          "type": "array"
+        },
+        "persistence": {
+          "const": "sequence",
+          "title": "Persistence",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Modality"
+        },
+        "unit": {
+          "const": "m",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "direction_policy",
+        "persistence",
+        "magnitude_values_m"
+      ],
+      "title": "AdditivePositionBiasFault",
+      "type": "object"
+    },
+    "AnalyticCrossoverManifest": {
+      "additionalProperties": false,
+      "description": "Closed-form-compatible single-sensor crossover experiment.",
+      "properties": {
+        "analytic_validation": {
+          "$ref": "#/$defs/AnalyticValidationSpec"
+        },
+        "evaluation": {
+          "$ref": "#/$defs/SingleSensorCrossoverEvaluation"
+        },
+        "experiment": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+          "title": "Experiment",
+          "type": "string"
+        },
+        "fault_sweep": {
+          "$ref": "#/$defs/AnalyticSingleSensorFault"
+        },
+        "kind": {
+          "const": "analytic-crossover",
+          "title": "Kind",
+          "type": "string"
+        },
+        "methods": {
+          "$ref": "#/$defs/PrimaryMethods"
+        },
+        "observations": {
+          "$ref": "#/$defs/ObservationModelsSpec"
+        },
+        "rng": {
+          "$ref": "#/$defs/RngSpec"
+        },
+        "schema": {
+          "const": "ffb.manifest/v1alpha1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/AnalyticSource"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "experiment",
+        "rng",
+        "source",
+        "analytic_validation",
+        "observations",
+        "fault_sweep",
+        "methods",
+        "evaluation"
+      ],
+      "title": "AnalyticCrossoverManifest",
+      "type": "object"
+    },
+    "AnalyticSingleSensorFault": {
+      "discriminator": {
+        "mapping": {
+          "additive-position-bias": "#/$defs/AdditivePositionBiasFault",
+          "increased-noise-correctly-reported": "#/$defs/CorrectlyReportedNoiseFault",
+          "increased-noise-underreported": "#/$defs/UnderreportedNoiseFault"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AdditivePositionBiasFault"
+        },
+        {
+          "$ref": "#/$defs/CorrectlyReportedNoiseFault"
+        },
+        {
+          "$ref": "#/$defs/UnderreportedNoiseFault"
+        }
+      ]
+    },
+    "AnalyticSource": {
+      "additionalProperties": false,
+      "description": "Closed-form one-object, one-frame Gaussian verification case.",
+      "properties": {
+        "case_id": {
+          "const": "one-object-static-local-error-gaussian-v1",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "analytic",
+          "title": "Kind",
+          "type": "string"
+        },
+        "sequence_count": {
+          "minimum": 2,
+          "title": "Sequence Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "case_id",
+        "sequence_count"
+      ],
+      "title": "AnalyticSource",
+      "type": "object"
+    },
+    "AnalyticValidationSpec": {
+      "additionalProperties": false,
+      "description": "Fixed independent-oracle acceptance thresholds for analytic runs.",
+      "properties": {
+        "continuous_root_reporting": {
+          "const": "separate-from-grid-estimand",
+          "title": "Continuous Root Reporting",
+          "type": "string"
+        },
+        "grid_crossover_abs_tolerance": {
+          "maximum": 1e-12,
+          "minimum": 1e-12,
+          "title": "Grid Crossover Abs Tolerance",
+          "type": "number"
+        },
+        "monte_carlo_standard_error_multiplier": {
+          "maximum": 6.0,
+          "minimum": 6.0,
+          "title": "Monte Carlo Standard Error Multiplier",
+          "type": "number"
+        },
+        "population_mse_abs_tolerance_m2": {
+          "maximum": 1e-12,
+          "minimum": 1e-12,
+          "title": "Population Mse Abs Tolerance M2",
+          "type": "number"
+        }
+      },
+      "required": [
+        "population_mse_abs_tolerance_m2",
+        "grid_crossover_abs_tolerance",
+        "monte_carlo_standard_error_multiplier",
+        "continuous_root_reporting"
+      ],
+      "title": "AnalyticValidationSpec",
+      "type": "object"
+    },
+    "AvailabilityControlEvaluation": {
+      "additionalProperties": false,
+      "description": "Dropout evaluation that never hides missing outputs.",
+      "properties": {
+        "bootstrap": {
+          "$ref": "#/$defs/BootstrapSpec"
+        },
+        "conditional_loss_aggregation": {
+          "const": "valid-object-frame-ratio-with-sequence-bootstrap",
+          "title": "Conditional Loss Aggregation",
+          "type": "string"
+        },
+        "crossover": {
+          "const": "not-applicable",
+          "title": "Crossover",
+          "type": "string"
+        },
+        "fixed_fusion_missing_input_action": {
+          "const": "undefined",
+          "title": "Fixed Fusion Missing Input Action",
+          "type": "string"
+        },
+        "metrics": {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "const": "coverage",
+              "type": "string"
+            },
+            {
+              "const": "conditional-matched-center-mse",
+              "type": "string"
+            },
+            {
+              "const": "undefined-output-rate",
+              "type": "string"
+            }
+          ],
+          "title": "Metrics",
+          "type": "array"
+        },
+        "missing_output_policy": {
+          "const": "undefined-no-localization-penalty",
+          "title": "Missing Output Policy",
+          "type": "string"
+        },
+        "mode": {
+          "const": "availability-control",
+          "title": "Mode",
+          "type": "string"
+        },
+        "rate_aggregation": {
+          "const": "count-ratio-with-sequence-bootstrap",
+          "title": "Rate Aggregation",
+          "type": "string"
+        },
+        "target_drop_identity_action": {
+          "const": "fixed-fusion",
+          "title": "Target Drop Identity Action",
+          "type": "string"
+        },
+        "target_drop_nonidentity_action": {
+          "const": "use-nontarget-modality",
+          "title": "Target Drop Nonidentity Action",
+          "type": "string"
+        },
+        "undefined_bootstrap_replicate_action": {
+          "const": "exclude-and-require-two-sided-support",
+          "title": "Undefined Bootstrap Replicate Action",
+          "type": "string"
+        },
+        "unimodal_missing_input_action": {
+          "const": "undefined",
+          "title": "Unimodal Missing Input Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "metrics",
+        "missing_output_policy",
+        "rate_aggregation",
+        "conditional_loss_aggregation",
+        "undefined_bootstrap_replicate_action",
+        "unimodal_missing_input_action",
+        "fixed_fusion_missing_input_action",
+        "target_drop_identity_action",
+        "target_drop_nonidentity_action",
+        "bootstrap",
+        "crossover"
+      ],
+      "title": "AvailabilityControlEvaluation",
+      "type": "object"
+    },
+    "AvailabilityControlManifest": {
+      "additionalProperties": false,
+      "description": "Procedural dropout evaluation with explicit missingness metrics.",
+      "properties": {
+        "evaluation": {
+          "$ref": "#/$defs/AvailabilityControlEvaluation"
+        },
+        "experiment": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+          "title": "Experiment",
+          "type": "string"
+        },
+        "fault_sweep": {
+          "$ref": "#/$defs/DropoutFault"
+        },
+        "kind": {
+          "const": "availability-control",
+          "title": "Kind",
+          "type": "string"
+        },
+        "methods": {
+          "$ref": "#/$defs/AvailabilityMethods"
+        },
+        "observations": {
+          "$ref": "#/$defs/ObservationModelsSpec"
+        },
+        "rng": {
+          "$ref": "#/$defs/RngSpec"
+        },
+        "roi": {
+          "$ref": "#/$defs/CommonRoiSpec"
+        },
+        "schema": {
+          "const": "ffb.manifest/v1alpha1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/ProceduralSource"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "experiment",
+        "rng",
+        "source",
+        "roi",
+        "observations",
+        "fault_sweep",
+        "methods",
+        "evaluation"
+      ],
+      "title": "AvailabilityControlManifest",
+      "type": "object"
+    },
+    "AvailabilityMethods": {
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "const": "camera-only",
+          "type": "string"
+        },
+        {
+          "const": "lidar-only",
+          "type": "string"
+        },
+        {
+          "const": "fixed-fusion",
+          "type": "string"
+        },
+        {
+          "const": "fault-target-drop-policy",
+          "type": "string"
+        }
+      ],
+      "type": "array"
+    },
+    "BootstrapSpec": {
+      "additionalProperties": false,
+      "description": "Complete-sequence paired percentile bootstrap.",
+      "properties": {
+        "confidence_level": {
+          "maximum": 0.95,
+          "minimum": 0.95,
+          "title": "Confidence Level",
+          "type": "number"
+        },
+        "interval_scope": {
+          "const": "pointwise",
+          "title": "Interval Scope",
+          "type": "string"
+        },
+        "method": {
+          "const": "percentile",
+          "title": "Method",
+          "type": "string"
+        },
+        "replicates": {
+          "minimum": 200,
+          "multipleOf": 40,
+          "title": "Replicates",
+          "type": "integer"
+        },
+        "resampling": {
+          "const": "paired-indices-across-severities-and-methods",
+          "title": "Resampling",
+          "type": "string"
+        },
+        "unit": {
+          "const": "sequence",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "method",
+        "unit",
+        "resampling",
+        "interval_scope",
+        "replicates",
+        "confidence_level"
+      ],
+      "title": "BootstrapSpec",
+      "type": "object"
+    },
+    "CalibrationTranslationFault": {
+      "additionalProperties": false,
+      "description": "T_used <- Delta_T_ego(direction * magnitude) T_true.",
+      "properties": {
+        "axis": {
+          "enum": [
+            "x",
+            "y"
+          ],
+          "title": "Axis",
+          "type": "string"
+        },
+        "direction_policy": {
+          "const": "symmetric-paired",
+          "title": "Direction Policy",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "calibration-metadata",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "calibration-translation",
+          "title": "Kind",
+          "type": "string"
+        },
+        "magnitude_values_m": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Magnitude Values M",
+          "type": "array"
+        },
+        "persistence": {
+          "const": "sequence",
+          "title": "Persistence",
+          "type": "string"
+        },
+        "perturbation_frame": {
+          "const": "ego",
+          "title": "Perturbation Frame",
+          "type": "string"
+        },
+        "target": {
+          "const": "camera",
+          "title": "Target",
+          "type": "string"
+        },
+        "unit": {
+          "const": "m",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "perturbation_frame",
+        "direction_policy",
+        "persistence",
+        "magnitude_values_m"
+      ],
+      "title": "CalibrationTranslationFault",
+      "type": "object"
+    },
+    "CalibrationYawFault": {
+      "additionalProperties": false,
+      "description": "T_used <- Delta_R_ego_z(direction * magnitude) T_true.",
+      "properties": {
+        "axis": {
+          "const": "yaw",
+          "title": "Axis",
+          "type": "string"
+        },
+        "direction_policy": {
+          "const": "symmetric-paired",
+          "title": "Direction Policy",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "calibration-metadata",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "calibration-yaw",
+          "title": "Kind",
+          "type": "string"
+        },
+        "magnitude_values_rad": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Magnitude Values Rad",
+          "type": "array"
+        },
+        "persistence": {
+          "const": "sequence",
+          "title": "Persistence",
+          "type": "string"
+        },
+        "perturbation_frame": {
+          "const": "ego",
+          "title": "Perturbation Frame",
+          "type": "string"
+        },
+        "target": {
+          "const": "camera",
+          "title": "Target",
+          "type": "string"
+        },
+        "unit": {
+          "const": "rad",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "perturbation_frame",
+        "direction_policy",
+        "persistence",
+        "magnitude_values_rad"
+      ],
+      "title": "CalibrationYawFault",
+      "type": "object"
+    },
+    "CartesianGaussianSensorSpec": {
+      "additionalProperties": false,
+      "description": "A fully declared v0.1 Cartesian estimator-output model.",
+      "properties": {
+        "actual_std_xy_m": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            }
+          ],
+          "title": "Actual Std Xy M",
+          "type": "array"
+        },
+        "output_space": {
+          "const": "ego-bev-xy",
+          "title": "Output Space",
+          "type": "string"
+        },
+        "range_dependence": {
+          "const": "constant",
+          "title": "Range Dependence",
+          "type": "string"
+        },
+        "reported_covariance_structure": {
+          "const": "diagonal",
+          "title": "Reported Covariance Structure",
+          "type": "string"
+        },
+        "reported_std_xy_m": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            }
+          ],
+          "title": "Reported Std Xy M",
+          "type": "array"
+        },
+        "temporal_dependence": {
+          "const": "iid",
+          "title": "Temporal Dependence",
+          "type": "string"
+        },
+        "true_covariance_structure": {
+          "const": "diagonal",
+          "title": "True Covariance Structure",
+          "type": "string"
+        },
+        "true_error_distribution": {
+          "const": "gaussian",
+          "title": "True Error Distribution",
+          "type": "string"
+        },
+        "true_error_mean_xy_m": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "const": 0.0
+            },
+            {
+              "const": 0.0
+            }
+          ],
+          "title": "True Error Mean Xy M",
+          "type": "array"
+        }
+      },
+      "required": [
+        "output_space",
+        "true_error_distribution",
+        "true_error_mean_xy_m",
+        "true_covariance_structure",
+        "actual_std_xy_m",
+        "reported_covariance_structure",
+        "reported_std_xy_m",
+        "temporal_dependence",
+        "range_dependence"
+      ],
+      "title": "CartesianGaussianSensorSpec",
+      "type": "object"
+    },
+    "CommonModeControlEvaluation": {
+      "additionalProperties": false,
+      "description": "Absolute-error blind-spot control without a healthy reference.",
+      "properties": {
+        "aggregation": {
+          "const": "object-frame-mean-then-sequence-mean",
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "bootstrap": {
+          "$ref": "#/$defs/BootstrapSpec"
+        },
+        "crossover": {
+          "const": "not-applicable",
+          "title": "Crossover",
+          "type": "string"
+        },
+        "loss_unit": {
+          "const": "m^2",
+          "title": "Loss Unit",
+          "type": "string"
+        },
+        "mode": {
+          "const": "common-mode-blind-spot-control",
+          "title": "Mode",
+          "type": "string"
+        },
+        "primary_contrast": {
+          "const": "none",
+          "title": "Primary Contrast",
+          "type": "string"
+        },
+        "primary_loss": {
+          "const": "matched-center-mse",
+          "title": "Primary Loss",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "primary_loss",
+        "loss_unit",
+        "aggregation",
+        "primary_contrast",
+        "bootstrap",
+        "crossover"
+      ],
+      "title": "CommonModeControlEvaluation",
+      "type": "object"
+    },
+    "CommonModeControlManifest": {
+      "additionalProperties": false,
+      "description": "Procedural common-mode blind-spot control.",
+      "properties": {
+        "evaluation": {
+          "$ref": "#/$defs/CommonModeControlEvaluation"
+        },
+        "experiment": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+          "title": "Experiment",
+          "type": "string"
+        },
+        "fault_sweep": {
+          "$ref": "#/$defs/CommonModePositionBiasFault"
+        },
+        "kind": {
+          "const": "common-mode-control",
+          "title": "Kind",
+          "type": "string"
+        },
+        "methods": {
+          "$ref": "#/$defs/ControlMethods"
+        },
+        "observations": {
+          "$ref": "#/$defs/ObservationModelsSpec"
+        },
+        "rng": {
+          "$ref": "#/$defs/RngSpec"
+        },
+        "roi": {
+          "$ref": "#/$defs/CommonRoiSpec"
+        },
+        "schema": {
+          "const": "ffb.manifest/v1alpha1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/ProceduralSource"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "experiment",
+        "rng",
+        "source",
+        "roi",
+        "observations",
+        "fault_sweep",
+        "methods",
+        "evaluation"
+      ],
+      "title": "CommonModeControlManifest",
+      "type": "object"
+    },
+    "CommonModePositionBiasFault": {
+      "additionalProperties": false,
+      "description": "Apply the same Cartesian bias to both modality outputs.",
+      "properties": {
+        "axis": {
+          "enum": [
+            "x",
+            "y"
+          ],
+          "title": "Axis",
+          "type": "string"
+        },
+        "direction_policy": {
+          "const": "symmetric-paired",
+          "title": "Direction Policy",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "estimator-output",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "common-mode-position-bias",
+          "title": "Kind",
+          "type": "string"
+        },
+        "magnitude_values_m": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Magnitude Values M",
+          "type": "array"
+        },
+        "persistence": {
+          "const": "sequence",
+          "title": "Persistence",
+          "type": "string"
+        },
+        "target": {
+          "const": "both",
+          "title": "Target",
+          "type": "string"
+        },
+        "unit": {
+          "const": "m",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "direction_policy",
+        "persistence",
+        "magnitude_values_m"
+      ],
+      "title": "CommonModePositionBiasFault",
+      "type": "object"
+    },
+    "CommonRoiSpec": {
+      "additionalProperties": false,
+      "description": "Common front-camera/LiDAR support in the ego BEV frame.",
+      "properties": {
+        "abs_y_max_m": {
+          "exclusiveMinimum": 0,
+          "title": "Abs Y Max M",
+          "type": "number"
+        },
+        "camera_half_fov_rad": {
+          "exclusiveMaximum": 1.5707963267948966,
+          "exclusiveMinimum": 0.0,
+          "title": "Camera Half Fov Rad",
+          "type": "number"
+        },
+        "frame": {
+          "const": "ego-bev",
+          "title": "Frame",
+          "type": "string"
+        },
+        "x_max_m": {
+          "title": "X Max M",
+          "type": "number"
+        },
+        "x_min_m": {
+          "title": "X Min M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "frame",
+        "x_min_m",
+        "x_max_m",
+        "abs_y_max_m",
+        "camera_half_fov_rad"
+      ],
+      "title": "CommonRoiSpec",
+      "type": "object"
+    },
+    "ControlMethods": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "const": "camera-only",
+          "type": "string"
+        },
+        {
+          "const": "lidar-only",
+          "type": "string"
+        },
+        {
+          "const": "fixed-fusion",
+          "type": "string"
+        }
+      ],
+      "type": "array"
+    },
+    "CorrectlyReportedNoiseFault": {
+      "additionalProperties": false,
+      "description": "actual_std and reported_std <- nominal_std * std_scale.",
+      "properties": {
+        "axis": {
+          "const": "xy",
+          "title": "Axis",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "true-error-model",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "increased-noise-correctly-reported",
+          "title": "Kind",
+          "type": "string"
+        },
+        "persistence": {
+          "const": "sequence-configuration",
+          "title": "Persistence",
+          "type": "string"
+        },
+        "reported_uncertainty": {
+          "const": "tracks-actual",
+          "title": "Reported Uncertainty",
+          "type": "string"
+        },
+        "std_scale_values": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Std Scale Values",
+          "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/Modality"
+        },
+        "unit": {
+          "const": "std-scale",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "reported_uncertainty",
+        "persistence",
+        "std_scale_values"
+      ],
+      "title": "CorrectlyReportedNoiseFault",
+      "type": "object"
+    },
+    "CrossoverSpec": {
+      "additionalProperties": false,
+      "description": "Operational first-zero rule, including censored bootstrap replicates.",
+      "properties": {
+        "fit": {
+          "const": "nondecreasing-isotonic-pava",
+          "title": "Fit",
+          "type": "string"
+        },
+        "fit_weights": {
+          "const": "equal-severity",
+          "title": "Fit Weights",
+          "type": "string"
+        },
+        "interpolation": {
+          "const": "linear-first-zero",
+          "title": "Interpolation",
+          "type": "string"
+        },
+        "no_crossing_handling": {
+          "const": "right-censored-above-tested-maximum",
+          "title": "No Crossing Handling",
+          "type": "string"
+        },
+        "status_rule": {
+          "const": "two-sided-bootstrap-crossing-fraction",
+          "title": "Status Rule",
+          "type": "string"
+        },
+        "zero_tolerance_m2": {
+          "maximum": 1e-12,
+          "minimum": 1e-12,
+          "title": "Zero Tolerance M2",
+          "type": "number"
+        }
+      },
+      "required": [
+        "fit",
+        "fit_weights",
+        "interpolation",
+        "zero_tolerance_m2",
+        "no_crossing_handling",
+        "status_rule"
+      ],
+      "title": "CrossoverSpec",
+      "type": "object"
+    },
+    "DropoutFault": {
+      "additionalProperties": false,
+      "description": "Independently remove target outputs with probability p per frame.",
+      "properties": {
+        "axis": {
+          "const": "availability",
+          "title": "Axis",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "availability",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "dropout",
+          "title": "Kind",
+          "type": "string"
+        },
+        "probability_values": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Probability Values",
+          "type": "array"
+        },
+        "process": {
+          "const": "shared-target-modality-frame-bernoulli",
+          "title": "Process",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Modality"
+        },
+        "unit": {
+          "const": "probability",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "process",
+        "probability_values"
+      ],
+      "title": "DropoutFault",
+      "type": "object"
+    },
+    "GeometryCrossoverManifest": {
+      "additionalProperties": false,
+      "description": "Geometry-capable temporal single-sensor crossover experiment.",
+      "properties": {
+        "evaluation": {
+          "$ref": "#/$defs/SingleSensorCrossoverEvaluation"
+        },
+        "experiment": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+          "title": "Experiment",
+          "type": "string"
+        },
+        "fault_sweep": {
+          "$ref": "#/$defs/GeometrySingleSensorFault"
+        },
+        "kind": {
+          "const": "geometry-crossover",
+          "title": "Kind",
+          "type": "string"
+        },
+        "methods": {
+          "$ref": "#/$defs/PrimaryMethods"
+        },
+        "observations": {
+          "$ref": "#/$defs/ObservationModelsSpec"
+        },
+        "rng": {
+          "$ref": "#/$defs/RngSpec"
+        },
+        "roi": {
+          "$ref": "#/$defs/CommonRoiSpec"
+        },
+        "schema": {
+          "const": "ffb.manifest/v1alpha1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/GeometrySource"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "experiment",
+        "rng",
+        "source",
+        "roi",
+        "observations",
+        "fault_sweep",
+        "methods",
+        "evaluation"
+      ],
+      "title": "GeometryCrossoverManifest",
+      "type": "object"
+    },
+    "GeometrySingleSensorFault": {
+      "discriminator": {
+        "mapping": {
+          "additive-position-bias": "#/$defs/AdditivePositionBiasFault",
+          "calibration-translation": "#/$defs/CalibrationTranslationFault",
+          "calibration-yaw": "#/$defs/CalibrationYawFault",
+          "increased-noise-correctly-reported": "#/$defs/CorrectlyReportedNoiseFault",
+          "increased-noise-underreported": "#/$defs/UnderreportedNoiseFault",
+          "timestamp-offset": "#/$defs/TimestampOffsetFault"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AdditivePositionBiasFault"
+        },
+        {
+          "$ref": "#/$defs/CorrectlyReportedNoiseFault"
+        },
+        {
+          "$ref": "#/$defs/UnderreportedNoiseFault"
+        },
+        {
+          "$ref": "#/$defs/CalibrationTranslationFault"
+        },
+        {
+          "$ref": "#/$defs/CalibrationYawFault"
+        },
+        {
+          "$ref": "#/$defs/TimestampOffsetFault"
+        }
+      ]
+    },
+    "GeometrySource": {
+      "discriminator": {
+        "mapping": {
+          "nuscenes-mini": "#/$defs/NuScenesMiniSource",
+          "procedural": "#/$defs/ProceduralSource"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ProceduralSource"
+        },
+        {
+          "$ref": "#/$defs/NuScenesMiniSource"
+        }
+      ]
+    },
+    "Modality": {
+      "enum": [
+        "camera",
+        "lidar"
+      ],
+      "type": "string"
+    },
+    "NuScenesMiniSource": {
+      "additionalProperties": false,
+      "description": "Local nuScenes-mini latent-scene selection without a dataset path.",
+      "properties": {
+        "adapter_profile": {
+          "const": "nuscenes-mini-matched-centers-v1",
+          "title": "Adapter Profile",
+          "type": "string"
+        },
+        "camera_channel": {
+          "const": "CAM_FRONT",
+          "title": "Camera Channel",
+          "type": "string"
+        },
+        "kind": {
+          "const": "nuscenes-mini",
+          "title": "Kind",
+          "type": "string"
+        },
+        "scene_names": {
+          "items": {
+            "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Scene Names",
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "adapter_profile",
+        "scene_names",
+        "camera_channel"
+      ],
+      "title": "NuScenesMiniSource",
+      "type": "object"
+    },
+    "ObservationModelsSpec": {
+      "additionalProperties": false,
+      "description": "Matched camera and LiDAR estimator-output contracts.",
+      "properties": {
+        "base_stochastic_sensor_errors": {
+          "const": "independent",
+          "title": "Base Stochastic Sensor Errors",
+          "type": "string"
+        },
+        "camera": {
+          "$ref": "#/$defs/CartesianGaussianSensorSpec"
+        },
+        "lidar": {
+          "$ref": "#/$defs/CartesianGaussianSensorSpec"
+        }
+      },
+      "required": [
+        "camera",
+        "lidar",
+        "base_stochastic_sensor_errors"
+      ],
+      "title": "ObservationModelsSpec",
+      "type": "object"
+    },
+    "PrimaryMethods": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "const": "camera-only",
+          "type": "string"
+        },
+        {
+          "const": "lidar-only",
+          "type": "string"
+        },
+        {
+          "const": "fixed-fusion",
+          "type": "string"
+        },
+        {
+          "const": "fault-target-drop-policy",
+          "type": "string"
+        },
+        {
+          "const": "performance-oracle",
+          "type": "string"
+        }
+      ],
+      "type": "array"
+    },
+    "ProceduralSource": {
+      "additionalProperties": false,
+      "description": "Reference to a committed, content-addressed generator profile.",
+      "properties": {
+        "kind": {
+          "const": "procedural",
+          "title": "Kind",
+          "type": "string"
+        },
+        "profile_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "profile_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Profile Sha256",
+          "type": "string"
+        },
+        "sequence_count": {
+          "minimum": 2,
+          "title": "Sequence Count",
+          "type": "integer"
+        },
+        "split": {
+          "enum": [
+            "train",
+            "validation",
+            "test"
+          ],
+          "title": "Split",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "split",
+        "profile_id",
+        "profile_sha256",
+        "sequence_count"
+      ],
+      "title": "ProceduralSource",
+      "type": "object"
+    },
+    "RngSpec": {
+      "additionalProperties": false,
+      "description": "Named streams whose seeds do not depend on draw or call order.",
+      "properties": {
+        "bootstrap_seed": {
+          "exclusiveMaximum": 340282366920938463463374607431768211456,
+          "minimum": 0,
+          "title": "Bootstrap Seed",
+          "type": "integer"
+        },
+        "data_master_seed": {
+          "exclusiveMaximum": 340282366920938463463374607431768211456,
+          "minimum": 0,
+          "title": "Data Master Seed",
+          "type": "integer"
+        },
+        "data_streams": {
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "const": "latent",
+              "type": "string"
+            },
+            {
+              "const": "camera",
+              "type": "string"
+            },
+            {
+              "const": "lidar",
+              "type": "string"
+            },
+            {
+              "const": "fault",
+              "type": "string"
+            }
+          ],
+          "title": "Data Streams",
+          "type": "array"
+        },
+        "engine": {
+          "const": "numpy-pcg64dxsm-v1",
+          "title": "Engine",
+          "type": "string"
+        },
+        "stream_derivation": {
+          "const": "sha256-name-and-sequence-v1",
+          "title": "Stream Derivation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine",
+        "stream_derivation",
+        "data_master_seed",
+        "bootstrap_seed",
+        "data_streams"
+      ],
+      "title": "RngSpec",
+      "type": "object"
+    },
+    "SingleSensorCrossoverEvaluation": {
+      "additionalProperties": false,
+      "description": "Primary fused-minus-healthy crossover estimand.",
+      "properties": {
+        "aggregation": {
+          "const": "object-frame-mean-then-sequence-mean",
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "bootstrap": {
+          "$ref": "#/$defs/BootstrapSpec"
+        },
+        "crossover": {
+          "$ref": "#/$defs/CrossoverSpec"
+        },
+        "loss_unit": {
+          "const": "m^2",
+          "title": "Loss Unit",
+          "type": "string"
+        },
+        "mode": {
+          "const": "primary-single-sensor-crossover",
+          "title": "Mode",
+          "type": "string"
+        },
+        "oracle_recovery_denominator_tolerance_m2": {
+          "maximum": 1e-12,
+          "minimum": 1e-12,
+          "title": "Oracle Recovery Denominator Tolerance M2",
+          "type": "number"
+        },
+        "performance_oracle_candidates": {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "const": "camera-only",
+              "type": "string"
+            },
+            {
+              "const": "lidar-only",
+              "type": "string"
+            },
+            {
+              "const": "fixed-fusion",
+              "type": "string"
+            }
+          ],
+          "title": "Performance Oracle Candidates",
+          "type": "array"
+        },
+        "performance_oracle_selection_unit": {
+          "const": "sequence",
+          "title": "Performance Oracle Selection Unit",
+          "type": "string"
+        },
+        "primary_contrast": {
+          "const": "fused-minus-healthy",
+          "title": "Primary Contrast",
+          "type": "string"
+        },
+        "primary_loss": {
+          "const": "matched-center-mse",
+          "title": "Primary Loss",
+          "type": "string"
+        },
+        "target_drop_identity_action": {
+          "const": "fixed-fusion",
+          "title": "Target Drop Identity Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "primary_loss",
+        "loss_unit",
+        "aggregation",
+        "primary_contrast",
+        "bootstrap",
+        "crossover",
+        "target_drop_identity_action",
+        "performance_oracle_selection_unit",
+        "performance_oracle_candidates",
+        "oracle_recovery_denominator_tolerance_m2"
+      ],
+      "title": "SingleSensorCrossoverEvaluation",
+      "type": "object"
+    },
+    "TimestampOffsetFault": {
+      "additionalProperties": false,
+      "description": "t_reported <- t_true + direction * magnitude.",
+      "properties": {
+        "axis": {
+          "const": "time",
+          "title": "Axis",
+          "type": "string"
+        },
+        "direction_policy": {
+          "const": "symmetric-paired",
+          "title": "Direction Policy",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "timestamp-metadata",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "timestamp-offset",
+          "title": "Kind",
+          "type": "string"
+        },
+        "magnitude_values_s": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Magnitude Values S",
+          "type": "array"
+        },
+        "persistence": {
+          "const": "sequence",
+          "title": "Persistence",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Modality"
+        },
+        "timestamp_convention": {
+          "const": "reported-minus-true",
+          "title": "Timestamp Convention",
+          "type": "string"
+        },
+        "unit": {
+          "const": "s",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "timestamp_convention",
+        "direction_policy",
+        "persistence",
+        "magnitude_values_s"
+      ],
+      "title": "TimestampOffsetFault",
+      "type": "object"
+    },
+    "UnderreportedNoiseFault": {
+      "additionalProperties": false,
+      "description": "actual_std <- nominal_std * std_scale; reported_std stays nominal.",
+      "properties": {
+        "axis": {
+          "const": "xy",
+          "title": "Axis",
+          "type": "string"
+        },
+        "injection_site": {
+          "const": "true-error-model",
+          "title": "Injection Site",
+          "type": "string"
+        },
+        "kind": {
+          "const": "increased-noise-underreported",
+          "title": "Kind",
+          "type": "string"
+        },
+        "persistence": {
+          "const": "sequence-configuration",
+          "title": "Persistence",
+          "type": "string"
+        },
+        "reported_uncertainty": {
+          "const": "nominal",
+          "title": "Reported Uncertainty",
+          "type": "string"
+        },
+        "std_scale_values": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Std Scale Values",
+          "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/Modality"
+        },
+        "unit": {
+          "const": "std-scale",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "axis",
+        "unit",
+        "injection_site",
+        "reported_uncertainty",
+        "persistence",
+        "std_scale_values"
+      ],
+      "title": "UnderreportedNoiseFault",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "analytic-crossover": "#/$defs/AnalyticCrossoverManifest",
+      "availability-control": "#/$defs/AvailabilityControlManifest",
+      "common-mode-control": "#/$defs/CommonModeControlManifest",
+      "geometry-crossover": "#/$defs/GeometryCrossoverManifest"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/AnalyticCrossoverManifest"
+    },
+    {
+      "$ref": "#/$defs/GeometryCrossoverManifest"
+    },
+    {
+      "$ref": "#/$defs/CommonModeControlManifest"
+    },
+    {
+      "$ref": "#/$defs/AvailabilityControlManifest"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+[project]
+name = "fusion-fault-bench"
+version = "0.1.0"
+description = "Deterministic evaluation of camera-LiDAR estimator fusion under controlled faults"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { file = "LICENSE" }
+authors = [{ name = "Fusion Fault Bench contributors" }]
+dependencies = [
+    "numpy>=2.0,<3",
+    "pydantic>=2.13,<3",
+]
+
+[project.scripts]
+ffb = "fusion_fault_bench.cli:main"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.400,<2",
+    "pytest>=8.4,<10",
+    "pytest-cov>=6.2,<8",
+    "ruff>=0.12,<1",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "src"
+module-name = "fusion_fault_bench"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "-q",
+    "--strict-config",
+    "--strict-markers",
+    "--cov=fusion_fault_bench",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-fail-under=90",
+]
+
+[tool.coverage.run]
+source = ["fusion_fault_bench"]
+branch = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "SIM",
+    "RUF",
+]
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "strict"
+reportUnknownMemberType = false
+reportUnknownVariableType = false

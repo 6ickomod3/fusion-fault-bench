@@ -1,5 +1,6 @@
 # Private local context
 /interview/
+/AGENTS.md
 
 # macOS
 .DS_Store
@@ -9,10 +10,16 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+.eggs/
+build/
+dist/
 .venv/
+venv/
+env/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.pyright/
 .hypothesis/
 .coverage
 htmlcov/
@@ -29,6 +36,21 @@ htmlcov/
 /artifacts/
 /outputs/
 /reports/generated/
+
+# nuScenes archives and common accidental extraction locations
+/v1.0-mini/
+/samples/
+/sweeps/
+/maps/
+/nuscenes/
+/nuScenes/
+v1.0-*.tgz
+nuScenes-*.tar.bz2
+
+# Model artifacts are outside the CPU-only v0.1 scope
+*.ckpt
+*.pth
+*.pt
 
 # Editors
 .idea/

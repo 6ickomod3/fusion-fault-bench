@@ -1,0 +1,189 @@
+{
+  "$defs": {
+    "FaultAxis": {
+      "enum": [
+        "x",
+        "y",
+        "xy",
+        "yaw",
+        "time",
+        "availability"
+      ],
+      "type": "string"
+    },
+    "FaultFamily": {
+      "enum": [
+        "additive-position-bias",
+        "increased-noise-correctly-reported",
+        "increased-noise-underreported",
+        "calibration-translation",
+        "calibration-yaw",
+        "timestamp-offset",
+        "dropout",
+        "common-mode-position-bias"
+      ],
+      "type": "string"
+    },
+    "SeverityUnit": {
+      "enum": [
+        "m",
+        "rad",
+        "s",
+        "probability",
+        "std-scale"
+      ],
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Crossover estimate with explicit censoring and bootstrap support.",
+  "properties": {
+    "bootstrap_crossing_fraction": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Bootstrap Crossing Fraction",
+      "type": "number"
+    },
+    "bootstrap_replicates": {
+      "minimum": 200,
+      "multipleOf": 40,
+      "title": "Bootstrap Replicates",
+      "type": "integer"
+    },
+    "censoring": {
+      "enum": [
+        "none",
+        "right-above-tested-maximum",
+        "mixed-bootstrap"
+      ],
+      "title": "Censoring",
+      "type": "string"
+    },
+    "confidence_level": {
+      "maximum": 0.95,
+      "minimum": 0.95,
+      "title": "Confidence Level",
+      "type": "number"
+    },
+    "direction": {
+      "enum": [
+        "negative",
+        "positive",
+        "increase"
+      ],
+      "title": "Direction",
+      "type": "string"
+    },
+    "fault_axis": {
+      "$ref": "#/$defs/FaultAxis"
+    },
+    "fault_family": {
+      "$ref": "#/$defs/FaultFamily"
+    },
+    "interval_lower": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Interval Lower"
+    },
+    "interval_method": {
+      "const": "right-censored-percentile",
+      "title": "Interval Method",
+      "type": "string"
+    },
+    "interval_upper": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "const": "positive-infinity",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Interval Upper"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "point_curve_crossed": {
+      "title": "Point Curve Crossed",
+      "type": "boolean"
+    },
+    "point_estimate": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Point Estimate"
+    },
+    "run_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema": {
+      "const": "ffb.crossover/v1alpha1",
+      "title": "Schema",
+      "type": "string"
+    },
+    "sequence_count": {
+      "minimum": 2,
+      "title": "Sequence Count",
+      "type": "integer"
+    },
+    "severity_unit": {
+      "$ref": "#/$defs/SeverityUnit"
+    },
+    "status": {
+      "enum": [
+        "observed",
+        "not-observed",
+        "undetermined"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "tested_maximum": {
+      "title": "Tested Maximum",
+      "type": "number"
+    }
+  },
+  "required": [
+    "schema",
+    "run_id",
+    "manifest_sha256",
+    "fault_family",
+    "fault_axis",
+    "direction",
+    "severity_unit",
+    "status",
+    "point_curve_crossed",
+    "point_estimate",
+    "interval_lower",
+    "interval_upper",
+    "tested_maximum",
+    "censoring",
+    "bootstrap_crossing_fraction",
+    "sequence_count",
+    "bootstrap_replicates",
+    "confidence_level",
+    "interval_method"
+  ],
+  "title": "CrossoverRecordV1Alpha1",
+  "type": "object"
+}

@@ -1,0 +1,303 @@
+{
+  "$defs": {
+    "FaultAxis": {
+      "enum": [
+        "x",
+        "y",
+        "xy",
+        "yaw",
+        "time",
+        "availability"
+      ],
+      "type": "string"
+    },
+    "FaultFamily": {
+      "enum": [
+        "additive-position-bias",
+        "increased-noise-correctly-reported",
+        "increased-noise-underreported",
+        "calibration-translation",
+        "calibration-yaw",
+        "timestamp-offset",
+        "dropout",
+        "common-mode-position-bias"
+      ],
+      "type": "string"
+    },
+    "LocalizationMetricRecord": {
+      "additionalProperties": false,
+      "description": "Sequence localization loss, including explicitly undefined dropout rows.",
+      "properties": {
+        "eligible_object_frame_count": {
+          "minimum": 1,
+          "title": "Eligible Object Frame Count",
+          "type": "integer"
+        },
+        "fault_axis": {
+          "$ref": "#/$defs/FaultAxis"
+        },
+        "fault_family": {
+          "$ref": "#/$defs/FaultFamily"
+        },
+        "manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifest Sha256",
+          "type": "string"
+        },
+        "method_id": {
+          "$ref": "#/$defs/MethodId"
+        },
+        "metric_name": {
+          "enum": [
+            "matched-center-mse",
+            "conditional-matched-center-mse"
+          ],
+          "title": "Metric Name",
+          "type": "string"
+        },
+        "record_level": {
+          "const": "sequence",
+          "title": "Record Level",
+          "type": "string"
+        },
+        "run_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "schema": {
+          "const": "ffb.sequence-metric/v1alpha1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "sequence_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Sequence Id",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/SeverityCoordinate"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "undefined"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unit": {
+          "const": "m^2",
+          "title": "Unit",
+          "type": "string"
+        },
+        "valid_object_frame_count": {
+          "minimum": 0,
+          "title": "Valid Object Frame Count",
+          "type": "integer"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "schema",
+        "record_level",
+        "run_id",
+        "manifest_sha256",
+        "sequence_id",
+        "fault_family",
+        "fault_axis",
+        "severity",
+        "method_id",
+        "eligible_object_frame_count",
+        "valid_object_frame_count",
+        "metric_name",
+        "status",
+        "value",
+        "unit"
+      ],
+      "title": "LocalizationMetricRecord",
+      "type": "object"
+    },
+    "MethodId": {
+      "enum": [
+        "camera-only",
+        "lidar-only",
+        "fixed-fusion",
+        "fault-target-drop-policy",
+        "performance-oracle"
+      ],
+      "type": "string"
+    },
+    "RateMetricRecord": {
+      "additionalProperties": false,
+      "description": "Coverage or undefined-output fraction over the pre-fault denominator.",
+      "properties": {
+        "eligible_object_frame_count": {
+          "minimum": 1,
+          "title": "Eligible Object Frame Count",
+          "type": "integer"
+        },
+        "fault_axis": {
+          "$ref": "#/$defs/FaultAxis"
+        },
+        "fault_family": {
+          "$ref": "#/$defs/FaultFamily"
+        },
+        "manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifest Sha256",
+          "type": "string"
+        },
+        "method_id": {
+          "$ref": "#/$defs/MethodId"
+        },
+        "metric_name": {
+          "enum": [
+            "coverage",
+            "undefined-output-rate"
+          ],
+          "title": "Metric Name",
+          "type": "string"
+        },
+        "record_level": {
+          "const": "sequence",
+          "title": "Record Level",
+          "type": "string"
+        },
+        "run_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "schema": {
+          "const": "ffb.sequence-metric/v1alpha1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "sequence_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Sequence Id",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/SeverityCoordinate"
+        },
+        "status": {
+          "const": "ok",
+          "title": "Status",
+          "type": "string"
+        },
+        "unit": {
+          "const": "fraction",
+          "title": "Unit",
+          "type": "string"
+        },
+        "valid_object_frame_count": {
+          "minimum": 0,
+          "title": "Valid Object Frame Count",
+          "type": "integer"
+        },
+        "value": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "schema",
+        "record_level",
+        "run_id",
+        "manifest_sha256",
+        "sequence_id",
+        "fault_family",
+        "fault_axis",
+        "severity",
+        "method_id",
+        "eligible_object_frame_count",
+        "valid_object_frame_count",
+        "metric_name",
+        "status",
+        "value",
+        "unit"
+      ],
+      "title": "RateMetricRecord",
+      "type": "object"
+    },
+    "SeverityCoordinate": {
+      "additionalProperties": false,
+      "description": "Machine-readable condition coordinate from a manifest fault grid.",
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/SeverityDirection"
+        },
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "magnitude": {
+          "title": "Magnitude",
+          "type": "number"
+        },
+        "unit": {
+          "$ref": "#/$defs/SeverityUnit"
+        }
+      },
+      "required": [
+        "index",
+        "magnitude",
+        "direction",
+        "unit"
+      ],
+      "title": "SeverityCoordinate",
+      "type": "object"
+    },
+    "SeverityDirection": {
+      "enum": [
+        "identity",
+        "negative",
+        "positive",
+        "increase"
+      ],
+      "type": "string"
+    },
+    "SeverityUnit": {
+      "enum": [
+        "m",
+        "rad",
+        "s",
+        "probability",
+        "std-scale"
+      ],
+      "type": "string"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "conditional-matched-center-mse": "#/$defs/LocalizationMetricRecord",
+      "coverage": "#/$defs/RateMetricRecord",
+      "matched-center-mse": "#/$defs/LocalizationMetricRecord",
+      "undefined-output-rate": "#/$defs/RateMetricRecord"
+    },
+    "propertyName": "metric_name"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/LocalizationMetricRecord"
+    },
+    {
+      "$ref": "#/$defs/RateMetricRecord"
+    }
+  ]
+}

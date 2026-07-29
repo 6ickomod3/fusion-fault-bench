@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.32"
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install
+
+      - name: Check lockfile
+        run: uv lock --check
+
+      - name: Sync environment
+        run: uv sync --locked --group dev
+
+      - name: Check formatting
+        run: uv run --locked ruff format --check .
+
+      - name: Lint
+        run: uv run --locked ruff check .
+
+      - name: Type check
+        run: uv run --locked pyright
+
+      - name: Test
+        run: uv run --locked pytest
+
+      - name: Build distributions
+        run: uv build --no-sources
+
+      - name: Smoke-test built wheel
+        run: |
+          uv venv --python 3.12 /tmp/ffb-wheel-smoke
+          uv pip install --python /tmp/ffb-wheel-smoke/bin/python dist/*.whl
+          /tmp/ffb-wheel-smoke/bin/ffb --version
+          /tmp/ffb-wheel-smoke/bin/ffb manifest validate \
+            examples/manifests/analytic-bias-v1alpha1.json

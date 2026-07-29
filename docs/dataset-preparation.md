@@ -2,8 +2,9 @@
 
 ## Should I prepare data now?
 
-Yes. Prepare only the official **nuScenes v1.0-mini** split. Do not download the
-full train/validation or test datasets for the CPU-first milestone.
+The dataset is not required for M0 or M1. Before M2, prepare only the official
+**nuScenes v1.0-mini** split. Do not download the full train/validation or test
+datasets for the CPU-first milestones.
 
 The project initially needs:
 
