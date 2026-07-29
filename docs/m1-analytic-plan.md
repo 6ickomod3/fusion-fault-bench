@@ -1,13 +1,40 @@
 # M1 Analytic Vertical Slice
 
-Status: **pre-registered; no release-eligible M1 artifact has been executed or
-released**.
+Status: **pre-registered; the first execution was withheld for a provenance
+defect and no M1 evidence has been released**.
 
 Adversarial-review amendment, recorded before the first release execution:
 `_SUCCESS` now commits to the exact volatile `run.json` bytes as well as the
 stable scientific artifact digest. This closes an integrity gap without
 changing any hypothesis, manifest, seed, severity, endpoint, sample count,
 estimand, result rule, or scientific payload identity.
+
+Post-execution, pre-release provenance amendment:
+
+- The initial and deterministic-repeat executions at source revision
+  `1649dec5de387dd8b408a14678fa0acad0818735` produced six strictly valid local
+  artifacts, but macOS hardware discovery recorded `cpu_model="arm"`. That
+  names an instruction-set family rather than the named CPU hardware required
+  by the claim-release rule.
+- Those six artifacts are release-ineligible, remain unpublished, and must
+  not support a public quantitative claim.
+- This amendment changes no hypothesis, manifest, seed, severity grid,
+  endpoint, sample count, estimand, bootstrap rule, crossover rule, result
+  status rule, or presentation decision. All three frozen manifest digests
+  remain unchanged.
+- Before the replacement execution, Darwin hardware discovery must record a
+  specific processor or chip name in `run.json` and fail closed if it can
+  obtain only a generic architecture or unknown value.
+- All three manifests must then be executed twice from the clean
+  provenance-fix revision. Each of the six replacement artifacts must pass
+  strict validation, and each within-revision pair must have byte-identical
+  scientific payloads. After excluding provenance-bound identifiers, every
+  sequence value, aggregate estimate and interval, crossover field, and
+  analytic-validation value must exactly match the withheld execution.
+- A changed source revision changes the deterministic `run_id`, which is
+  embedded in scientific records. Replacement payload digests are therefore
+  expected to change even when every numerical value is identical; manifest
+  digests must not change.
 
 ## Purpose
 
