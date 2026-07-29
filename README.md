@@ -1,5 +1,7 @@
 # Fusion Fault Bench
 
+[![CI](https://github.com/6ickomod3/fusion-fault-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/6ickomod3/fusion-fault-bench/actions/workflows/ci.yml)
+
 **When does camera-LiDAR fusion become worse than trusting the modality
 declared healthy in a controlled single-sensor fault?**
 
@@ -98,6 +100,7 @@ reproduction command.
 - [Limitations](docs/limitations.md)
 - [Results](docs/results.md)
 - [Project plan](docs/project-plan.md)
+- [M1 analytic pre-registration](docs/m1-analytic-plan.md)
 
 ## Explicit non-goals
 
