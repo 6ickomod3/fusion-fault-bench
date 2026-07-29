@@ -1,0 +1,55 @@
+{
+  "schema": "ffb.experiment-matrix/v1",
+  "matrix_id": "m3-procedural-v1",
+  "execution_order": [
+    {
+      "manifest": "examples/manifests/procedural-lidar-y-bias-v1alpha1.json",
+      "manifest_sha256": "e5a4aa3ddf9832cd8cc88eb0be87151bfb44efbf99363f826f3b360c81960056"
+    },
+    {
+      "manifest": "examples/manifests/procedural-camera-noise-correct-v1alpha1.json",
+      "manifest_sha256": "4359f4f5cc172017b4cbf2eb5d7470692a25846501066d999ae416b56caa1add"
+    },
+    {
+      "manifest": "examples/manifests/procedural-camera-noise-underreported-v1alpha1.json",
+      "manifest_sha256": "900b4893ca33eb8ce84d10cc14a3e350e6b07de4783641c4212b4ee0337c549d"
+    },
+    {
+      "manifest": "examples/manifests/procedural-camera-calibration-x-v1alpha1.json",
+      "manifest_sha256": "463637c5dc2b8a8135e40dab4b23e1a3fd61b9475364a523b999e61d1787cdce"
+    },
+    {
+      "manifest": "examples/manifests/procedural-camera-calibration-yaw-v1alpha1.json",
+      "manifest_sha256": "b6ec17bd745483af6863857db93376e5d560ccc9d4a6cfffc13e027e2e4289fa"
+    },
+    {
+      "manifest": "examples/manifests/procedural-camera-timestamp-offset-v1alpha1.json",
+      "manifest_sha256": "292d47f2711223382cca48e229a2cb7a1bd6ebfe392bb36d0730505b5e9f3d57"
+    },
+    {
+      "manifest": "examples/manifests/procedural-camera-dropout-v1alpha1.json",
+      "manifest_sha256": "79ae8c67ff9994b7d6b764e8ef8b7c2185c3cb4871b6489d64bb4385f786022a"
+    },
+    {
+      "manifest": "examples/manifests/procedural-common-mode-x-edge-v1alpha1.json",
+      "manifest_sha256": "1b78059d62b016ca8a25cc23d22a73576ef1e61742c08f35394e9ad273c06d3c"
+    }
+  ],
+  "profiles": [
+    {
+      "profile": "examples/profiles/constant-velocity-front-roi-v1.json",
+      "profile_sha256": "4771a6e69d75b9af41f99ab794c0af1b51e6103e43474c8e0f07df3e6f3ca68c"
+    },
+    {
+      "profile": "examples/profiles/constant-velocity-fov-edge-v1.json",
+      "profile_sha256": "ca1544f69023847af7bdad9f1306ae3885f2e5d067d6afc026038f87ae36448d"
+    },
+    {
+      "profile": "examples/profiles/constant-velocity-ci-smoke-v1.json",
+      "profile_sha256": "7f2479c064e0f8104789dfc3ce704a78aabdd46c1be7a31fdd2e75dbe3b407ed"
+    }
+  ],
+  "release_split": "test",
+  "result_selection": "publish-complete-matrix-without-favorable-result-selection",
+  "scientific_overrides": "forbidden"
+}

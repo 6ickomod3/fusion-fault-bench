@@ -138,7 +138,7 @@ See the
 | Canonical manifest fingerprinting | Validated |
 | Analytic fusion/fault vertical slice | Released as M1 |
 | SE(3) and local nuScenes-mini grounding | Released as M2 validation evidence |
-| Temporal procedural benchmark | Planned |
+| Temporal procedural benchmark | Pre-registered; implementation next |
 | Health-aware fallback | Planned |
 | Released fault-performance results | M1 analytic Gaussian stress tests only |
 
@@ -160,6 +160,7 @@ contains deterministic validation gates and attestations, not an estimand.
 - [M1 analytic pre-registration](docs/m1-analytic-plan.md)
 - [M2 geometry pre-registration](docs/m2-geometry-plan.md)
 - [M2 geometry release](reports/releases/m2-geometry-v0.1.0/README.md)
+- [M3 temporal procedural pre-registration](docs/m3-temporal-plan.md)
 
 ## Explicit non-goals
 

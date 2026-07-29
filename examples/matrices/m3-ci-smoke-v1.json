@@ -1,0 +1,19 @@
+{
+  "schema": "ffb.experiment-matrix/v1",
+  "matrix_id": "m3-ci-smoke-v1",
+  "execution_order": [
+    {
+      "manifest": "examples/manifests/procedural-ci-smoke-v1alpha1.json",
+      "manifest_sha256": "cc1c26f8ebce3bf17143cef89238719dde14568091838fcabf6ecaeef0e702fd"
+    }
+  ],
+  "profiles": [
+    {
+      "profile": "examples/profiles/constant-velocity-ci-smoke-v1.json",
+      "profile_sha256": "7f2479c064e0f8104789dfc3ce704a78aabdd46c1be7a31fdd2e75dbe3b407ed"
+    }
+  ],
+  "release_split": "test",
+  "result_selection": "ci-only-not-release-evidence",
+  "scientific_overrides": "forbidden"
+}

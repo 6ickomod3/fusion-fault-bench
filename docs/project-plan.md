@@ -366,8 +366,10 @@ Release outcome:
 
 ### M3: Temporal procedural benchmark
 
-Status: **next**. M3 begins from the released M1 inference machinery and M2
-geometry contracts; it remains CPU-only and dataset-independent.
+Status: **pre-registered; implementation next**. See the
+[M3 temporal procedural pre-registration](m3-temporal-plan.md). M3 begins from
+the released M1 inference machinery and M2 geometry contracts; it remains
+CPU-only and dataset-independent.
 
 Deliver:
 

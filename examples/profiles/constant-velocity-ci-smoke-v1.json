@@ -1,0 +1,165 @@
+{
+  "schema": "ffb.procedural-profile/v1",
+  "profile_id": "constant-velocity-ci-smoke-v1",
+  "source": {
+    "kind": "seeded-constant-velocity-known-id-bev",
+    "frame_count": 8,
+    "frame_index_start": 0,
+    "frame_period_s": 0.1,
+    "frame_time_equation": "t_k_s=frame_index*frame_period_s",
+    "object_count": 3,
+    "object_id_format": "object:{index:02d}",
+    "truth_equation": "p_xy(object,frame)=initial_xy_m(object)+velocity_xy_mps(object)*t_k_s"
+  },
+  "coordinate_contract": {
+    "handedness": "right-handed",
+    "point_representation": "column-vector",
+    "transform_notation": "T_{target<-source}",
+    "scoring_frame": "ego-bev-at-frame-time",
+    "ego_axes": {
+      "x": "forward",
+      "y": "left",
+      "z": "up"
+    },
+    "length_unit": "m",
+    "time_unit": "s",
+    "angle_unit": "rad",
+    "floating_point": "float64"
+  },
+  "rng_contract": {
+    "engine": "numpy-pcg64dxsm-v1",
+    "stream_derivation": "sha256-name-and-sequence-v1",
+    "seed_source": "experiment-manifest",
+    "latent_draw": {
+      "stream_name": "latent",
+      "distribution": "Generator.random",
+      "dtype": "float64",
+      "calls_per_sequence": 1,
+      "shape": [3, 4],
+      "component_order": ["u0", "u1", "u2", "u3"]
+    },
+    "camera_error_draw": {
+      "stream_name": "camera",
+      "distribution": "Generator.standard_normal",
+      "dtype": "float64",
+      "calls_per_sequence": 1,
+      "shape": ["eligible_object_frame_count", 2],
+      "coordinate_order": ["x", "y"]
+    },
+    "lidar_error_draw": {
+      "stream_name": "lidar",
+      "distribution": "Generator.standard_normal",
+      "dtype": "float64",
+      "calls_per_sequence": 1,
+      "shape": ["eligible_object_frame_count", 2],
+      "coordinate_order": ["x", "y"]
+    },
+    "dropout_draw": {
+      "stream_name": "fault",
+      "distribution": "Generator.random",
+      "dtype": "float64",
+      "calls_per_sequence": 1,
+      "shape": [8],
+      "draw_order": "increasing-frame-index",
+      "shared_across_objects_in_frame": true,
+      "drop_rule": "drop-when-u-less-than-probability",
+      "reuse_across_probability_grid": true
+    },
+    "reuse_base_draws_across_fault_families_severities_directions_and_methods": true
+  },
+  "deterministic_order": {
+    "sequences": "ascending-zero-based-index",
+    "frames": "ascending-integer-frame-index",
+    "objects": "utf8-byte-order-of-object-id",
+    "coordinates": ["x", "y"],
+    "eligible_error_rows": "frame-then-object",
+    "filesystem_enumeration_used": false
+  },
+  "eligibility": {
+    "decision_stage": "before-fault-injection",
+    "reuse_same_object_frames_across_all_severities_directions_and_methods": true,
+    "frame": "ego-bev",
+    "x_min_m": 5.0,
+    "x_max_m": 60.0,
+    "abs_y_max_m": 40.0,
+    "positive_forward_required": true,
+    "camera_support": "inclusive-symmetric-bearing-half-fov",
+    "camera_half_fov_rad": 0.7,
+    "camera_and_lidar_estimator_availability_required": true,
+    "lidar_support_available": true
+  },
+  "rig": {
+    "rig_id": "stationary-front-camera-lidar-v1",
+    "ego_motion": "stationary",
+    "camera_channel": "CAM_FRONT",
+    "camera_frame_axes": {
+      "x": "right",
+      "y": "down",
+      "z": "forward"
+    },
+    "camera_true_extrinsic": {
+      "notation": "T_{ego<-camera}",
+      "translation_m": [1.5, 0.0, 1.5],
+      "quaternion_order": "wxyz",
+      "quaternion_wxyz": [0.5, -0.5, 0.5, -0.5]
+    },
+    "lidar_channel": "LIDAR_TOP",
+    "lidar_estimator_output_frame": "ego-bev-at-frame-time"
+  },
+  "reconstruction": {
+    "camera_base_error_application": "add-manifest-scaled-ego-bev-error-before-true-pose-backprojection",
+    "camera_physical_proxy_observation_equation": "q_camera=T_{camera<-ego}^{true}*[p_truth_x+error_x,p_truth_y+error_y,0]",
+    "camera_reconstruction_equation": "z_camera_ego=T_{ego<-camera}^{reported}*q_camera",
+    "lidar_reconstruction_equation": "z_lidar_ego_xy=p_truth_xy+manifest-scaled-lidar-error_xy",
+    "calibration_generation_transform": "true-only",
+    "calibration_translation_fault_equation": "T_reported=DeltaT_ego*T_true",
+    "calibration_yaw_fault_equation": "T_reported=DeltaR_ego_z*T_true",
+    "calibration_fault_may_change_eligibility": false,
+    "reported_covariance_frame": "reconstructed-ego-bev",
+    "reported_covariance_rotation_rule": "rotate-with-reported-transform",
+    "m3_isotropic-camera-covariance_keeps_xy_diagonal_under-yaw": true
+  },
+  "timing": {
+    "reference_timestamp": "frame-time",
+    "camera_timestamp_true": "frame-time",
+    "lidar_timestamp_true": "frame-time",
+    "physical_camera_time_offset_s": 0.0,
+    "physical_lidar_time_offset_s": 0.0,
+    "timestamp_fault_sign": "reported-minus-true",
+    "timestamp_fault_equation": "t_reported=t_true+signed-magnitude",
+    "alignment_equation": "z_aligned_xy=z_raw_xy+latent_velocity_xy_mps*(t_reference-t_reported)",
+    "alignment_velocity_source": "declared-latent-constant-velocity",
+    "identity_equation": "t_reference=t_true=t_reported",
+    "timestamp_fault_may_change_eligibility": false
+  },
+  "fault_pairing": {
+    "persistent_bias_calibration_and_timestamp_faults": "constant-within-sequence",
+    "noise_faults": "sequence-configuration-with-iid-object-frame-errors",
+    "signed_direction_order": ["negative", "positive"],
+    "identity_emitted_once": true,
+    "faults_never_accumulate_across_severity": true
+  },
+  "splits": {
+    "test": {
+      "sequence_count": 4,
+      "layout_family": "small-front-roi-smoke",
+      "initial_x_m": {
+        "equation": "10+10*u0",
+        "support": [10.0, 20.0]
+      },
+      "initial_y_m": {
+        "equation": "lateral_centers_m[object_index]+0.1*(2*u1-1)",
+        "lateral_centers_m": [-2.0, 0.0, 2.0],
+        "jitter_half_width_m": 0.1
+      },
+      "velocity_x_mps": {
+        "equation": "-0.5+u2",
+        "support": [-0.5, 0.5]
+      },
+      "velocity_y_mps": {
+        "equation": "0.05*(2*u3-1)",
+        "support": [-0.05, 0.05]
+      }
+    }
+  }
+}
