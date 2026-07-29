@@ -173,6 +173,7 @@ def derive_run_id(
     git_revision: str,
     lockfile_sha256: str,
     package_version: str,
+    artifact_contract: str = _ARTIFACT_CONTRACT.decode("ascii"),
 ) -> str:
     """Derive the preregistered deterministic run identifier."""
 
@@ -186,7 +187,7 @@ def derive_run_id(
             framed(git_revision.encode("utf-8")),
             framed(lockfile_sha256.encode("utf-8")),
             framed(package_version.encode("utf-8")),
-            framed(_ARTIFACT_CONTRACT),
+            framed(artifact_contract.encode("utf-8")),
         )
     )
     return f"run:{hashlib.sha256(preimage).hexdigest()}"
@@ -1358,3 +1359,18 @@ def write_artifact(
             os.close(staging_fd)
     finally:
         os.close(parent_fd)
+
+
+# Reusable descriptor-safe primitives for other fixed-layout artifact contracts.
+# The released M1 writer above continues to use the original private names.
+absolute_artifact_path = _absolute_lexical
+assert_directory_descriptor_matches_path = _assert_directory_fd_matches_path
+atomic_rename_directory_no_replace_at = _atomic_rename_no_replace_at
+create_staging_directory_at = _create_staging_directory_at
+entry_exists_at = _entry_exists_at
+open_or_create_real_directory = _open_or_create_real_directory
+read_file_at = _read_at
+reject_directory_descriptor_in_git_metadata = _reject_directory_fd_in_git_metadata
+reject_git_metadata_destination = _reject_git_metadata_destination
+strict_json_object_body = _strict_json_body
+write_exclusive_file_at = _write_exclusive_at

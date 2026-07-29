@@ -7,7 +7,7 @@ import json
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Never
 
 from pydantic import ValidationError
 
@@ -19,6 +19,11 @@ from fusion_fault_bench.contracts.artifact_v1alpha1 import (
     PayloadIndexV1Alpha1,
     SuccessMarkerV1Alpha1,
 )
+from fusion_fault_bench.contracts.geometry_validation_v1 import (
+    GeometryPayloadIndexV1,
+    GeometryValidationManifestV1,
+    GeometryValidationV1,
+)
 from fusion_fault_bench.contracts.io import load_manifest
 from fusion_fault_bench.contracts.manifest_v1alpha1 import manifest_json_schema
 from fusion_fault_bench.contracts.result_v1alpha1 import (
@@ -27,6 +32,8 @@ from fusion_fault_bench.contracts.result_v1alpha1 import (
     RunRecordV1Alpha1,
     metric_record_json_schema,
 )
+from fusion_fault_bench.geometry_artifacts import load_geometry_validation_artifact
+from fusion_fault_bench.geometry_runner import run_geometry_validation
 from fusion_fault_bench.runner import run_analytic_experiment
 
 SchemaBuilder = Callable[[], dict[str, Any]]
@@ -34,6 +41,9 @@ SCHEMA_BUILDERS: dict[str, SchemaBuilder] = {
     "aggregate": lambda: AggregateMetricRecordV1Alpha1.model_json_schema(by_alias=True),
     "analytic-validation": lambda: AnalyticValidationV1Alpha1.model_json_schema(by_alias=True),
     "crossover": lambda: CrossoverRecordV1Alpha1.model_json_schema(by_alias=True),
+    "geometry-manifest": lambda: GeometryValidationManifestV1.model_json_schema(by_alias=True),
+    "geometry-payload-index": lambda: GeometryPayloadIndexV1.model_json_schema(by_alias=True),
+    "geometry-validation": lambda: GeometryValidationV1.model_json_schema(by_alias=True),
     "manifest": manifest_json_schema,
     "metric": metric_record_json_schema,
     "payload-index": lambda: PayloadIndexV1Alpha1.model_json_schema(by_alias=True),
@@ -42,8 +52,18 @@ SCHEMA_BUILDERS: dict[str, SchemaBuilder] = {
 }
 
 
+class _CliArgumentError(ValueError):
+    """An argument failure whose message never repeats user-provided values."""
+
+
+class _SanitizedArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> Never:
+        del message
+        raise _CliArgumentError("invalid command arguments")
+
+
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = _SanitizedArgumentParser(
         prog="ffb",
         description="Fusion Fault Bench reproducibility and experiment tools.",
     )
@@ -74,6 +94,43 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Strictly validate a complete result bundle.",
     )
     bundle_validate.add_argument("path", type=Path, metavar="DEST")
+
+    geometry = commands.add_parser(
+        "geometry",
+        help="Run or inspect the frozen M2 geometry validation.",
+    )
+    geometry_commands = geometry.add_subparsers(
+        dest="geometry_command",
+        required=True,
+    )
+    geometry_validate = geometry_commands.add_parser(
+        "validate",
+        help="Run the clean-source M2 geometry validation.",
+    )
+    geometry_validate.add_argument("path", type=Path, metavar="MANIFEST")
+    geometry_validate.add_argument(
+        "--dataset-root-env",
+        required=True,
+    )
+    geometry_validate.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        metavar="DEST",
+    )
+    geometry_bundle = geometry_commands.add_parser(
+        "bundle",
+        help="Inspect an M2 geometry-validation artifact.",
+    )
+    geometry_bundle_commands = geometry_bundle.add_subparsers(
+        dest="geometry_bundle_command",
+        required=True,
+    )
+    geometry_bundle_validate = geometry_bundle_commands.add_parser(
+        "validate",
+        help="Strictly validate a complete M2 artifact.",
+    )
+    geometry_bundle_validate.add_argument("path", type=Path, metavar="DEST")
     return parser
 
 
@@ -97,6 +154,27 @@ def _run(args: argparse.Namespace) -> int:
 
     if args.command == "bundle":
         artifact = load_artifact(args.path)
+        print(
+            f"valid {artifact.payload_index.artifact_contract} "
+            f"artifact_sha256={artifact.artifact_sha256} "
+            f"run_sha256={artifact.run_sha256}"
+        )
+        return 0
+
+    if args.command == "geometry":
+        if args.geometry_command == "validate":
+            artifact = run_geometry_validation(
+                args.path,
+                dataset_root_env=args.dataset_root_env,
+                output_dir=args.output_dir,
+            )
+            print(
+                f"wrote {args.output_dir.as_posix()} "
+                f"artifact_sha256={artifact.artifact_sha256} "
+                f"run_sha256={artifact.run_sha256}"
+            )
+            return 0
+        artifact = load_geometry_validation_artifact(args.path)
         print(
             f"valid {artifact.payload_index.artifact_contract} "
             f"artifact_sha256={artifact.artifact_sha256} "
@@ -129,8 +207,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI, returning a process-style exit code."""
 
     parser = _build_parser()
-    args = parser.parse_args(argv)
     try:
+        args = parser.parse_args(argv)
         return _run(args)
     except (OSError, ValueError, ValidationError) as error:
         print(f"error: {error}", file=sys.stderr)

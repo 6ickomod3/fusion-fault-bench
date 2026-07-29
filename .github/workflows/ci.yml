@@ -52,5 +52,6 @@ jobs:
           uv venv --python 3.12 /tmp/ffb-wheel-smoke
           uv pip install --python /tmp/ffb-wheel-smoke/bin/python dist/*.whl
           /tmp/ffb-wheel-smoke/bin/ffb --version
+          /tmp/ffb-wheel-smoke/bin/ffb schema show geometry-validation > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb manifest validate \
             examples/manifests/analytic-bias-v1alpha1.json
