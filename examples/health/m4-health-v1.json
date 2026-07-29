@@ -1,0 +1,714 @@
+{
+  "schema": "ffb.health-benchmark-intent/v1",
+  "benchmark_id": "m4-health-v1",
+  "release_id": "m4-health-v0.1.0",
+  "coordinate_contract": {
+    "handedness": "right-handed",
+    "point_representation": "column-vector",
+    "transform_notation": "T_{target<-source}",
+    "health_frame": "persistent-scene-bev",
+    "length_unit": "m",
+    "time_unit": "s",
+    "angle_unit": "rad",
+    "floating_point": "float64"
+  },
+  "source_population": {
+    "profile_id": "constant-velocity-front-roi-v1",
+    "profile_sha256": "4771a6e69d75b9af41f99ab794c0af1b51e6103e43474c8e0f07df3e6f3ca68c",
+    "edge_profile_id": "constant-velocity-fov-edge-v1",
+    "edge_profile_sha256": "ca1544f69023847af7bdad9f1306ae3885f2e5d067d6afc026038f87ae36448d",
+    "data_master_seed": 1729,
+    "split_sequence_counts": {
+      "train": 200,
+      "validation": 200,
+      "test": 200,
+      "edge_test": 100
+    },
+    "split_uses": {
+      "train": "clean-ecdf-fit-only",
+      "validation": "threshold-selection-only",
+      "test": "frozen-fit-evaluation-only",
+      "edge_test": "held-out-support-and-common-mode-controls-only"
+    },
+    "test_once": true,
+    "variant_clustering_key": "base-sequence-index-within-split"
+  },
+  "observation_model": {
+    "camera_actual_std_xy_m": [1.0, 1.0],
+    "camera_reported_std_xy_m": [1.0, 1.0],
+    "lidar_actual_std_xy_m": [0.3, 0.3],
+    "lidar_reported_std_xy_m": [0.3, 0.3],
+    "base_error_dependence": "temporally-iid-independent-between-modalities",
+    "paired_base_draws_across_conditions_methods_and_policies": true,
+    "actual_error_separate_from_reported_covariance": true,
+    "fault_generation_uses_true_state_pose_and_time": true,
+    "metadata_faults_apply_only_to_reconstruction_or_alignment": true
+  },
+  "event_schedules": {
+    "standard": {
+      "frame_count": 48,
+      "predictor_initialization_frames": [0, 2],
+      "clean_prefix_frames": [0, 12],
+      "score_frames": [2, 48],
+      "fault_active_frames": [12, 36],
+      "recovery_frames": [36, 48]
+    },
+    "cold_start": {
+      "frame_count": 48,
+      "score_frames": [0, 48],
+      "fault_active_frames": [0, 24],
+      "recovery_frames": [24, 48]
+    },
+    "interval_semantics": "zero-based-half-open",
+    "outside_active_event": "exact-identity-observation-and-metadata-configuration",
+    "fault_accumulation_across_frames": false
+  },
+  "validation_matrix": [
+    {
+      "condition_id": "validation-camera-output-y-bias",
+      "family": "additive-position-bias",
+      "target": "camera",
+      "axis": "y",
+      "unit": "m",
+      "values": [-2.0, -0.5, 0.5, 2.0],
+      "schedule": "standard",
+      "selection_role": "numeric-threshold-utility"
+    },
+    {
+      "condition_id": "validation-lidar-output-y-bias",
+      "family": "additive-position-bias",
+      "target": "lidar",
+      "axis": "y",
+      "unit": "m",
+      "values": [-2.0, -0.5, 0.5, 2.0],
+      "schedule": "standard",
+      "selection_role": "numeric-threshold-utility"
+    },
+    {
+      "condition_id": "validation-camera-noise-underreported",
+      "family": "increased-noise-underreported",
+      "target": "camera",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.5, 4.0],
+      "schedule": "standard",
+      "selection_role": "numeric-threshold-utility"
+    },
+    {
+      "condition_id": "validation-lidar-noise-underreported",
+      "family": "increased-noise-underreported",
+      "target": "lidar",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.5, 4.0],
+      "schedule": "standard",
+      "selection_role": "numeric-threshold-utility"
+    },
+    {
+      "condition_id": "validation-camera-noise-correctly-reported",
+      "family": "increased-noise-correctly-reported",
+      "target": "camera",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.5, 4.0],
+      "schedule": "standard",
+      "selection_role": "numeric-threshold-utility-negative-control"
+    },
+    {
+      "condition_id": "validation-lidar-noise-correctly-reported",
+      "family": "increased-noise-correctly-reported",
+      "target": "lidar",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.5, 4.0],
+      "schedule": "standard",
+      "selection_role": "numeric-threshold-utility-negative-control"
+    },
+    {
+      "condition_id": "validation-camera-timestamp-offset",
+      "family": "timestamp-offset",
+      "target": "camera",
+      "axis": "time",
+      "unit": "s",
+      "values": [-0.4, -0.1, 0.1, 0.4],
+      "schedule": "standard",
+      "selection_role": "direct-telemetry-validation-only"
+    },
+    {
+      "condition_id": "validation-lidar-timestamp-offset",
+      "family": "timestamp-offset",
+      "target": "lidar",
+      "axis": "time",
+      "unit": "s",
+      "values": [-0.4, -0.1, 0.1, 0.4],
+      "schedule": "standard",
+      "selection_role": "direct-telemetry-validation-only"
+    },
+    {
+      "condition_id": "validation-camera-dropout",
+      "family": "dropout",
+      "target": "camera",
+      "axis": "availability",
+      "unit": "probability",
+      "values": [0.25, 0.75],
+      "schedule": "standard",
+      "selection_role": "direct-telemetry-validation-only"
+    },
+    {
+      "condition_id": "validation-lidar-dropout",
+      "family": "dropout",
+      "target": "lidar",
+      "axis": "availability",
+      "unit": "probability",
+      "values": [0.25, 0.75],
+      "schedule": "standard",
+      "selection_role": "direct-telemetry-validation-only"
+    },
+    {
+      "condition_id": "validation-camera-calibration-x",
+      "family": "calibration-translation",
+      "target": "camera",
+      "axis": "x",
+      "unit": "m",
+      "values": [-2.0, -0.5, 0.5, 2.0],
+      "schedule": "standard",
+      "selection_role": "numeric-threshold-utility"
+    }
+  ],
+  "validation_controls": [
+    {
+      "condition_id": "validation-main-clean",
+      "family": "identity",
+      "target": "none",
+      "axis": "none",
+      "unit": "identity",
+      "values": [0.0],
+      "schedule": "standard",
+      "population": "main-validation",
+      "selection_role": "clean-feasibility-only"
+    }
+  ],
+  "test_matrix": [
+    {
+      "condition_id": "test-camera-output-y-bias",
+      "family": "additive-position-bias",
+      "target": "camera",
+      "axis": "y",
+      "unit": "m",
+      "values": [-3.0, -0.75, 0.75, 3.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity"
+    },
+    {
+      "condition_id": "test-lidar-output-y-bias",
+      "family": "additive-position-bias",
+      "target": "lidar",
+      "axis": "y",
+      "unit": "m",
+      "values": [-3.0, -0.75, 0.75, 3.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity"
+    },
+    {
+      "condition_id": "test-camera-noise-underreported",
+      "family": "increased-noise-underreported",
+      "target": "camera",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.25, 3.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity"
+    },
+    {
+      "condition_id": "test-lidar-noise-underreported",
+      "family": "increased-noise-underreported",
+      "target": "lidar",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.25, 3.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity"
+    },
+    {
+      "condition_id": "test-camera-noise-correctly-reported",
+      "family": "increased-noise-correctly-reported",
+      "target": "camera",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.25, 3.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity-negative-control"
+    },
+    {
+      "condition_id": "test-lidar-noise-correctly-reported",
+      "family": "increased-noise-correctly-reported",
+      "target": "lidar",
+      "axis": "xy",
+      "unit": "std-scale",
+      "values": [1.25, 3.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity-negative-control"
+    },
+    {
+      "condition_id": "test-camera-timestamp-offset",
+      "family": "timestamp-offset",
+      "target": "camera",
+      "axis": "time",
+      "unit": "s",
+      "values": [-0.6, -0.15, 0.15, 0.6],
+      "schedule": "standard",
+      "test_role": "unseen-severity-direct-telemetry"
+    },
+    {
+      "condition_id": "test-lidar-timestamp-offset",
+      "family": "timestamp-offset",
+      "target": "lidar",
+      "axis": "time",
+      "unit": "s",
+      "values": [-0.6, -0.15, 0.15, 0.6],
+      "schedule": "standard",
+      "test_role": "unseen-severity-direct-telemetry"
+    },
+    {
+      "condition_id": "test-camera-dropout",
+      "family": "dropout",
+      "target": "camera",
+      "axis": "availability",
+      "unit": "probability",
+      "values": [0.1, 0.5, 1.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity-direct-telemetry"
+    },
+    {
+      "condition_id": "test-lidar-dropout",
+      "family": "dropout",
+      "target": "lidar",
+      "axis": "availability",
+      "unit": "probability",
+      "values": [0.1, 0.5, 1.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity-direct-telemetry"
+    },
+    {
+      "condition_id": "test-camera-calibration-x",
+      "family": "calibration-translation",
+      "target": "camera",
+      "axis": "x",
+      "unit": "m",
+      "values": [-3.0, -0.75, 0.75, 3.0],
+      "schedule": "standard",
+      "test_role": "unseen-severity"
+    },
+    {
+      "condition_id": "test-camera-calibration-yaw",
+      "family": "calibration-yaw",
+      "target": "camera",
+      "axis": "yaw",
+      "unit": "rad",
+      "values": [-0.06, -0.015, 0.015, 0.06],
+      "schedule": "standard",
+      "test_role": "held-out-fault-family"
+    }
+  ],
+  "test_controls": [
+    {
+      "condition_id": "test-main-clean",
+      "family": "identity",
+      "target": "none",
+      "axis": "none",
+      "unit": "identity",
+      "values": [0.0],
+      "schedule": "standard",
+      "population": "main-test",
+      "test_role": "clean-regression"
+    },
+    {
+      "condition_id": "test-edge-clean",
+      "family": "identity",
+      "target": "none",
+      "axis": "none",
+      "unit": "identity",
+      "values": [0.0],
+      "schedule": "standard",
+      "population": "edge-test",
+      "test_role": "held-out-support-shift"
+    },
+    {
+      "condition_id": "test-clean-bounded-acceleration",
+      "family": "clean-predictor-mismatch",
+      "target": "none",
+      "axis": "motion",
+      "unit": "m/s^2",
+      "values": [8.0],
+      "schedule": "standard",
+      "population": "main-test",
+      "motion_rule": {
+        "time_step_s": 0.1,
+        "transition_indices": "k=0-through-46-updates-frame-k-to-k+1",
+        "object_side": "-1-for-object-index-0-through-2;positive-1-for-object-index-3-through-5",
+        "acceleration_x_mps2": 0.0,
+        "acceleration_y_mps2": "side*8-for-18<=k<24;negative-side*8-for-24<=k<30;zero-otherwise",
+        "position_recurrence": "p_k+1=p_k+v_k*dt+0.5*a_k*dt^2",
+        "velocity_recurrence": "v_k+1=v_k+a_k*dt",
+        "initial_state": "unchanged-main-test-profile-frame-0-state",
+        "eligibility": "recompute-once-from-true-maneuver-trajectory-before-observations-and-reuse-for-all-methods"
+      },
+      "test_role": "difficult-clean-predictor-mismatch"
+    },
+    {
+      "condition_id": "test-common-mode-x-edge",
+      "family": "common-mode-position-bias",
+      "target": "both",
+      "axis": "x",
+      "unit": "m",
+      "values": [-4.0, -1.0, 1.0, 4.0],
+      "schedule": "standard",
+      "population": "edge-test",
+      "test_role": "agreement-blind-spot"
+    },
+    {
+      "condition_id": "test-cold-start-camera-calibration-x",
+      "family": "calibration-translation",
+      "target": "camera",
+      "axis": "x",
+      "unit": "m",
+      "values": [3.0],
+      "schedule": "cold_start",
+      "population": "main-test",
+      "test_role": "cold-start-diagnostic"
+    },
+    {
+      "condition_id": "test-cold-start-lidar-y-bias",
+      "family": "additive-position-bias",
+      "target": "lidar",
+      "axis": "y",
+      "unit": "m",
+      "values": [3.0],
+      "schedule": "cold_start",
+      "population": "main-test",
+      "test_role": "cold-start-diagnostic"
+    }
+  ],
+  "predictor": {
+    "history_scope": "independent-per-modality-per-object",
+    "history_length": 2,
+    "history_members": ["estimate_xy_m", "reported_covariance_xy_m2", "reference_time_s"],
+    "requires_strict_times": "t_a<t_b<t_k",
+    "prediction_clock": "frame-reference-time-only",
+    "reported_timestamp_use": "direct-residual-only",
+    "h_equation": "h=(t_k-t_b)/(t_b-t_a)",
+    "mean_equation": "z_pred=(1+h)*z_b-h*z_a",
+    "covariance_equation": "P_pred=(1+h)^2*R_b+h^2*R_a",
+    "process_noise": 0.0,
+    "score_before_current_update": true,
+    "unavailable_measurements_update_history": false,
+    "policy_action_changes_monitoring_history": false
+  },
+  "features": {
+    "minimum_mature_object_count": 2,
+    "numeric_score_statuses": ["defined", "insufficient-support"],
+    "insufficient_support_condition": "fewer-than-two-mature-current-objects-for-any-required-numeric-channel",
+    "numeric_object_aggregation": ["arithmetic-mean", "maximum"],
+    "self_nis_equation": "nis_m=(z_m-z_pred_m)^T*(P_pred_m+R_m)^-1*(z_m-z_pred_m)",
+    "camera_from_lidar_cross_equation": "nis_camera_from_lidar=(z_camera-z_pred_lidar)^T*(P_pred_lidar+R_camera)^-1*(z_camera-z_pred_lidar)",
+    "lidar_from_camera_cross_equation": "nis_lidar_from_camera=(z_lidar-z_pred_camera)^T*(P_pred_camera+R_lidar)^-1*(z_lidar-z_pred_camera)",
+    "clean_ecdf_arrays": [
+      "camera-self-mean",
+      "camera-self-maximum",
+      "lidar-self-mean",
+      "lidar-self-maximum",
+      "camera-from-lidar-cross-mean",
+      "camera-from-lidar-cross-maximum",
+      "lidar-from-camera-cross-mean",
+      "lidar-from-camera-cross-maximum"
+    ],
+    "direct_features": [
+      "current-camera-availability",
+      "current-lidar-availability",
+      "abs-camera-reported-minus-reference-time",
+      "abs-lidar-reported-minus-reference-time"
+    ],
+    "diagnostic_only_features": [
+      "trailing-four-frame-missing-fraction",
+      "self-mature-fraction",
+      "cross-mature-fraction"
+    ],
+    "prohibited_inputs": [
+      "truth",
+      "latent-velocity",
+      "fault-family",
+      "fault-target",
+      "severity",
+      "direction",
+      "event-phase",
+      "event-boundary",
+      "seed",
+      "split",
+      "sequence-id",
+      "manifest",
+      "absolute-frame-index-as-feature"
+    ]
+  },
+  "calibration": {
+    "fit_split": "train",
+    "fit_conditions": ["clean-only"],
+    "fit_frames": [2, 48],
+    "expected_values_per_ecdf_array": 9200,
+    "ecdf_rank_equation": "rank(x)=count(clean_value<x)/clean_value_count",
+    "tie_rule": "strict-less-than",
+    "channel_score": "maximum-of-mean-statistic-rank-and-maximum-statistic-rank",
+    "alarm_comparison": "score>threshold",
+    "threshold_one_disables_numeric-alarm": true
+  },
+  "policy": {
+    "raw_labels": ["healthy", "camera-fault", "lidar-fault", "ambiguous"],
+    "raw_evidence_statuses": ["update-eligible", "insufficient-support"],
+    "latched_states": ["healthy", "camera-fault", "lidar-fault", "ambiguous"],
+    "executed_actions": ["camera-only", "lidar-only", "fixed-fusion", "undefined"],
+    "direct_timestamp_tolerance_s": 1e-12,
+    "raw_decision_rules": {
+      "direct-telemetry-gate": "exactly-one-current-missing-or-timestamp-suspicious-labels-that-sensor;both-suspicious-is-ambiguous;else-healthy",
+      "self-nis-gate": "exactly-one-self-alarm-labels-that-sensor;both-alarm-is-ambiguous;else-healthy",
+      "cross-nis-gate": "any-directional-cross-alarm-is-ambiguous;never-attribute-target;else-healthy",
+      "combined-health-gate": "direct-evidence-first;then-exactly-one-self-alarm-labels-that-sensor-or-both-ambiguous;then-any-cross-alarm-ambiguous;else-healthy"
+    },
+    "insufficient_support_rule": "direct-evidence-remains-update-eligible;without-direct-evidence-any-required-undefined-numeric-channel-emits-raw-ambiguous-with-insufficient-support-status",
+    "insufficient_support_counter_behavior": "hold-latched-state-activation-candidate-activation-count-and-recovery-count;do-not-advance-or-reset",
+    "activation_streak": 2,
+    "activation_rule": "second-consecutive-identical-nonhealthy-raw-label-latches-on-current-frame",
+    "activation_recurrence": "eligible-healthy-sets-count-0;eligible-nonhealthy-matching-candidate-increments;eligible-nonhealthy-contrary-label-becomes-new-candidate-with-count-1",
+    "recovery_streak": 3,
+    "recovery_rule": "third-consecutive-raw-healthy-restores-healthy-on-current-frame",
+    "counter_reset_rule": "contrary-raw-evidence-resets-relevant-counter",
+    "latched_attribution_switching": "never-switch-until-recovered-healthy",
+    "action_rules": {
+      "neither-modality-available": "undefined",
+      "only-camera-available": "camera-only-immediately-regardless-of-latch",
+      "only-lidar-available": "lidar-only-immediately-regardless-of-latch",
+      "both-available-and-healthy": "fixed-fusion",
+      "both-available-and-camera-fault": "lidar-only",
+      "both-available-and-lidar-fault": "camera-only",
+      "both-available-and-ambiguous-nonabstaining": "fixed-fusion",
+      "both-available-and-ambiguous-abstaining": "undefined"
+    },
+    "detection_uses": "latched-state-not-raw-label",
+    "missing-input-action-override_is_not_detection": true
+  },
+  "fault_target_drop_policy": {
+    "outside_active_event": "fixed-fusion",
+    "inside_active_single-target_event": "non-target-modality-only",
+    "selected-modality-unavailable": "undefined",
+    "availability_fallback_to_target": false,
+    "identity_condition": "fixed-fusion",
+    "common_mode_applicable": false,
+    "deployable": false
+  },
+  "methods": [
+    "camera-only",
+    "lidar-only",
+    "fixed-fusion",
+    "self-nis-gate",
+    "cross-nis-gate",
+    "direct-telemetry-gate",
+    "combined-health-gate",
+    "combined-health-gate-abstain",
+    "fault-target-drop-policy",
+    "frame-action-performance-oracle"
+  ],
+  "threshold_selection": {
+    "self_thresholds": [0.95, 0.975, 0.99, 0.995, 0.999, 1.0],
+    "cross_thresholds": [0.95, 0.975, 0.99, 0.995, 0.999, 1.0],
+    "candidate_count": 36,
+    "iteration_order": "self-threshold-ascending-outer-then-cross-threshold-ascending-inner",
+    "selected_policy": "combined-health-gate",
+    "all_deployable_ablations_share_selected_thresholds": true,
+    "feasibility": {
+      "condition_id": "validation-main-clean",
+      "mean_clean_regression_m2_max": 0.002,
+      "upper_pointwise_95pct_clean_regression_m2_max": 0.005,
+      "false_alert_episode_starts_per_clean_sequence_max": 0.05,
+      "clean_coverage_must_equal_fixed": true
+    },
+    "selection_conditions": [
+      "validation-camera-output-y-bias",
+      "validation-lidar-output-y-bias",
+      "validation-camera-noise-underreported",
+      "validation-lidar-noise-underreported",
+      "validation-camera-noise-correctly-reported",
+      "validation-lidar-noise-correctly-reported",
+      "validation-camera-calibration-x"
+    ],
+    "objective": "mean-score-window-policy-minus-frame-action-oracle-regret-with-equal-target-then-equal-family-then-equal-condition-weighting",
+    "tie_tolerance_m2": 1e-12,
+    "tie_break_order": [
+      "lower-false-alert-episode-starts",
+      "lower-clean-regression",
+      "larger-self-threshold",
+      "larger-cross-threshold"
+    ],
+    "no_feasible_candidate": "hard-preregistration-failure-no-gate-relaxation",
+    "retain_all_candidate_records": true,
+    "fit_artifact_must_exist_before_test": true,
+    "test_threshold_override": false,
+    "test_refit": false
+  },
+  "oracle": {
+    "id": "frame-action-performance-oracle",
+    "action_granularity": "one-action-per-frame-shared-by-all-eligible-objects",
+    "candidate_actions": ["camera-only", "lidar-only", "fixed-fusion"],
+    "selection_rule": "minimum-current-frame-mean-squared-center-loss-among-currently-defined-actions",
+    "sequence_aggregation": "sum-selected-action-object-loss-over-defined-eligible-object-frames-divided-by-selected-valid-count",
+    "hindsight": true,
+    "deployable": false,
+    "dominance_gate": "loss-no-greater-than-every-nonabstaining-policy-on-identical-frame-support",
+    "common_mode_applicable": false,
+    "unequal_coverage_recovery_fraction": false
+  },
+  "evaluation": {
+    "loss_windows_by_schedule": {
+      "standard": {
+        "score": [2, 48],
+        "event": [12, 36],
+        "recovery": [36, 48]
+      },
+      "cold_start": {
+        "score": [0, 48],
+        "event": [0, 24],
+        "recovery": [24, 48]
+      }
+    },
+    "primary_contrast": "fixed-fusion-loss-minus-policy-loss-positive-means-policy-gain",
+    "clean_regression": "policy-loss-minus-fixed-fusion-loss",
+    "target_drop_gap": "policy-loss-minus-fault-target-drop-loss",
+    "frame_oracle_gap": "policy-loss-minus-frame-action-performance-oracle-loss",
+    "frame_oracle_recovery_fraction": "(fixed-loss-policy-loss)/(fixed-loss-frame-oracle-loss)",
+    "recovery_fraction_denominator_tolerance_m2": 1e-12,
+    "recovery_fraction_clipped": false,
+    "abstaining_comparison": "coverage-and-undefined-rate-before-conditional-loss-no-recovery-fraction-on-unequal-support",
+    "dropout_comparison": "coverage-and-undefined-rate-first;loss-contrast-only-on-paired-common-support-where-fixed-and-policy-are-both-defined;prohibit-all-support-policy-gain-oracle-gap-and-recovery-fraction-on-method-specific-unequal-support",
+    "dropout_zero_loss_imputation": false,
+    "common_mode_has_healthy_target_drop_or_oracle": false,
+    "attribution_and_action_utility_are_separate_estimands": true
+  },
+  "health_metrics": {
+    "event_outcomes": ["correct", "ambiguous", "wrong-sensor", "missed"],
+    "event_outcome_reduction": "label-of-first-healthy-to-nonhealthy-latched-transition-during-active-event;no-transition-is-missed;later-latch-episodes-do-not-rewrite-event-outcome",
+    "common_mode_outcomes": "no-correct-or-wrong-target;report-first-latch-label-ambiguous-fraction-state-and-action-occupancy-and-missed-fraction",
+    "detection_fraction_reported_before_latency": true,
+    "detection_latency": "first-nonhealthy-latched-frame-minus-event-start-conditional-on-detected",
+    "attribution_latency": "first-correctly-attributed-latched-frame-minus-event-start-conditional-on-correctly-attributed",
+    "multiple_latch_episodes": "retained-in-episode-counts-state-occupancy-action-occupancy-early-clear-and-final-fault-frame-state",
+    "dropout_first-realized-missing_latency_also_reported": true,
+    "dropout_realized_fraction_reported_first": true,
+    "dropout_no_realization_outcome": "missed-regime-event-regardless-of-latch;any-latch-also-counted-as-false-alert-diagnostic",
+    "dropout_first_missing_latency_denominator": "sequences-with-at-least-one-realized-missing-frame-in-active-event",
+    "early_clear": "nonhealthy-to-healthy-latched-transition-during-active-event-after-detection",
+    "state_at_final_fault_frame_reported": true,
+    "recovery_denominator": "sequences-latched-nonhealthy-at-final-active-event-frame",
+    "recovery_latency": "first-healthy-latched-frame-in-recovery-minus-recovery-start-conditional-on-recovered",
+    "false_alert_definition": "latched-healthy-to-nonhealthy-episode-starts-per-clean-sequence",
+    "state_occupancy_reported": true,
+    "action_occupancy_reported": true,
+    "conditional_metric_defined_fraction_reported": true,
+    "frame_auroc_auprc": "secondary-or-not-applicable",
+    "brier_and_ece": "not-applicable-nonprobabilistic-scores"
+  },
+  "inference": {
+    "bootstrap_engine": "numpy-pcg64dxsm-v1",
+    "validation_bootstrap_seed": 2718,
+    "test_bootstrap_seed": 314159,
+    "bootstrap_replicates": 2000,
+    "confidence_level": 0.95,
+    "interval": "pointwise-percentile-linear-quantile",
+    "resampling_unit": "complete-base-sequence",
+    "one_index_matrix_reused_across_all_variants_methods_windows_and_contrasts_per_split": true,
+    "family_weighted_metrics_recomputed_inside_replicate": true,
+    "conditional_ratio_minimum_defined_replicate_fraction": 0.975,
+    "missed_events_remain_in_event_denominators": true,
+    "selection_uncertainty_in_test_intervals": false,
+    "multiplicity": "pointwise-not-simultaneous"
+  },
+  "artifacts": {
+    "fit_schema": "ffb.health-fit-payload/v1",
+    "evaluation_schema": "ffb.health-eval-payload/v1",
+    "fit_contents": [
+      "intent-and-profile-identities",
+      "eight-sorted-clean-ecdf-arrays",
+      "all-36-validation-candidate-records",
+      "selected-thresholds-and-policy-semantics",
+      "fit-validation",
+      "payload-index",
+      "run-record",
+      "success-marker"
+    ],
+    "evaluation_contents": [
+      "intent-and-profile-identities",
+      "exact-fit-artifact-digest",
+      "sequence-metrics",
+      "aggregate-metrics",
+      "event-metrics",
+      "evaluation-validation",
+      "payload-index",
+      "run-record",
+      "success-marker"
+    ],
+    "no_overwrite": true,
+    "two_execution_scientific_byte_repeat": true,
+    "public_release_excludes_frame_features_and_sequence_rows": true,
+    "public_release_commits_omitted_rows_by_hash_length_and_count": true
+  },
+  "resource_caps": {
+    "candidate_frame_evaluations_max": 50000000,
+    "bootstrap_cells_max": 100000000,
+    "peak_rss_bytes_max": 1073741824,
+    "wall_time_seconds_per_full_run_max": 1800,
+    "curated_release_bytes_max": 52428800,
+    "single_process_cpu_only": true,
+    "feature_computation_once_then_immutable_reuse": true
+  },
+  "acceptance": {
+    "minimum_policy_gain": null,
+    "minimum_detection_rate": null,
+    "minimum_attribution_rate": null,
+    "negative_result_releasable": true,
+    "required_controls": [
+      "correctly-reported-noise",
+      "clean-main",
+      "clean-edge-support-shift",
+      "clean-bounded-acceleration-predictor-mismatch",
+      "common-mode-bias",
+      "cold-start-events",
+      "full-and-partial-dropout",
+      "zero-noise-constant-velocity-oracle",
+      "metadata-leakage-mutations",
+      "current-update-leakage-mutation",
+      "future-prefix-causality-mutation"
+    ],
+    "full_local_verification": [
+      "ruff-format-check",
+      "ruff-check",
+      "pyright",
+      "pytest",
+      "package-build",
+      "isolated-wheel-smoke",
+      "privacy-audit",
+      "public-ci"
+    ]
+  },
+  "non_goals": [
+    "learned-health-classifier",
+    "probability-calibration",
+    "torch-or-cuda",
+    "detector-training",
+    "raw-sensor-generation",
+    "nuscenes-replay",
+    "association-or-set-loss",
+    "robust-fusion",
+    "random-event-onset",
+    "compound-faults",
+    "fault-prior-estimation",
+    "planning-or-collision",
+    "production-fallback",
+    "physical-tolerance-or-safety-claim"
+  ]
+}

@@ -167,7 +167,7 @@ and [independent results review](docs/reviews/m3-results-review.md).
 | Analytic fusion/fault vertical slice | Released as M1 |
 | SE(3) and local nuScenes-mini grounding | Released as M2 validation evidence |
 | Temporal procedural benchmark | Released as M3 |
-| Health-aware fallback | M4 pre-registration next |
+| Health-aware fallback | M4 pre-registered; implementation next |
 | Released fault-performance results | M1 analytic and M3 procedural estimator-output stress tests |
 
 Results enter this README only after they trace to a released manifest,
@@ -190,6 +190,8 @@ contains deterministic validation gates and attestations, not an estimand.
 - [M2 geometry release](reports/releases/m2-geometry-v0.1.0/README.md)
 - [M3 temporal procedural pre-registration](docs/m3-temporal-plan.md)
 - [M3 temporal procedural release](reports/releases/m3-procedural-v0.1.0/README.md)
+- [M4 observable health-aware fallback pre-registration](docs/m4-health-plan.md)
+- [M4 adversarial plan review](docs/reviews/m4-plan-review.md)
 
 ## Explicit non-goals
 

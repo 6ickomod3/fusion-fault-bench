@@ -404,6 +404,10 @@ Release outcome:
 
 ### M4: Health-aware fallback
 
+Status: **pre-registered; implementation next**. See the
+[M4 observable health-aware fallback plan](m4-health-plan.md) and
+[adversarial plan review](reviews/m4-plan-review.md).
+
 Deliver:
 
 - Pre-update sensor-specific or leave-one-sensor-out temporal predictors.

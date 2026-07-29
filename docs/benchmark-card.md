@@ -7,8 +7,8 @@ estimator-output fusion under controlled proxy faults. The v0.1 contract
 studies known-object BEV center estimates in a common front-camera/LiDAR region
 of interest. M1 releases a narrower one-object Gaussian analytic case, M2
 releases its geometry implementation validation, and M3 releases the temporal
-procedural fault matrix. Observable health gating and nuScenes latent-scene
-replay remain later milestones.
+procedural fault matrix. Observable health gating is pre-registered for M4;
+nuScenes latent-scene replay remains a later milestone.
 
 The benchmark is designed to answer a narrow evaluation question: when does
 fixed information fusion increase matched-center loss relative to a modality
