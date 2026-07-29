@@ -7,7 +7,7 @@ observable-feature boundary, policy, threshold selection, estimands, inference,
 acceptance gates, controls, resource limits, and claim boundary before M4 code
 or results are produced. The machine-readable intent is
 [`m4-health-v1.json`](../examples/health/m4-health-v1.json), canonical SHA-256
-`391d41a8c4b1ec191649e8a86fc43ee32b03849b5e17b658f2b3e9c5b1cc9ae7`.
+`c19573b72a6ef58ad5efdd7039110da79beacd3b398007a508eb7ecfc4c81357`.
 The normative [v0.1 benchmark contract](benchmark-contract-v0.1.md) remains
 controlling.
 
@@ -347,9 +347,10 @@ actions by frame. M4 therefore versions a new oracle at matching granularity:
 for each frame, select camera, LiDAR, or fixed fusion with the lowest
 current-frame mean object loss among currently defined actions, then aggregate
 the selected object losses over the ordinary eligible-object-frame sequence
-denominator. It uses hindsight and is not deployable. On identical support it
-must have loss no greater than every nonabstaining policy. Common mode has no
-healthy modality, target-drop policy, or performance oracle.
+denominator. Exact loss ties resolve in declared order: camera, then LiDAR,
+then fixed fusion. It uses hindsight and is not deployable. On identical
+support it must have loss no greater than every nonabstaining policy. Common
+mode has no healthy modality, target-drop policy, or performance oracle.
 
 ## 10. Threshold selection
 

@@ -9,7 +9,7 @@ claims.
 The review was performed before M4 implementation. The reviewer first returned
 `REVISE` with five release blockers and ten major issues. The final
 machine-readable intent has canonical SHA-256
-`391d41a8c4b1ec191649e8a86fc43ee32b03849b5e17b658f2b3e9c5b1cc9ae7`.
+`c19573b72a6ef58ad5efdd7039110da79beacd3b398007a508eb7ecfc4c81357`.
 
 ## Initial blockers and resolutions
 
@@ -72,6 +72,9 @@ fault-target-drop operators.
 
 The final exact-file reread returned **PASS**: all seven findings are resolved,
 machine intent and prose agree, and no P0/P1 preregistration blocker remains.
+Before oracle implementation, a read-only architecture pass made the declared
+camera-then-LiDAR-then-fixed exact-loss tie order literal; the canonical digest
+and final review were refreshed afterward.
 
 Verdict: **PASS for preregistration freeze.**
 

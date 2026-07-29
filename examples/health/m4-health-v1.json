@@ -557,6 +557,7 @@
     "action_granularity": "one-action-per-frame-shared-by-all-eligible-objects",
     "candidate_actions": ["camera-only", "lidar-only", "fixed-fusion"],
     "selection_rule": "minimum-current-frame-mean-squared-center-loss-among-currently-defined-actions",
+    "tie_break_order": ["camera-only", "lidar-only", "fixed-fusion"],
     "sequence_aggregation": "sum-selected-action-object-loss-over-defined-eligible-object-frames-divided-by-selected-valid-count",
     "hindsight": true,
     "deployable": false,
