@@ -79,3 +79,41 @@ def draw_standard_normal_xy(
         size=(object_frame_count, 2),
         dtype=np.float64,
     )
+
+
+def draw_latent_uniforms(
+    *,
+    data_master_seed: int,
+    sequence_id: str,
+    object_count: int,
+) -> FloatArray:
+    """Draw the exact single-call ``(object_count, 4)`` profile latent array."""
+
+    if type(object_count) is not int or object_count <= 0:
+        raise ValueError("object_count must be a positive integer")
+    seed = derive_stream_seed(
+        data_master_seed=data_master_seed,
+        stream_name="latent",
+        sequence_id=sequence_id,
+    )
+    generator = np.random.Generator(np.random.PCG64DXSM(seed))
+    return generator.random(size=(object_count, 4), dtype=np.float64)
+
+
+def draw_fault_uniforms(
+    *,
+    data_master_seed: int,
+    sequence_id: str,
+    frame_count: int,
+) -> FloatArray:
+    """Draw the exact single-call target-modality frame uniform vector."""
+
+    if type(frame_count) is not int or frame_count <= 0:
+        raise ValueError("frame_count must be a positive integer")
+    seed = derive_stream_seed(
+        data_master_seed=data_master_seed,
+        stream_name="fault",
+        sequence_id=sequence_id,
+    )
+    generator = np.random.Generator(np.random.PCG64DXSM(seed))
+    return generator.random(size=frame_count, dtype=np.float64)

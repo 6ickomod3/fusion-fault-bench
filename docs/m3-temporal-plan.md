@@ -603,3 +603,108 @@ operator, severity grid, seed, method, estimand, interval, crossover rule, or
 acceptance threshold after execution starts requires a new profile or manifest
 identifier and a documented pre-result amendment. Result-driven tuning is
 forbidden.
+
+## 13. Pre-result implementation-review amendment
+
+This amendment was frozen on 2026-07-29 after implementation review and before
+either the smoke or release matrix produced evidence. It does not change a
+profile, population, fault, seed, method, estimand, threshold, or result
+selection rule. It closes two evidence-envelope ambiguities found by the first
+adversarial implementation audit.
+
+First, cross-manifest identity cannot be authenticated by a standalone
+artifact. The per-artifact identity field is therefore
+`deferred-to-matrix` for the seven main-profile artifacts and explicitly
+not-applicable for the edge-profile common-mode control. The new strict
+`ffb.m3-matrix-validation/v1` record binds the matrix digest and ordered
+artifact-set digest. For the release matrix it:
+
+- selects only identity localization rows;
+- maps dropout identity
+  `conditional-matched-center-mse` to `matched-center-mse` before comparison
+  and excludes dropout rate rows;
+- removes only run ID, manifest digest, fault family, fault axis, severity, and
+  the manifest experiment context while retaining sequence ID, method, status,
+  value, unit, eligibility count, and valid count;
+- uses the first compatible manifest in frozen matrix order as the anchor for
+  each method and compares every later compatible row exactly;
+- commits 6,800 normalized input rows, 1,000 distinct normalized keys, and
+  5,800 anchor-peer comparisons, with zero complete-row mismatches required;
+  and
+- records the edge artifact as a different-profile exclusion. The one-manifest
+  smoke matrix records an explicit no-peer status and is never release identity
+  evidence.
+
+This comparison authenticates released sequence-loss records, not unpersisted
+raw estimator-output arrays. Lower-level output equations remain covered by the
+independently regenerated geometry, affine-loss, dropout, and common-mode
+oracles.
+
+Second, the indexed validation record now requires the exact fourteen moment
+keys and the exact affine method/contrast key set at every applicable
+condition. It also names the reported-covariance, expected-response,
+complete-sequence performance-oracle, and identity-row reconstruction gates.
+On every write and strict load, deterministic sequences are regenerated from
+the stored profile and manifest and the complete validation record is rebuilt;
+a contract-valid but fabricated commitment is rejected.
+
+Repeat evidence is moved to the strict `ffb.repeat-verification/v1` record.
+Each run root must contain exactly one strict artifact directory per matrix
+entry. The scientific artifact-set digest uses:
+
+```text
+SHA256(
+  b"fusion-fault-bench/m3-artifact-set/v1\0"
+  || frame4(matrix_sha256)
+  || uint32_big_endian(artifact_count)
+  || for each matrix entry:
+       frame4(experiment)
+       || frame4(manifest_sha256)
+       || frame4(profile_sha256)
+       || frame4(procedural_artifact_sha256)
+)
+```
+
+The repeat record compares the six indexed scientific members in
+matrix/member order: 48 comparisons for release and six for smoke. It records
+both named-CPU wall times and peak-memory measurements; no favorable run is
+selected. Volatile `run.json` timestamps and success-marker digests remain
+outside scientific byte equality.
+
+A later pre-execution adversarial review found that caller-supplied positive
+resource numbers and copied artifact trees were not sufficient evidence of two
+executions. The tracked `tools/m3_release.py execute` command therefore owns
+both matrix invocations as separate child processes. It measures elapsed
+monotonic wall time around each complete child and obtains that child's
+`ru_maxrss` through `wait4`; Darwin reports bytes directly and Linux values are
+converted from KiB to bytes. The execute command has no resource-value
+arguments. The tool canonical-writes exactly `matrix-validation.json` and
+`repeat-verification.json`, then the separate `validate` command strictly
+reloads both artifact roots and rebuilds the scientific and consistency
+fields.
+
+The repeat record also commits the ordered volatile run-record SHA-256 values
+for both executions. Corresponding run-record digests must differ, even though
+the deterministic run ID is intentionally the same. Distinct roots, artifact
+directories, and all nine member inodes are required; hard-linked trees and a
+byte-for-byte copy retaining the first run records are rejected. These
+volatile commitments detect an unmodified copied tree but remain outside the
+six-member scientific equality claim.
+
+Wall time and peak memory are self-reported observations from the tracked
+driver, not quantities that can be independently recomputed after execution.
+The validator checks their type, positivity, named-CPU consistency, and exact
+record preservation; it cannot authenticate a coherently rewritten resource
+record or prove that computation occurred. Likewise, distinct paths, inodes,
+and volatile run-record hashes are consistency controls, not cryptographic
+proof of two executions. Both limitations are literal fields in
+`ffb.repeat-verification/v1`. The release Git revision and public CI log are
+the provenance/authenticity boundary, and public wording must not claim more.
+
+The final pre-execution scientific review additionally made three existing
+gates concrete: the independent profile check regenerates all 600 main-profile
+split sequences to verify disjoint identifiers, layout families, initial-range
+slices, and held-out motion slices; the calibration-cancellation negative
+control numerically applies the corrupted extrinsic to both generation and
+reconstruction and verifies its self-cancellation; and independently indexed
+eligible truth and velocity rows must exactly match their full latent arrays.

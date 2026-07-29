@@ -26,6 +26,20 @@ from fusion_fault_bench.contracts.geometry_validation_v1 import (
 )
 from fusion_fault_bench.contracts.io import load_manifest
 from fusion_fault_bench.contracts.manifest_v1alpha1 import manifest_json_schema
+from fusion_fault_bench.contracts.matrix_v1 import experiment_matrix_json_schema
+from fusion_fault_bench.contracts.procedural_artifact_v1 import (
+    ProceduralPayloadIndexV1Alpha2,
+)
+from fusion_fault_bench.contracts.procedural_profile_v1 import (
+    procedural_profile_json_schema,
+)
+from fusion_fault_bench.contracts.procedural_release_v1 import (
+    m3_matrix_validation_json_schema,
+    repeat_verification_json_schema,
+)
+from fusion_fault_bench.contracts.procedural_validation_v1 import (
+    procedural_validation_json_schema,
+)
 from fusion_fault_bench.contracts.result_v1alpha1 import (
     AggregateMetricRecordV1Alpha1,
     CrossoverRecordV1Alpha1,
@@ -34,6 +48,8 @@ from fusion_fault_bench.contracts.result_v1alpha1 import (
 )
 from fusion_fault_bench.geometry_artifacts import load_geometry_validation_artifact
 from fusion_fault_bench.geometry_runner import run_geometry_validation
+from fusion_fault_bench.procedural_artifacts import load_procedural_artifact
+from fusion_fault_bench.procedural_runner import run_procedural_matrix
 from fusion_fault_bench.runner import run_analytic_experiment
 
 SchemaBuilder = Callable[[], dict[str, Any]]
@@ -45,8 +61,16 @@ SCHEMA_BUILDERS: dict[str, SchemaBuilder] = {
     "geometry-payload-index": lambda: GeometryPayloadIndexV1.model_json_schema(by_alias=True),
     "geometry-validation": lambda: GeometryValidationV1.model_json_schema(by_alias=True),
     "manifest": manifest_json_schema,
+    "m3-matrix-validation": m3_matrix_validation_json_schema,
+    "matrix": experiment_matrix_json_schema,
     "metric": metric_record_json_schema,
     "payload-index": lambda: PayloadIndexV1Alpha1.model_json_schema(by_alias=True),
+    "procedural-payload-index": lambda: ProceduralPayloadIndexV1Alpha2.model_json_schema(
+        by_alias=True
+    ),
+    "procedural-profile": procedural_profile_json_schema,
+    "procedural-validation": procedural_validation_json_schema,
+    "repeat-verification": repeat_verification_json_schema,
     "run": lambda: RunRecordV1Alpha1.model_json_schema(by_alias=True),
     "success": lambda: SuccessMarkerV1Alpha1.model_json_schema(by_alias=True),
 }
@@ -131,6 +155,47 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Strictly validate a complete M2 artifact.",
     )
     geometry_bundle_validate.add_argument("path", type=Path, metavar="DEST")
+
+    procedural = commands.add_parser(
+        "procedural",
+        help="Run or inspect a frozen M3 procedural matrix.",
+    )
+    procedural_commands = procedural.add_subparsers(
+        dest="procedural_command",
+        required=True,
+    )
+    procedural_matrix = procedural_commands.add_parser(
+        "matrix",
+        help="Run a content-addressed procedural matrix.",
+    )
+    procedural_matrix_commands = procedural_matrix.add_subparsers(
+        dest="procedural_matrix_command",
+        required=True,
+    )
+    procedural_matrix_run = procedural_matrix_commands.add_parser(
+        "run",
+        help="Run every manifest in the frozen matrix.",
+    )
+    procedural_matrix_run.add_argument("path", type=Path, metavar="MATRIX")
+    procedural_matrix_run.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        metavar="DEST",
+    )
+    procedural_bundle = procedural_commands.add_parser(
+        "bundle",
+        help="Inspect an M3 procedural artifact.",
+    )
+    procedural_bundle_commands = procedural_bundle.add_subparsers(
+        dest="procedural_bundle_command",
+        required=True,
+    )
+    procedural_bundle_validate = procedural_bundle_commands.add_parser(
+        "validate",
+        help="Strictly validate a complete M3 artifact.",
+    )
+    procedural_bundle_validate.add_argument("path", type=Path, metavar="DEST")
     return parser
 
 
@@ -175,6 +240,29 @@ def _run(args: argparse.Namespace) -> int:
             )
             return 0
         artifact = load_geometry_validation_artifact(args.path)
+        print(
+            f"valid {artifact.payload_index.artifact_contract} "
+            f"artifact_sha256={artifact.artifact_sha256} "
+            f"run_sha256={artifact.run_sha256}"
+        )
+        return 0
+
+    if args.command == "procedural":
+        if args.procedural_command == "matrix":
+            artifacts = run_procedural_matrix(
+                args.path,
+                output_dir=args.output_dir,
+            )
+            for artifact in artifacts:
+                logical_path = args.output_dir / artifact.path.name
+                print(
+                    f"wrote {logical_path.as_posix()} "
+                    f"artifact_sha256={artifact.artifact_sha256} "
+                    f"run_sha256={artifact.run_sha256}"
+                )
+            print(f"completed procedural matrix artifact_count={len(artifacts)}")
+            return 0
+        artifact = load_procedural_artifact(args.path)
         print(
             f"valid {artifact.payload_index.artifact_contract} "
             f"artifact_sha256={artifact.artifact_sha256} "

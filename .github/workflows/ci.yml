@@ -44,6 +44,23 @@ jobs:
       - name: Test
         run: uv run --locked pytest
 
+      - name: Run measured two-execution M3 smoke matrix
+        run: |
+          uv run --locked python tools/m3_release.py execute \
+            examples/matrices/m3-ci-smoke-v1.json \
+            --first-output-dir reports/generated/m3-ci-smoke-first \
+            --second-output-dir reports/generated/m3-ci-smoke-second \
+            --evidence-dir reports/generated/m3-ci-smoke-evidence
+          uv run --locked python tools/m3_release.py validate \
+            examples/matrices/m3-ci-smoke-v1.json \
+            --first-output-dir reports/generated/m3-ci-smoke-first \
+            --second-output-dir reports/generated/m3-ci-smoke-second \
+            --evidence-dir reports/generated/m3-ci-smoke-evidence
+          uv run --locked ffb procedural bundle validate \
+            reports/generated/m3-ci-smoke-first/procedural-ci-smoke
+          uv run --locked ffb procedural bundle validate \
+            reports/generated/m3-ci-smoke-second/procedural-ci-smoke
+
       - name: Build distributions
         run: uv build --no-sources
 
@@ -53,5 +70,6 @@ jobs:
           uv pip install --python /tmp/ffb-wheel-smoke/bin/python dist/*.whl
           /tmp/ffb-wheel-smoke/bin/ffb --version
           /tmp/ffb-wheel-smoke/bin/ffb schema show geometry-validation > /dev/null
+          /tmp/ffb-wheel-smoke/bin/ffb schema show procedural-validation > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb manifest validate \
             examples/manifests/analytic-bias-v1alpha1.json

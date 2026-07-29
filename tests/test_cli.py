@@ -117,6 +117,73 @@ def test_geometry_schemas_are_exposed(capsys) -> None:
         assert schema["type"] == "object"
 
 
+def test_procedural_cli_runs_matrix_and_validates_bundle(
+    tmp_path,
+    monkeypatch,
+    capsys,
+) -> None:
+    artifact = SimpleNamespace(
+        path=tmp_path / "procedural-ci-smoke",
+        artifact_sha256="c" * 64,
+        run_sha256="d" * 64,
+        payload_index=SimpleNamespace(artifact_contract="ffb.procedural-payload/v1"),
+    )
+    monkeypatch.setattr(
+        "fusion_fault_bench.cli.run_procedural_matrix",
+        lambda *_args, **_kwargs: (artifact,),
+    )
+
+    result = main(
+        [
+            "procedural",
+            "matrix",
+            "run",
+            "examples/matrices/m3-ci-smoke-v1.json",
+            "--output-dir",
+            "reports/generated/m3-ci-smoke",
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert result == 0
+    assert f"artifact_sha256={'c' * 64}" in output
+    assert "completed procedural matrix artifact_count=1" in output
+    assert str(tmp_path) not in output
+
+    monkeypatch.setattr(
+        "fusion_fault_bench.cli.load_procedural_artifact",
+        lambda _path: artifact,
+    )
+    assert (
+        main(
+            [
+                "procedural",
+                "bundle",
+                "validate",
+                str(tmp_path / "private-artifact-path"),
+            ]
+        )
+        == 0
+    )
+    bundle_output = capsys.readouterr().out
+    assert bundle_output.startswith("valid ffb.procedural-payload/v1 ")
+    assert str(tmp_path) not in bundle_output
+
+
+def test_procedural_schemas_are_exposed(capsys) -> None:
+    for name in (
+        "matrix",
+        "m3-matrix-validation",
+        "procedural-payload-index",
+        "procedural-profile",
+        "procedural-validation",
+        "repeat-verification",
+    ):
+        assert main(["schema", "show", name]) == 0
+        schema = json.loads(capsys.readouterr().out)
+        assert schema
+
+
 def test_geometry_cli_never_echoes_rejected_dataset_arguments() -> None:
     secret_path = "/Users/private-owner/datasets/nuScenes"
     base = [
