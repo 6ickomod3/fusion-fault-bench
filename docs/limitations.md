@@ -9,8 +9,10 @@ establish detector robustness.
 
 The released M1 evidence is narrower still: a one-object, two-dimensional
 Gaussian analytic model with additive output bias and
-uncertainty-reporting stress. It does not yet exercise SE(3), projection,
-timestamps, dropout, procedural motion, nuScenes, or a health-aware gate.
+uncertainty-reporting stress. M2 validates SE(3), projection, ROI, box, and
+covariance implementations, but it does not add a fault-performance result.
+Timestamps, dropout, procedural motion, latent-scene replay, and a
+health-aware gate remain unevaluated until later milestones.
 
 ## Conditional crossover
 
@@ -44,6 +46,14 @@ nuScenes-mini contains ten scenes. Replaying its annotations, poses,
 calibration, and timestamps tests whether findings persist under those latent
 geometries and motions; it does not validate real sensor noise or support
 fleet-scale inference.
+
+The released M2 record is narrower than replay. One user-provided tree matching
+the declared official-mini profile passed fixed metadata, link,
+referenced-key-frame existence, and projection attestations. The public
+aggregate does not authenticate archive or table bytes. The 808 file checks do
+not read image or point-cloud contents, the independent scalar reference is
+not an official-devkit execution, and the omitted local diagnostic cannot
+support a localization-loss or physical calibration-accuracy claim.
 
 ## Health attribution
 

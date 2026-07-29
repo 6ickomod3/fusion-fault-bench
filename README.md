@@ -79,11 +79,14 @@ uv run ffb bundle validate \
 
 uv run python tools/m1_release.py validate \
   reports/releases/m1-analytic-v0.1.0
+uv run python tools/m2_release.py validate \
+  reports/releases/m2-geometry-v0.1.0
 ```
 
-The current tools require no GPU, model checkpoint, or dataset. nuScenes-mini
-is user-provided and optional for the planned geometry and latent-scene
-grounding.
+The current tools require no GPU or model checkpoint. M1 and public release
+validation require no dataset. The M2 local geometry command uses a
+user-provided nuScenes-mini tree through `NUSCENES_ROOT`; the package never
+downloads or redistributes it.
 
 ## Evidence status
 
@@ -113,19 +116,36 @@ tolerances or safety thresholds. See the
 
 ![Correctly reported versus underreported camera-noise results](reports/releases/m1-analytic-v0.1.0/figures/noise-reporting-fused-minus-healthy.svg)
 
+**Released: M2 geometry implementation validation and local nuScenes-mini
+grounding on the same named CPU.**
+
+The frame-aware SE(3), quaternion, projection, box, ROI, and bearing/depth
+covariance implementations passed their frozen synthetic gates. One
+user-provided tree matching the declared nuScenes v1.0-mini profile passed the
+sanitized structural, 808 key-frame-reference existence, scalar projection,
+and diagnostic-generation attestations. The record does not authenticate
+dataset bytes, expose the diagnostic, or report a fault-performance result.
+
+See the
+[complete M2 release](reports/releases/m2-geometry-v0.1.0/README.md) and its
+[claim-evidence map](reports/releases/m2-geometry-v0.1.0/claim-evidence.md).
+
+![M2 geometry validation summary](reports/releases/m2-geometry-v0.1.0/figures/geometry-validation-summary.svg)
+
 | Component | Status |
 |---|---|
 | Versioned manifest and result contracts | Validated |
 | Canonical manifest fingerprinting | Validated |
 | Analytic fusion/fault vertical slice | Released as M1 |
-| SE(3) and nuScenes projection grounding | M2 pre-registered |
+| SE(3) and local nuScenes-mini grounding | Released as M2 validation evidence |
 | Temporal procedural benchmark | Planned |
 | Health-aware fallback | Planned |
-| Released quantitative results | M1 analytic Gaussian stress tests only |
+| Released fault-performance results | M1 analytic Gaussian stress tests only |
 
 Results enter this README only after they trace to a released manifest,
-software revision, aggregate record, named CPU run, uncertainty interval, and
-reproduction command.
+software revision, aggregate record, figure, named CPU run, and reproduction
+command. Uncertainty intervals are required for inferential results; M2
+contains deterministic validation gates and attestations, not an estimand.
 
 ## Documentation
 
@@ -139,6 +159,7 @@ reproduction command.
 - [Project plan](docs/project-plan.md)
 - [M1 analytic pre-registration](docs/m1-analytic-plan.md)
 - [M2 geometry pre-registration](docs/m2-geometry-plan.md)
+- [M2 geometry release](reports/releases/m2-geometry-v0.1.0/README.md)
 
 ## Explicit non-goals
 

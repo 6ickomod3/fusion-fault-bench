@@ -1,10 +1,11 @@
 # Dataset Preparation
 
-## Should I prepare data now?
+## Dataset status
 
-The dataset is not required for M0 or M1. Before M2, prepare only the official
-**nuScenes v1.0-mini** split. Do not download the full train/validation or test
-datasets for the CPU-first milestones.
+The dataset is not required for M0, M1, the procedural M3/M4 paths, or public
+release validation. The released M2 local geometry check and planned M5 replay
+use only the official **nuScenes v1.0-mini** split. Do not download the full
+train/validation or test datasets for the CPU-first milestones.
 
 The project initially needs:
 
@@ -82,8 +83,23 @@ test -f "$NUSCENES_ROOT/v1.0-mini/sample_annotation.json"
 ```
 
 The official tutorial reports that v1.0-mini contains 10 scenes, 404 annotated
-samples, and 18,538 sample annotations. The future dataset-validation command
-will check these counts without uploading or copying data.
+samples, and 18,538 sample annotations. Run the implemented M2 check from a
+clean checkout:
+
+```bash
+uv run ffb geometry validate \
+  examples/validation/m2-geometry-v1.json \
+  --dataset-root-env NUSCENES_ROOT \
+  --output-dir reports/generated/m2-geometry
+uv run ffb geometry bundle validate reports/generated/m2-geometry
+```
+
+The command checks the fixed 12-table profile, declared links and chains,
+CAM_FRONT/LIDAR_TOP calibration and pose consistency, annotation records, and
+the existence of 808 referenced key-frame files. It does not read image or
+point-cloud contents. It writes one sanitized five-file aggregate artifact and
+one ignored local projection diagnostic; it uploads or copies no dataset file.
+The no-overwrite output path must be absent before each execution.
 
 ## 5. Do not download yet
 
@@ -115,9 +131,9 @@ Never commit:
 - Authentication cookies, access tokens, or download URLs tied to an account.
 - Derived artifacts that reproduce or redistribute protected dataset content.
 
-## 7. First planned data milestone
+## 7. Released geometry milestone and planned replay
 
-The first adapter will load one mini sample and canonicalize:
+The released M2 adapter canonicalizes:
 
 1. Global-frame object annotations.
 2. Ego pose at each sensor timestamp.
@@ -125,5 +141,12 @@ The first adapter will load one mini sample and canonicalize:
 4. Camera intrinsics and image bounds.
 5. Global-to-ego-to-sensor transform chains.
 
-It will then render a diagnostic box projection and verify it against the
-official devkit convention. No detector inference is involved.
+It renders one deterministic local diagnostic and compares the production
+projection against a repository-owned independent scalar implementation based
+on conventions reviewed at a pinned official devkit revision. This is not an
+execution-parity claim for the devkit. The diagnostic remains untracked and no
+detector inference is involved.
+
+M5 will use eligible annotations, poses, and timing as latent matched-center
+sequence structure. Estimator errors will still be simulated; replay will not
+turn the benchmark into a raw-sensor evaluation.

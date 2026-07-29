@@ -1,6 +1,6 @@
 # Results
 
-Status: **M1 analytic evidence released**.
+Status: **M1 analytic evidence and M2 geometry-validation evidence released**.
 
 The release is
 [`m1-analytic-v0.1.0`](../reports/releases/m1-analytic-v0.1.0/README.md).
@@ -61,3 +61,35 @@ The release includes the complete
 [verification record](../reports/releases/m1-analytic-v0.1.0/verification.md),
 curated machine-readable aggregates, figures, manifests, analytic oracles, and
 named hardware records.
+
+## M2 geometry implementation validation
+
+The
+[`m2-geometry-v0.1.0`](../reports/releases/m2-geometry-v0.1.0/README.md)
+release validates the geometry foundation used by later temporal experiments.
+It is not a crossover or perception-performance result.
+
+All preregistered synthetic transform, projection, box, and covariance gates
+passed. The largest nonlinear covariance gate ratio was
+`0.019455935342375528` against the pass boundary of one, using 200,000
+draws. The independent synthetic projection disagreement was
+`1.4779288903810084e-12` pixels against `1e-9`, and the largest transform
+translation disagreement was `2.8421709430404007e-13` meters against `1e-10`.
+
+One user-provided tree matching the declared nuScenes v1.0-mini profile
+attested the fixed expected counts of 10 scenes, 404 samples, and 18,538 sample
+annotations; fixed structural checks; 808 referenced CAM_FRONT/LIDAR_TOP
+key-frame existence checks; an independent-scalar/production projection
+cross-check; and generation of a visually inspected local diagnostic. The
+public record contains none of the source rows, tokens, paths, residuals, or
+diagnostic geometry and explicitly states
+`summary-does-not-authenticate-dataset-bytes`.
+
+![M2 normalized geometry gates and sanitized local profile](../reports/releases/m2-geometry-v0.1.0/figures/geometry-validation-summary.svg)
+
+The exact numeric selectors, source revision, named CPU run, separate dataset
+terms, and recomputable-versus-attested boundary are recorded in the
+[M2 claim-evidence ledger](../reports/releases/m2-geometry-v0.1.0/claim-evidence.md).
+These values are implementation-validation errors and expected-profile
+aggregates, not local nuScenes projection residuals, calibration tolerances,
+or evidence of real sensor-noise transfer.

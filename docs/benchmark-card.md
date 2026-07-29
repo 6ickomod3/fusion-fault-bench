@@ -5,8 +5,9 @@
 Fusion Fault Bench is a deterministic benchmark for camera-LiDAR
 estimator-output fusion under controlled proxy faults. The v0.1 contract
 studies known-object BEV center estimates in a common front-camera/LiDAR region
-of interest. The released M1 slice is a narrower one-object Gaussian analytic
-case; geometry, temporal, and dataset-grounded modes remain planned.
+of interest. M1 releases a narrower one-object Gaussian analytic case, and M2
+releases its geometry implementation validation. Temporal fault sweeps and
+nuScenes latent-scene replay remain planned.
 
 The benchmark is designed to answer a narrow evaluation question: when does
 fixed information fusion increase matched-center loss relative to a modality
@@ -37,7 +38,13 @@ uncertainty-reporting cases with closed-form checks.
 **Procedural — planned:** seeded constant-velocity scenes with controlled
 layouts and paired observation draws.
 
-**nuScenes-mini grounding — planned:** recorded annotations, poses,
+**nuScenes-mini geometry grounding — released in M2:** one local
+user-provided tree matching the declared official-mini profile passed
+sanitized metadata-integrity, referenced-key-frame existence, and scalar
+projection attestations. The release authenticates no dataset bytes and
+contains no per-frame payload.
+
+**nuScenes-mini latent replay — planned for M5:** recorded annotations, poses,
 calibration, and timing provide latent scene structure. Estimator outputs
 remain simulated. Ten mini scenes are treated as exploratory grounding rather
 than external validation.
@@ -50,10 +57,12 @@ than external validation.
 - **Released:** evidence is committed under `reports/releases/` and traces to a
   tagged software revision.
 
-The current quantitative evidence is limited to
+The current fault-performance evidence is limited to
 [M1 analytic estimator-output stress tests](../reports/releases/m1-analytic-v0.1.0/README.md).
 The correctly reported-noise control is published with an `undetermined`
 finite-sample status; it is not converted into a favorable conclusion.
+[M2](../reports/releases/m2-geometry-v0.1.0/README.md) contributes
+implementation-validation evidence, not another performance result.
 
 ## Primary validity boundaries
 

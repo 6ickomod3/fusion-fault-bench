@@ -6,6 +6,13 @@ check had already confirmed the expected directory layout and the three
 documented official-mini headline counts; no projection, covariance,
 referential-integrity, or experimental result was evaluated before this plan.
 
+Release note: M2 subsequently passed its frozen gates and was promoted as
+[`m2-geometry-v0.1.0`](../reports/releases/m2-geometry-v0.1.0/README.md).
+The scientific execution revision is
+`cd9ce423d296a90dcf7c993c1c08b078dcfd4bd4`. This note records disposition
+without changing the preregistered questions, thresholds, or claim boundary
+below.
+
 This document freezes the M2 validation questions, numerical gates, local-data
 boundary, and explicit non-goals before geometry code or nuScenes-mini
 diagnostics are executed. M2 is an implementation-validation milestone. It

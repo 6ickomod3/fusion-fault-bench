@@ -130,9 +130,61 @@ audit recorded in
 [M1 verification](../reports/releases/m1-analytic-v0.1.0/verification.md);
 they are not needed to regenerate or validate the released scientific result.
 
+## Released M2 geometry evidence
+
+The curated M2 release can be validated without a dataset:
+
+```bash
+uv run python tools/m2_release.py validate \
+  reports/releases/m2-geometry-v0.1.0
+```
+
+The validator enforces the exact release allowlist; reconstructs and strictly
+loads the sanitized five-file geometry bundle; recomputes manifest, artifact,
+run, member, document, and figure identities; regenerates the release-summary
+SVG; and checks the separate nuScenes-derived evidence terms. The release
+records:
+
+- scientific source revision
+  `cd9ce423d296a90dcf7c993c1c08b078dcfd4bd4`;
+- manifest SHA-256
+  `7bfb5427c1ea5450a795bedef327457e5959860316bcd23f930e6eaa5917a068`;
+- artifact SHA-256
+  `09159042ca063b50762bf4150fb275b8a1760e4317ab74da8b0d24c133f42c90`;
+- the same locked environment and named Apple M3 Pro configuration as M1;
+  and
+- three of three stable-file comparisons and an ignored diagnostic comparison
+  that were byte-identical across two clean runs.
+
+The exact local execution requires a separately obtained mini tree:
+
+```bash
+git checkout --detach cd9ce423d296a90dcf7c993c1c08b078dcfd4bd4
+uv sync --locked --group dev
+uv lock --check
+export NUSCENES_ROOT=/absolute/path/to/nuScenes
+
+uv run ffb geometry validate \
+  examples/validation/m2-geometry-v1.json \
+  --dataset-root-env NUSCENES_ROOT \
+  --output-dir reports/generated/m2-geometry
+uv run ffb geometry bundle validate reports/generated/m2-geometry
+```
+
+The deterministic scientific comparison covers `manifest.json`,
+`geometry-validation.json`, and `payload-index.json`. `run.json` and
+`_SUCCESS` change with timestamps and the resulting run-record digest.
+Cross-architecture byte identity is not claimed.
+
+The public loader recomputes all sanitized synthetic numeric gates and
+conjunctions. It cannot recompute local metadata, key-frame-reference,
+projection, diagnostic-generation, or visual-inspection attestations without
+the separately obtained dataset and local run. The public CI record explicitly
+has `dataset_access=false`.
+
 ## Local data
 
-nuScenes is optional until the geometry-grounding milestone and is never
+nuScenes is optional for M2 local grounding and planned M5 replay. It is never
 downloaded by the package or CI.
 
 ```bash
@@ -149,9 +201,10 @@ excluded from manifests and public result records.
 | Contract and canonicalization unit tests | Validated in M0 |
 | Package build and isolated-wheel smoke test | Validated in M0 |
 | Analytic RNG, fusion, fault, metric, and artifact tests | Validated in M1 |
-| Geometry and temporal fault tests | Geometry pre-registered; temporal planned |
-| Transform and covariance property tests | Pre-registered for M2 |
+| Geometry and temporal fault tests | Geometry foundation released in M2; temporal planned |
+| Transform and covariance property tests | Validated and released in M2 |
 | Independent-Gaussian analytic oracles | Validated in M1 |
-| nuScenes integrity and projection agreement | Pre-registered for M2 |
+| Local nuScenes profile integrity and scalar projection cross-check | Attested and released in M2 |
 | Named-CPU analytic release and deterministic repeat | Released in M1 |
+| Named-CPU geometry release and deterministic stable-file repeat | Released in M2 |
 | Full multi-family clean-CPU report reproduction | Planned for M6 |

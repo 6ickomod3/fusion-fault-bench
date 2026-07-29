@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="880" viewBox="0 0 1200 880" role="img">
+<title>M2 geometry validation: frozen gates and local profile</title>
+<desc>Preregistered synthetic numeric gate utilization and sanitized nuScenes-mini profile aggregates. Lower numeric gate utilization is better.</desc>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#182230}
+.muted{fill:#5b677a}.grid{stroke:#dce3ec;stroke-width:1}
+.gate{stroke:#bf3b3b;stroke-width:2}.bar{fill:#1f8a70}.track{fill:#edf2f6}
+.card{fill:#f7f9fc;stroke:#dce3ec;stroke-width:1}
+</style>
+<rect width="1200" height="880" fill="#ffffff"/>
+<text x="64" y="44" font-size="27" font-weight="700">M2 geometry validation: frozen gates and local profile</text>
+<text class="muted" x="64" y="73" font-size="15">Synthetic error ÷ frozen tolerance on a log scale; values ≤ 1 pass. Local counts are allowlisted aggregates.</text>
+<text x="64" y="105" font-size="14" font-weight="650">Numeric check</text>
+<text x="360" y="105" font-size="13" class="muted">10⁻⁶</text>
+<text x="546.7" y="105" font-size="13" class="muted" text-anchor="middle">10⁻⁴</text>
+<text x="733.3" y="105" font-size="13" class="muted" text-anchor="middle">10⁻²</text>
+<text x="920" y="105" font-size="13" fill="#a32f2f" text-anchor="end">1 (gate)</text>
+<line class="grid" x1="360.00" y1="114" x2="360.00" y2="554"/>
+<line class="grid" x1="546.67" y1="114" x2="546.67" y2="554"/>
+<line class="grid" x1="733.33" y1="114" x2="733.33" y2="554"/>
+<line class="gate" x1="920" y1="114" x2="920" y2="554"/>
+<text x="64" y="138" font-size="14">Rotation composition</text>
+<rect class="track" x="360" y="123" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="123" width="303.289" height="18" rx="4"/>
+<text x="948" y="138" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.001776</text>
+<text x="1120" y="138" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="177" font-size="14">Translation inverse</text>
+<rect class="track" x="360" y="162" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="162" width="322.341" height="18" rx="4"/>
+<text x="948" y="177" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.002842</text>
+<text x="1120" y="177" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="216" font-size="14">Point round trip</text>
+<rect class="track" x="360" y="201" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="201" width="279.787" height="18" rx="4"/>
+<text x="948" y="216" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.0009948</text>
+<text x="1120" y="216" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="255" font-size="14">Quaternion sign</text>
+<rect class="track" x="360" y="240" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="240" width="0.000" height="18" rx="4"/>
+<text x="948" y="255" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0</text>
+<text x="1120" y="255" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="294" font-size="14">Synthetic projection</text>
+<rect class="track" x="360" y="279" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="279" width="295.834" height="18" rx="4"/>
+<text x="948" y="294" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.001478</text>
+<text x="1120" y="294" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="333" font-size="14">Synthetic depth</text>
+<rect class="track" x="360" y="318" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="318" width="387.578" height="18" rx="4"/>
+<text x="948" y="333" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.01421</text>
+<text x="1120" y="333" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="372" font-size="14">Synthetic box corners</text>
+<rect class="track" x="360" y="357" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="357" width="247.097" height="18" rx="4"/>
+<text x="948" y="372" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.0004441</text>
+<text x="1120" y="372" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="411" font-size="14">Covariance finite difference</text>
+<rect class="track" x="360" y="396" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="396" width="311.520" height="18" rx="4"/>
+<text x="948" y="411" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.002176</text>
+<text x="1120" y="411" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="450" font-size="14">Covariance Monte Carlo xx</text>
+<rect class="track" x="360" y="435" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="435" width="400.312" height="18" rx="4"/>
+<text x="948" y="450" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.01946</text>
+<text x="1120" y="450" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="489" font-size="14">Covariance Monte Carlo xy</text>
+<rect class="track" x="360" y="474" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="474" width="394.032" height="18" rx="4"/>
+<text x="948" y="489" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.01666</text>
+<text x="1120" y="489" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="528" font-size="14">Covariance Monte Carlo yy</text>
+<rect class="track" x="360" y="513" width="560" height="18" rx="4"/>
+<rect class="bar" x="360" y="513" width="333.210" height="18" rx="4"/>
+<text x="948" y="528" font-size="14" font-variant-numeric="tabular-nums">gate ratio 0.003716</text>
+<text x="1120" y="528" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text x="64" y="580" font-size="17" font-weight="700">Sanitized local nuScenes-mini profile</text>
+<rect class="card" x="64" y="594" width="252" height="103" rx="9"/>
+<text x="82" y="628" font-size="14" class="muted">Scenes</text>
+<text x="82" y="669" font-size="29" font-weight="700">10</text>
+<text x="298" y="669" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<rect class="card" x="334" y="594" width="252" height="103" rx="9"/>
+<text x="352" y="628" font-size="14" class="muted">Samples</text>
+<text x="352" y="669" font-size="29" font-weight="700">404</text>
+<text x="568" y="669" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<rect class="card" x="604" y="594" width="252" height="103" rx="9"/>
+<text x="622" y="628" font-size="14" class="muted">Sample annotations</text>
+<text x="622" y="669" font-size="29" font-weight="700">18,538</text>
+<text x="838" y="669" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<rect class="card" x="874" y="594" width="252" height="103" rx="9"/>
+<text x="892" y="628" font-size="14" class="muted">Key-frame references checked</text>
+<text x="892" y="669" font-size="29" font-weight="700">808</text>
+<text x="1108" y="669" font-size="13" fill="#16745f" text-anchor="end">PASS</text>
+<text class="muted" x="64" y="731" font-size="14">Counts are expected-profile values whose local match is attested; 808 checks referenced-file existence, not file contents.</text>
+<text class="muted" x="64" y="756" font-size="14">Public summary does not authenticate dataset bytes. No per-scene, per-frame, token, path, residual, or diagnostic geometry is shown.</text>
+<text class="muted" x="64" y="792" font-size="12">Source: nuScenes v1.0-mini, Motional.</text>
+<text class="muted" x="64" y="812" font-size="12">Attribution: nuScenes: A multimodal dataset for autonomous driving, Caesar et al., 2020.</text>
+<text class="muted" x="64" y="832" font-size="12">License: CC-BY-NC-SA-4.0-plus-Motional-Dataset-Terms. Terms: https://www.nuscenes.org/terms-of-use</text>
+<text class="muted" x="64" y="852" font-size="12">Motional does not sponsor, approve, or endorse Fusion Fault Bench.</text>
+</svg>

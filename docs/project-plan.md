@@ -330,9 +330,11 @@ Accept when:
 
 ### M2: Geometry and nuScenes grounding
 
-Status: **pre-registered**. See the
-[M2 geometry validation plan](m2-geometry-plan.md). Implementation and local
-geometry execution have not started.
+Status: **released**. See the
+[M2 geometry validation plan](m2-geometry-plan.md) and
+[M2 geometry evidence](../reports/releases/m2-geometry-v0.1.0/README.md).
+The release validates implementation conventions and a sanitized local
+metadata-grounding path; it is not a fault-performance result.
 
 Deliver:
 
@@ -350,7 +352,22 @@ Accept when:
 - Camera bearing/depth covariance propagation agrees with Monte Carlo.
 - No dataset content or absolute local path enters tracked artifacts.
 
+Release outcome:
+
+- all frozen synthetic geometry and 200,000-draw covariance gates passed;
+- one user-provided tree matching the declared official-mini profile passed
+  the structural, referenced-key-frame existence, scalar projection, and
+  diagnostic-generation attestations;
+- the three stable artifact files and ignored diagnostic were byte-identical
+  across two clean runs on the named CPU;
+- the public aggregate explicitly does not authenticate dataset bytes; and
+- the local diagnostic remained untracked and no per-scene or per-frame
+  payload was released.
+
 ### M3: Temporal procedural benchmark
+
+Status: **next**. M3 begins from the released M1 inference machinery and M2
+geometry contracts; it remains CPU-only and dataset-independent.
 
 Deliver:
 

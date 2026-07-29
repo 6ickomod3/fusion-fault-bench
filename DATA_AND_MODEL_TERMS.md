@@ -11,9 +11,12 @@ applicable terms, and configure a local dataset root. This repository does not
 redistribute nuScenes archives, images, point clouds, maps, metadata tables, or
 credentials.
 
-Fusion Fault Bench plans to use the mini split only for local development and
-exploratory grounding of latent geometry, motion, calibration, and timing.
-Estimator outputs in that benchmark path will remain simulated. The project
+Fusion Fault Bench uses the mini split for the released M2 local geometry and
+metadata-grounding check. The tracked M2 release contains only sanitized
+aggregate attestations and a summary figure; it contains no source row,
+per-frame payload, image, point cloud, map, archive, token, filename, or local
+path. Planned M5 replay will use recorded latent geometry, motion,
+calibration, and timing while estimator errors remain simulated. The project
 does not claim endorsement by Motional or the nuScenes authors.
 
 The current [Motional Dataset Terms](https://www.nuscenes.org/terms-of-use)
