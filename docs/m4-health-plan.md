@@ -1,6 +1,12 @@
 # M4 Observable Health-Aware Fallback Pre-registration
 
-Status: **pre-registered; not executed**.
+Status: **executed and released as
+[`m4-health-v0.1.0`](../reports/releases/m4-health-v0.1.0.md)**.
+
+Release note (2026-07-29): the pre-registration below remains the frozen
+before-execution record. Outcomes, including negative results, are reported in
+the release overview and
+[independent results review](reviews/m4-results-review.md).
 
 This document freezes the M4 question, population, transient-event semantics,
 observable-feature boundary, policy, threshold selection, estimands, inference,

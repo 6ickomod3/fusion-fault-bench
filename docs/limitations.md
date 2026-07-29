@@ -11,8 +11,9 @@ The released M1 evidence is narrower still: a one-object, two-dimensional
 Gaussian analytic model with additive output bias and
 uncertainty-reporting stress. M2 validates SE(3), projection, ROI, box, and
 covariance implementations, but it does not add a fault-performance result.
-M3 adds timestamps, dropout, and procedural constant-velocity motion, but not
-latent-scene replay or a health-aware gate.
+M3 adds timestamps, dropout, and procedural constant-velocity motion. M4 adds
+one observable health-aware rule, but neither milestone adds latent-scene
+replay or a learned detector.
 
 ## Conditional crossover
 
@@ -64,11 +65,29 @@ identify its cause. Difficult geometry, covariance misspecification, and
 common-mode faults can be ambiguous. The benchmark retains an
 unknown/ambiguous decision and publishes attribution failures.
 
-M3 does not yet evaluate an observable health policy. Its target-drop policy
-knows the injected fault target, and its performance oracle uses
-complete-sequence hindsight. Neither is deployable. M4 must separately report
-observable attribution and downstream loss; detecting degradation does not
-imply that dropping a still-useful sensor improves fusion.
+M4 evaluates an observable health policy separately from its diagnostic
+target-drop and frame-action performance oracles. The latter two use fault
+metadata or hindsight and are not deployable.
+
+M4 also demonstrates that attribution is not action utility. Under `3×`
+underreported LiDAR noise, the combined gate detected and attributed every
+event but worsened matched-center loss relative to fixed fusion. Under shared
+common-mode bias there is no uniquely healthy target, and under held-out edge
+clean support false-alert and loss regression increased. The selected
+thresholds are frozen benchmark choices, not operational thresholds.
+The frozen three-frame recovery latch also created post-event loss after a
+strongly beneficial LiDAR-bias event; hysteresis is therefore part of the
+policy tradeoff, not a cost-free implementation detail.
+
+The clean ECDF anomaly ranks are not calibrated probabilities. Their training
+population is procedural constant-velocity output, and threshold uncertainty
+is not propagated into test intervals. Test intervals are pointwise and
+condition on the selected fit.
+
+The M4 public release retains every aggregate row but omits 433,700
+sequence-level loss, contrast, and event rows. Exact commitments authenticate
+what was omitted, but a third party cannot independently recompute bootstrap
+inference from the curated release without rerunning the benchmark.
 
 ## Safety boundary
 

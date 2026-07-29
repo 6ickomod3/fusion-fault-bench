@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="920" viewBox="0 0 1400 920" role="img">
+<title>M4 observable health policy outcomes and counterexamples</title>
+<desc>Selected predeclared M4 results for the combined health gate. Positive signed policy gain favors the health gate over fixed fusion. The figure shows improvements, harmful routing counterexamples, clean controls, cold start, and full-dropout coverage.</desc>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#182230}
+.muted{fill:#5b677a}.small{font-size:14px}.label{font-size:16px;font-weight:650}
+.value{font-size:23px;font-weight:750}.panel{fill:#fbfcfe;stroke:#dce3ec;stroke-width:1.5}
+.good{fill:#e8f7f2;stroke:#8dd6c4}.bad{fill:#fff0ef;stroke:#efb0aa}
+.neutral{fill:#fff8e6;stroke:#e7c66a}.coverage{fill:#eef4ff;stroke:#9db8ef}
+</style>
+<rect width="1400" height="920" fill="#ffffff"/>
+<text x="54" y="48" font-size="28" font-weight="750">M4: observable detection does not guarantee beneficial fallback</text>
+<text class="muted" x="54" y="75" font-size="15">Signed gain G = fixed-fusion MSE − health-policy MSE. Positive favors the policy; intervals are pointwise.</text>
+<text class="muted" x="54" y="94" font-size="13">Event window unless marked recovery; paired complete-sequence bootstrap with 2,000 replicates.</text>
+
+<rect class="panel" x="48" y="112" width="632" height="576" rx="12"/>
+<text x="72" y="140" font-size="20" font-weight="720" fill="#0f766e">Fallback helped under several high-severity events</text>
+<text class="muted" x="72" y="164" font-size="14">Combined gate, 200 held-out test sequences per main-profile condition</text>
+
+<rect class="good" x="72" y="190" width="584" height="74" rx="9"/>
+<text class="label" x="92" y="219">LiDAR output y-bias, +3 m</text>
+<text class="value" x="636" y="221" text-anchor="end" fill="#0f766e">+5.459 m²</text>
+<text class="muted small" x="92" y="246">95% interval [5.391, 5.509] · 99.5% correct attribution</text>
+
+<rect class="good" x="72" y="278" width="584" height="74" rx="9"/>
+<text class="label" x="92" y="307">LiDAR timestamp offset, +0.6 s</text>
+<text class="value" x="636" y="309" text-anchor="end" fill="#0f766e">+2.947 m²</text>
+<text class="muted small" x="92" y="334">95% interval [2.869, 3.024] · direct telemetry attributed 100%</text>
+
+<rect class="good" x="72" y="366" width="584" height="74" rx="9"/>
+<text class="label" x="92" y="395">Camera noise, 3× but covariance underreported</text>
+<text class="value" x="636" y="397" text-anchor="end" fill="#0f766e">+0.0861 m²</text>
+<text class="muted small" x="92" y="422">95% interval [0.0831, 0.0893] · 85.8% of oracle-recoverable loss</text>
+
+<rect class="good" x="72" y="454" width="584" height="74" rx="9"/>
+<text class="label" x="92" y="483">Camera timestamp offset, +0.6 s</text>
+<text class="value" x="636" y="485" text-anchor="end" fill="#0f766e">+0.0234 m²</text>
+<text class="muted small" x="92" y="510">95% interval [0.0218, 0.0250] · direct telemetry attributed 100%</text>
+
+<rect class="good" x="72" y="542" width="584" height="98" rx="9"/>
+<text class="label" x="92" y="571">Held-out camera-yaw family, +0.06 rad</text>
+<text class="value" x="636" y="573" text-anchor="end" fill="#0f766e">+0.000674 m²</text>
+<text class="muted small" x="92" y="598">95% interval [0.000174, 0.001266] · detection 100%,</text>
+<text class="muted small" x="92" y="620">but first-event attribution only 3.0% and LiDAR action occupancy 2.7%</text>
+
+<rect class="panel" x="720" y="112" width="632" height="576" rx="12"/>
+<text x="744" y="140" font-size="20" font-weight="720" fill="#b42318">The same rule also produced important counterexamples</text>
+<text class="muted" x="744" y="164" font-size="14">Negative results are release evidence, not hidden tuning failures</text>
+
+<rect class="bad" x="744" y="190" width="584" height="86" rx="9"/>
+<text class="label" x="764" y="219">LiDAR noise, 3× but covariance underreported</text>
+<text class="value" x="1308" y="221" text-anchor="end" fill="#b42318">−0.579 m²</text>
+<text class="muted small" x="764" y="246">95% interval [−0.608, −0.553] · attribution was 100%,</text>
+<text class="muted small" x="764" y="266">yet dropping LiDAR for camera-only estimation increased loss</text>
+
+<rect class="bad" x="744" y="290" width="584" height="86" rx="9"/>
+<text class="label" x="764" y="319">Shared common-mode x-bias, +4 m</text>
+<text class="value" x="1308" y="321" text-anchor="end" fill="#b42318">−0.143 m²</text>
+<text class="muted small" x="764" y="346">95% interval [−0.201, −0.0866] · no healthy target exists;</text>
+<text class="muted small" x="764" y="366">77% detection; first latch was 23% ambiguous / 54% LiDAR-fault</text>
+
+<rect class="bad" x="744" y="390" width="584" height="86" rx="9"/>
+<text class="label" x="764" y="419">Held-out edge-profile clean control</text>
+<text class="value" x="1308" y="421" text-anchor="end" fill="#b42318">−0.00420 m²</text>
+<text class="muted small" x="764" y="446">Score-window interval [−0.0100, −0.0000204] · 0.17 false-alert</text>
+<text class="muted small" x="764" y="466">episode starts per sequence despite 100% output coverage</text>
+
+<rect class="neutral" x="744" y="490" width="584" height="86" rx="9"/>
+<text class="label" x="764" y="519">Cold-start camera/LiDAR diagnostics</text>
+<text class="value" x="1308" y="521" text-anchor="end" fill="#9a6700">0.000 m²</text>
+<text class="muted small" x="764" y="546">Detection reached 100% after ≈3.1 frames, but attribution was 0%;</text>
+<text class="muted small" x="764" y="566">the ambiguous state retained fixed fusion, so routing gain stayed zero</text>
+
+<rect class="neutral" x="744" y="590" width="584" height="72" rx="9"/>
+<text class="label" x="764" y="617">Post-event latch cost: LiDAR +3 m bias</text>
+<text x="1308" y="619" text-anchor="end" font-size="18" font-weight="700" fill="#9a6700">−0.620 m²</text>
+<text class="muted small" x="764" y="644">100% recovered, mean 4.07 frames · recovery interval [−0.642, −0.598]</text>
+<text class="muted small" x="744" y="681">Correctly reported 3× noise produced exactly 0.000 m² event-window gain.</text>
+
+<rect class="coverage" x="48" y="710" width="1304" height="146" rx="12"/>
+<text x="72" y="746" font-size="20" font-weight="720" fill="#2659a8">Full dropout is a coverage result, not a common-support loss win</text>
+<text x="72" y="783" class="label">Camera dropout p=1</text>
+<text x="286" y="783" font-size="14">fixed</text>
+<rect x="330" y="768" width="150" height="20" rx="5" fill="#ffffff" stroke="#9db8ef"/>
+<text x="490" y="783" font-size="14">0%</text>
+<text x="536" y="783" font-size="14">gate</text>
+<rect x="576" y="768" width="300" height="20" rx="5" fill="#3d73c5"/>
+<text x="886" y="783" font-size="14">100%</text>
+<text x="966" y="783" font-size="15">gate MSE 0.180 m²</text>
+<text x="72" y="823" class="label">LiDAR dropout p=1</text>
+<text x="286" y="823" font-size="14">fixed</text>
+<rect x="330" y="808" width="150" height="20" rx="5" fill="#ffffff" stroke="#9db8ef"/>
+<text x="490" y="823" font-size="14">0%</text>
+<text x="536" y="823" font-size="14">gate</text>
+<rect x="576" y="808" width="300" height="20" rx="5" fill="#3d73c5"/>
+<text x="886" y="823" font-size="14">100%</text>
+<text x="966" y="823" font-size="15">gate MSE 2.005 m²</text>
+<text class="muted" x="72" y="848" font-size="13">At p=1 the signed contrast is undefined: fixed fusion has no valid event support. Missing output is never assigned zero loss.</text>
+
+<text class="muted" x="54" y="886" font-size="12">Source: m4-health-v0.1.0 · revision a829a9f · Apple M3 Pro.</text>
+<text class="muted" x="54" y="904" font-size="12">Procedural estimator-output benchmark; not a physical tolerance, operational threshold, or safety claim.</text>
+</svg>

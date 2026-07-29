@@ -238,6 +238,67 @@ self-reported by the tracked child-process driver, not independently
 recomputable facts. All 48 indexed scientific member pairs were byte
 identical; cross-architecture byte identity is not claimed.
 
+## Released M4 observable-health evidence
+
+The strict M4 aggregate release is dataset-free:
+
+```bash
+uv sync --locked --group dev
+uv run python tools/m4_release.py validate-release \
+  reports/releases/m4-health-v0.1.0
+```
+
+The validator enforces the exact curated allowlist; authenticates both fit
+copies and both evaluation provenance envelopes; recomputes scientific member
+commitments, aggregate structure, repeat equality, resource sidecars, numeric
+claim projections, privacy scans, release index, and success marker; and
+rejects unexpected sequence payloads or local paths.
+
+Scientific regeneration starts from revision
+`a829a9f3af541c1b92b89d051b7c8b7003dc5a15`:
+
+```bash
+git checkout --detach a829a9f3af541c1b92b89d051b7c8b7003dc5a15
+uv sync --locked --group dev
+
+uv run ffb health fit \
+  --output-dir reports/generated/m4-reproduction-fit-primary
+uv run ffb health fit \
+  --output-dir reports/generated/m4-reproduction-fit-repeat
+
+uv run ffb health evaluate \
+  reports/generated/m4-reproduction-fit-primary \
+  --output-dir reports/generated/m4-reproduction-eval-primary
+uv run ffb health evaluate \
+  reports/generated/m4-reproduction-fit-primary \
+  --output-dir reports/generated/m4-reproduction-eval-repeat
+```
+
+Set `OPENBLAS_NUM_THREADS`, `OMP_NUM_THREADS`,
+`VECLIB_MAXIMUM_THREADS`, `MKL_NUM_THREADS`, and `NUMEXPR_NUM_THREADS` to `1`
+for the named single-thread resource profile. Strictly validate each fit and
+evaluation with:
+
+```bash
+uv run ffb health bundle fit validate <fit>
+uv run ffb health bundle evaluation validate <evaluation> \
+  --fit-artifact reports/generated/m4-reproduction-fit-primary
+```
+
+The released fits measured `279.62` and `286.17` seconds with peak RSS
+`121,585,664` and `123,486,208` bytes. Evaluations measured `592.01` and
+`559.82` seconds with peak RSS `169,869,312` and `168,116,224` bytes on an
+Apple M3 Pro. The four raw Darwin `/usr/bin/time -l` records are retained and
+reparsed, but remain operator-recorded, self-reported evidence.
+
+Both fits matched on seven indexed scientific members; both evaluations
+matched on nine. The public release retains all 11,515 aggregate rows but
+omits and commits 433,700 sequence-level rows. Aggregate claims and figures
+for scientific outcomes are reproducible from those rows; fit-selection and
+resource tables use the other retained release evidence. Independently
+recomputing bootstrap intervals requires full regeneration because the
+sequence rows are not public.
+
 ## Verification roadmap
 
 | Level | Current status |
@@ -251,4 +312,6 @@ identical; cross-architecture byte identity is not claimed.
 | Local nuScenes profile integrity and scalar projection cross-check | Attested and released in M2 |
 | Named-CPU analytic release and deterministic repeat | Released in M1 |
 | Named-CPU geometry release and deterministic stable-file repeat | Released in M2 |
-| Full multi-family clean-CPU procedural fault report | Released in M3; health/replay synthesis planned for M6 |
+| Full multi-family clean-CPU procedural fault report | Released in M3 |
+| Observable health-aware fallback and deterministic repeat | Released in M4 |
+| nuScenes latent-scene replay | Planned for M5 |

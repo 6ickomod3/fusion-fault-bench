@@ -6,14 +6,14 @@ Fusion Fault Bench is a deterministic benchmark for camera-LiDAR
 estimator-output fusion under controlled proxy faults. The v0.1 contract
 studies known-object BEV center estimates in a common front-camera/LiDAR region
 of interest. M1 releases a narrower one-object Gaussian analytic case, M2
-releases its geometry implementation validation, and M3 releases the temporal
-procedural fault matrix. Observable health gating is pre-registered for M4;
-nuScenes latent-scene replay remains a later milestone.
+releases its geometry implementation validation, M3 releases the temporal
+procedural fault matrix, and M4 releases one frozen observable health-aware
+fallback benchmark. nuScenes latent-scene replay remains a later milestone.
 
 The benchmark is designed to answer a narrow evaluation question: when does
 fixed information fusion increase matched-center loss relative to a modality
-declared healthy by a controlled single-sensor target? A later milestone asks
-how much of that loss an observable health gate can recover.
+declared healthy by a controlled single-sensor target, and when does an
+observable health gate recover or worsen that loss?
 
 ## Intended uses
 
@@ -40,6 +40,11 @@ uncertainty-reporting cases with closed-form checks.
 controlled layouts, paired observation draws, metadata faults, dropout, and a
 common-mode blind-spot control.
 
+**Observable health — released in M4:** clean-ECDF-calibrated pre-update self
+and cross NIS, direct timestamp/availability telemetry, a frozen latch/action
+rule, transient events, held-out severities and yaw, difficult-clean,
+common-mode, cold-start, and dropout controls.
+
 **nuScenes-mini geometry grounding — released in M2:** one local
 user-provided tree matching the declared official-mini profile passed
 sanitized metadata-integrity, referenced-key-frame existence, and scalar
@@ -60,14 +65,22 @@ than external validation.
   tagged software revision.
 
 The current fault-performance evidence consists of
-[M1 analytic estimator-output stress tests](../reports/releases/m1-analytic-v0.1.0/README.md)
+[M1 analytic estimator-output stress tests](../reports/releases/m1-analytic-v0.1.0/README.md),
+the
+[M3 procedural fault matrix](../reports/releases/m3-procedural-v0.1.0/README.md),
 and the
-[M3 procedural fault matrix](../reports/releases/m3-procedural-v0.1.0/README.md).
+[M4 observable health release](../reports/releases/m4-health-v0.1.0.md).
 The correctly reported-noise control is published with an `undetermined`
 finite-sample status in M1 and a `not-observed` result through `4×` in M3;
 neither is converted into a favorable conclusion.
 [M2](../reports/releases/m2-geometry-v0.1.0/README.md) contributes
 implementation-validation evidence, not another performance result.
+
+M4 publishes both improvements and counterexamples. Severe bias, timestamp,
+and some underreported-noise conditions benefited from fallback, while
+perfectly attributed underreported LiDAR noise and shared common-mode bias
+produced harmful routing. Full-dropout endpoints are reported as coverage
+recovery with undefined fixed-fusion conditional loss, not zero-imputed gains.
 
 ## Primary validity boundaries
 

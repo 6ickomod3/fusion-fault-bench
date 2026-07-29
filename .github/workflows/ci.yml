@@ -44,6 +44,11 @@ jobs:
       - name: Test
         run: uv run --locked pytest
 
+      - name: Validate curated M4 release
+        run: |
+          uv run --locked python tools/m4_release.py validate-release \
+            reports/releases/m4-health-v0.1.0
+
       - name: Run measured two-execution M3 smoke matrix
         run: |
           uv run --locked python tools/m3_release.py execute \
@@ -71,5 +76,6 @@ jobs:
           /tmp/ffb-wheel-smoke/bin/ffb --version
           /tmp/ffb-wheel-smoke/bin/ffb schema show geometry-validation > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb schema show procedural-validation > /dev/null
+          /tmp/ffb-wheel-smoke/bin/ffb schema show health-intent > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb manifest validate \
             examples/manifests/analytic-bias-v1alpha1.json

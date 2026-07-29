@@ -1,7 +1,7 @@
 # Results
 
-Status: **M1 analytic, M2 geometry-validation, and M3 temporal procedural
-evidence released**.
+Status: **M1 analytic, M2 geometry-validation, M3 temporal procedural, and M4
+observable-health evidence released**.
 
 The release is
 [`m1-analytic-v0.1.0`](../reports/releases/m1-analytic-v0.1.0/README.md).
@@ -152,7 +152,82 @@ M3 Pro matched on all 48 indexed scientific members. The
 [independent adversarial review](reviews/m3-results-review.md) found no
 release blocker.
 
-These results are procedural estimator-output stress tests. They are not
+These M3 results are procedural estimator-output stress tests. They are not
 physical calibration or timing tolerances, detector results, real
 sensor-noise transfer, nuScenes persistence, a health-aware fallback result,
 or safety evidence.
+
+## M4 observable health-aware fallback
+
+The
+[`m4-health-v0.1.0`](../reports/releases/m4-health-v0.1.0.md) release fits
+clean residual ECDFs on 200 training sequences, selects one of 36 threshold
+pairs on 200 validation sequences, and applies the frozen fit to 47 held-out
+conditions. Main conditions use 200 test sequences and edge controls use 100.
+Inference uses 2,000 paired complete-sequence bootstrap replicates.
+
+The selected combined gate used self threshold `0.999` and cross threshold
+`0.995`. Its primary signed event-window estimand is
+
+\[
+G_P=\bar L_F-\bar L_P,
+\]
+
+computed on fixed-policy common support. Positive values mean lower
+matched-center MSE for the health policy.
+
+| Held-out test condition | \(G_P\), m² | Pointwise 95% interval | Event attribution |
+|---|---:|---:|---:|
+| LiDAR output \(y\)-bias, \(+3\) m | +5.458996 | [5.390819, 5.509366] | 99.5% |
+| LiDAR timestamp offset, \(+0.6\) s | +2.946629 | [2.868592, 3.023793] | 100% |
+| Camera noise, `3×`, covariance underreported | +0.086143 | [0.083089, 0.089319] | 98.5% |
+| Camera timestamp offset, \(+0.6\) s | +0.023411 | [0.021776, 0.024989] | 100% |
+| Camera calibration \(x\), \(+3\) m | +0.001524 | [0.000490, 0.002780] | 4.0% |
+| Held-out camera yaw, \(+0.06\) rad | +0.000674 | [0.000174, 0.001266] | 3.0% |
+| LiDAR noise, `3×`, covariance underreported | **−0.578576** | [−0.608040, −0.553247] | 100% |
+
+The final row is the main policy counterexample. The monitor correctly
+identified the degraded LiDAR stream, but camera-only fallback discarded
+useful information and raised downstream loss. Observable fault attribution
+is therefore not a sufficient proxy for action utility.
+
+![M4 observable health outcomes](figures/m4-health-policy-outcomes.svg)
+
+### Controls and support
+
+- Correctly reported `3×` camera and LiDAR noise produced exactly `0 m²`
+  event-window policy gain.
+- Main clean and bounded-acceleration score-window regression was
+  `1.0529e-5 m²` in favor of fixed fusion. The held-out edge clean condition
+  regressed by `0.00419894 m²`
+  (`[0.00002045,0.0100138] m²` magnitude interval) and produced `0.17`
+  false-alert episode starts per sequence.
+- Under shared common-mode \(+4\) m bias, no healthy target was defined. The
+  combined rule detected 77% of events but produced
+  \(G_P=-0.142977\ \mathrm{m}^2\),
+  interval \([-0.201134,-0.086554]\).
+- Cold-start camera calibration and LiDAR-bias events reached 100% detection
+  after about 3.1 frames but 0% first-event attribution. The ambiguous state
+  retained fixed fusion, yielding exactly zero policy gain.
+- Event clearance was also not free. After the beneficial LiDAR `+3 m` bias
+  event, every latched episode recovered in a mean `4.07` frames, but the
+  recovery-window gain was `−0.620387 m²`
+  (`[−0.642015,−0.597787]`). The three-frame recovery latch traded switching
+  stability for measurable post-event loss.
+- At full target dropout, fixed-fusion event coverage was zero and conditional
+  loss was undefined. The combined gate restored full coverage with
+  conditional loss `0.180453 m²` for camera dropout and `2.005130 m²` for
+  LiDAR dropout. No common-support policy gain is defined at this endpoint.
+
+Two complete fits and two complete evaluations on the Apple M3 Pro matched on
+all 16 indexed scientific members. Evaluation wall times were `592.01 s` and
+`559.82 s`; peak RSS was `169,869,312` and `168,116,224` bytes.
+
+The strict release retains all 11,515 aggregate rows and exact commitments for
+433,700 omitted sequence loss/contrast/event rows. Its
+[claim-evidence ledger](../reports/releases/m4-health-v0.1.0-claim-evidence.md)
+maps each number to an exact aggregate selector.
+
+M4 remains a known-ID procedural estimator-output benchmark. It does not
+evaluate detector AP, raw-sensor effects, natural fault rates, nuScenes
+persistence, planning, collisions, or a production fallback.

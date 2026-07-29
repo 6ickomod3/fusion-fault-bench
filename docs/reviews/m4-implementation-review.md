@@ -2,6 +2,12 @@
 
 Status: **PASS for clean execution; results not yet reviewed**.
 
+Post-release note (2026-07-29): numerical evidence was subsequently evaluated
+in the separate
+[`m4-health-v0.1.0` adversarial results review](m4-results-review.md). The
+historical scope statement below is retained to keep implementation approval
+separate from results approval.
+
 This review covers the implementation of the frozen
 [`m4-health-v1.json`](../../examples/health/m4-health-v1.json) intent and
 [`m4-health-plan.md`](../m4-health-plan.md). It does not approve a numerical

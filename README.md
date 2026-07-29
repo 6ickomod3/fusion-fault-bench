@@ -84,6 +84,8 @@ uv run python tools/m2_release.py validate \
 uv run python tools/m3_release.py validate-release \
   reports/releases/m3-procedural-v0.1.0 \
   --official-identity examples/release-identities/m3-procedural-v0.1.0.json
+uv run python tools/m4_release.py validate-release \
+  reports/releases/m4-health-v0.1.0
 ```
 
 The current tools require no GPU or model checkpoint. M1 and public release
@@ -160,6 +162,37 @@ and [independent results review](docs/reviews/m3-results-review.md).
 
 ![M3 signed fusion delta curves](reports/releases/m3-procedural-v0.1.0/figures/fusion-delta-curves.svg)
 
+**Released: M4 observable health-aware fallback and deterministic repeat on
+the same named CPU.**
+
+M4 freezes one causal rule using pre-update self/cross NIS plus direct
+availability and timestamp telemetry, then evaluates 47 transient-event and
+control conditions. The result is intentionally not a universal fallback win.
+At high severity, event-window policy gain was `+5.459 m²` for LiDAR
+`+3 m` output bias and `+2.947 m²` for LiDAR `+0.6 s` timestamp offset.
+But under `3×` underreported LiDAR noise, detection and attribution were both
+100% while signed policy gain was **`−0.579 m²`**
+([`−0.608`, `−0.553`]). Detecting inconsistency and choosing the better
+estimator are different problems. Even the beneficial LiDAR `+3 m` event paid
+a post-event latch cost: recovery-window gain was `−0.620 m²`
+([`−0.642`, `−0.598`]).
+
+At full camera or LiDAR dropout, fixed fusion had zero event coverage and
+undefined conditional loss; the gate restored 100% coverage without
+zero-imputing missing output. The held-out edge-clean control exposed `0.17`
+false-alert starts per sequence and a small but nonzero loss regression.
+
+Two fits and two complete evaluations matched on all 16 indexed scientific
+members. The exact 47-condition evaluation stayed below 170 MB peak RSS on an
+Apple M3 Pro. See the
+[M4 release overview](reports/releases/m4-health-v0.1.0.md),
+[claim-evidence ledger](reports/releases/m4-health-v0.1.0-claim-evidence.md),
+[independent results review](docs/reviews/m4-results-review.md),
+[technical walkthrough](docs/m4-technical-walkthrough.md), and
+[strict machine-readable evidence](reports/releases/m4-health-v0.1.0/).
+
+![M4 observable health policy outcomes](docs/figures/m4-health-policy-outcomes.svg)
+
 | Component | Status |
 |---|---|
 | Versioned manifest and result contracts | Validated |
@@ -167,8 +200,8 @@ and [independent results review](docs/reviews/m3-results-review.md).
 | Analytic fusion/fault vertical slice | Released as M1 |
 | SE(3) and local nuScenes-mini grounding | Released as M2 validation evidence |
 | Temporal procedural benchmark | Released as M3 |
-| Health-aware fallback | M4 pre-registered; implementation next |
-| Released fault-performance results | M1 analytic and M3 procedural estimator-output stress tests |
+| Observable health-aware fallback | Released as M4 |
+| Released fault-performance results | M1, M3, and M4 procedural estimator-output stress tests |
 
 Results enter this README only after they trace to a released manifest,
 software revision, aggregate record, figure, named CPU run, and reproduction
@@ -192,6 +225,9 @@ contains deterministic validation gates and attestations, not an estimand.
 - [M3 temporal procedural release](reports/releases/m3-procedural-v0.1.0/README.md)
 - [M4 observable health-aware fallback pre-registration](docs/m4-health-plan.md)
 - [M4 adversarial plan review](docs/reviews/m4-plan-review.md)
+- [M4 release overview](reports/releases/m4-health-v0.1.0.md)
+- [M4 adversarial results review](docs/reviews/m4-results-review.md)
+- [M4 technical walkthrough](docs/m4-technical-walkthrough.md)
 
 ## Explicit non-goals
 

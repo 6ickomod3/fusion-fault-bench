@@ -404,9 +404,19 @@ Release outcome:
 
 ### M4: Health-aware fallback
 
-Status: **pre-registered; implementation next**. See the
-[M4 observable health-aware fallback plan](m4-health-plan.md) and
-[adversarial plan review](reviews/m4-plan-review.md).
+Status: **released as
+[`m4-health-v0.1.0`](../reports/releases/m4-health-v0.1.0.md)**. See the frozen
+[M4 observable health-aware fallback plan](m4-health-plan.md),
+[adversarial plan review](reviews/m4-plan-review.md), and
+[independent results review](reviews/m4-results-review.md).
+
+Outcome: the frozen observable rule reduced event-window matched-center loss
+under several severe bias and timestamp faults, but it was not uniformly
+beneficial. Perfect attribution under `3×` underreported LiDAR noise still
+selected a worse estimator, the recovery latch created post-event cost, and
+edge-clean/common-mode controls exposed false-alert and identifiability
+limits. Full-dropout endpoints recovered coverage but did not create an
+unsupported common-support loss comparison.
 
 Deliver:
 
