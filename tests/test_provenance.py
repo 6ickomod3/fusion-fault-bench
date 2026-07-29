@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.metadata
+import platform
 import subprocess
 from pathlib import Path
 
@@ -146,6 +147,53 @@ def test_runtime_environment_has_no_hostname_and_positive_resources() -> None:
     assert environment.logical_cpu_count > 0
     assert environment.memory_bytes > 0
     assert environment.cpu_model
+    assert environment.cpu_model.casefold() not in {"arm", "arm64", "x86_64", "unknown-cpu"}
+
+
+def test_darwin_cpu_model_uses_specific_system_profiler_chip(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(
+        command: tuple[str, ...],
+        **_kwargs: object,
+    ) -> subprocess.CompletedProcess[str]:
+        if command[0] == "sysctl":
+            return subprocess.CompletedProcess(command, 1, "", "not permitted")
+        assert command == (
+            "/usr/sbin/system_profiler",
+            "SPHardwareDataType",
+            "-detailLevel",
+            "mini",
+        )
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            "Hardware:\n\n    Hardware Overview:\n\n      Chip: Apple M3 Pro\n",
+            "",
+        )
+
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    assert collect_runtime_environment().cpu_model == "Apple M3 Pro"
+
+
+def test_cpu_model_discovery_fails_closed_on_generic_architecture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(
+        command: tuple[str, ...],
+        **_kwargs: object,
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(command, 1, "", "unavailable")
+
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(platform, "processor", lambda: "arm")
+    monkeypatch.setattr(platform, "machine", lambda: "riscv64")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    with pytest.raises(ProvenanceError, match="specific CPU model"):
+        collect_runtime_environment()
 
 
 def _real_snapshot() -> CleanSourceSnapshot:

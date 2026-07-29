@@ -38,6 +38,20 @@ class CleanSourceSnapshot:
 
 _PROJECT_DISTRIBUTION = "fusion-fault-bench"
 _SAFE_PATH_SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
+_GENERIC_CPU_MODELS = frozenset(
+    {
+        "aarch64",
+        "amd64",
+        "arm",
+        "arm64",
+        "i386",
+        "i686",
+        "unknown",
+        "unknown-cpu",
+        "x86",
+        "x86_64",
+    }
+)
 
 
 def _git_output(source: Path, *arguments: str) -> str:
@@ -345,9 +359,49 @@ def _sysctl_value(name: str) -> str | None:
     return value if result.returncode == 0 and value else None
 
 
+def _specific_cpu_model(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized or normalized.casefold() in _GENERIC_CPU_MODELS:
+        return None
+    return normalized
+
+
+def _darwin_system_profiler_cpu_model() -> str | None:
+    """Read only a non-unique chip or processor label from macOS hardware output."""
+
+    try:
+        result = subprocess.run(
+            (
+                "/usr/sbin/system_profiler",
+                "SPHardwareDataType",
+                "-detailLevel",
+                "mini",
+            ),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10.0,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    for line in result.stdout.splitlines():
+        label, separator, raw_value = line.strip().partition(":")
+        if separator and label.casefold() in {"chip", "processor name"}:
+            value = _specific_cpu_model(raw_value)
+            if value is not None:
+                return value
+    return None
+
+
 def _cpu_model() -> str:
     if platform.system() == "Darwin":
-        value = _sysctl_value("machdep.cpu.brand_string")
+        value = _specific_cpu_model(_sysctl_value("machdep.cpu.brand_string"))
+        if value is None:
+            value = _darwin_system_profiler_cpu_model()
         if value is not None:
             return value
     if platform.system() == "Linux":
@@ -355,10 +409,13 @@ def _cpu_model() -> str:
         if cpuinfo.is_file():
             for line in cpuinfo.read_text(encoding="utf-8").splitlines():
                 if line.lower().startswith("model name") and ":" in line:
-                    value = line.split(":", maxsplit=1)[1].strip()
+                    value = _specific_cpu_model(line.split(":", maxsplit=1)[1])
                     if value:
                         return value
-    return platform.processor() or platform.machine() or "unknown-cpu"
+    value = _specific_cpu_model(platform.processor())
+    if value is None:
+        raise ProvenanceError("a specific CPU model is unavailable")
+    return value
 
 
 def _memory_bytes() -> int:
