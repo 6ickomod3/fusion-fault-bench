@@ -2,8 +2,9 @@
 
 Status: **no released quantitative results**.
 
-The repository is in foundation and analytic-validation development. Planned
-findings, expected crossovers, or resume placeholders are not evidence.
+The M1 analytic implementation is complete, but no clean-checkout artifact has
+yet been promoted as release evidence. Planned findings, development-run
+outputs, or resume placeholders are not evidence.
 
 Released results will be stored under `reports/releases/<version>/` with:
 

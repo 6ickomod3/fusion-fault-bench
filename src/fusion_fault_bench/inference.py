@@ -3,12 +3,33 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
 
 type FloatArray = npt.NDArray[np.float64]
 type IntArray = npt.NDArray[np.int64]
+type BootstrapCrossoverStatus = Literal["observed", "not-observed", "undetermined"]
+
+
+def bootstrap_crossover_status(
+    *,
+    point_crossed: bool,
+    crossing_count: int,
+    bootstrap_replicates: int,
+) -> BootstrapCrossoverStatus:
+    """Classify exact bootstrap counts without floating-point threshold drift."""
+
+    if bootstrap_replicates <= 0 or bootstrap_replicates % 40 != 0:
+        raise ValueError("bootstrap_replicates must be a positive multiple of 40")
+    if crossing_count < 0 or crossing_count > bootstrap_replicates:
+        raise ValueError("crossing_count must lie within the replicate count")
+    if point_crossed and crossing_count > 39 * bootstrap_replicates // 40:
+        return "observed"
+    if not point_crossed and crossing_count < bootstrap_replicates // 40:
+        return "not-observed"
+    return "undetermined"
 
 
 def paired_bootstrap_indices(

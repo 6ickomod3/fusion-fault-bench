@@ -12,7 +12,13 @@ from typing import Any
 from pydantic import ValidationError
 
 from fusion_fault_bench import __version__
+from fusion_fault_bench.artifacts import load_artifact
 from fusion_fault_bench.canonical import sha256_digest
+from fusion_fault_bench.contracts.artifact_v1alpha1 import (
+    AnalyticValidationV1Alpha1,
+    PayloadIndexV1Alpha1,
+    SuccessMarkerV1Alpha1,
+)
 from fusion_fault_bench.contracts.io import load_manifest
 from fusion_fault_bench.contracts.manifest_v1alpha1 import manifest_json_schema
 from fusion_fault_bench.contracts.result_v1alpha1 import (
@@ -21,14 +27,18 @@ from fusion_fault_bench.contracts.result_v1alpha1 import (
     RunRecordV1Alpha1,
     metric_record_json_schema,
 )
+from fusion_fault_bench.runner import run_analytic_experiment
 
 SchemaBuilder = Callable[[], dict[str, Any]]
 SCHEMA_BUILDERS: dict[str, SchemaBuilder] = {
     "aggregate": lambda: AggregateMetricRecordV1Alpha1.model_json_schema(by_alias=True),
+    "analytic-validation": lambda: AnalyticValidationV1Alpha1.model_json_schema(by_alias=True),
     "crossover": lambda: CrossoverRecordV1Alpha1.model_json_schema(by_alias=True),
     "manifest": manifest_json_schema,
     "metric": metric_record_json_schema,
+    "payload-index": lambda: PayloadIndexV1Alpha1.model_json_schema(by_alias=True),
     "run": lambda: RunRecordV1Alpha1.model_json_schema(by_alias=True),
+    "success": lambda: SuccessMarkerV1Alpha1.model_json_schema(by_alias=True),
 }
 
 
@@ -52,6 +62,18 @@ def _build_parser() -> argparse.ArgumentParser:
     manifest_validate.add_argument("--json", action="store_true", dest="as_json")
     manifest_digest = manifest_commands.add_parser("digest", help="Print a manifest digest.")
     manifest_digest.add_argument("path", type=Path)
+
+    run = commands.add_parser("run", help="Run a clean-source analytic experiment.")
+    run.add_argument("path", type=Path, metavar="MANIFEST")
+    run.add_argument("--output-dir", type=Path, required=True, metavar="DEST")
+
+    bundle = commands.add_parser("bundle", help="Inspect a scientific result bundle.")
+    bundle_commands = bundle.add_subparsers(dest="bundle_command", required=True)
+    bundle_validate = bundle_commands.add_parser(
+        "validate",
+        help="Strictly validate a complete result bundle.",
+    )
+    bundle_validate.add_argument("path", type=Path, metavar="DEST")
     return parser
 
 
@@ -62,6 +84,24 @@ def _schema_payload(record_type: str) -> dict[str, Any]:
 def _run(args: argparse.Namespace) -> int:
     if args.command == "schema":
         print(json.dumps(_schema_payload(args.record_type), indent=2, sort_keys=True))
+        return 0
+
+    if args.command == "run":
+        artifact = run_analytic_experiment(args.path, output_dir=args.output_dir)
+        print(
+            f"wrote {artifact.path} "
+            f"artifact_sha256={artifact.artifact_sha256} "
+            f"run_sha256={artifact.run_sha256}"
+        )
+        return 0
+
+    if args.command == "bundle":
+        artifact = load_artifact(args.path)
+        print(
+            f"valid {artifact.payload_index.artifact_contract} "
+            f"artifact_sha256={artifact.artifact_sha256} "
+            f"run_sha256={artifact.run_sha256}"
+        )
         return 0
 
     manifest = load_manifest(args.path)

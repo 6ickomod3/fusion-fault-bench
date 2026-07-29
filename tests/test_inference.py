@@ -7,12 +7,57 @@ from fusion_fault_bench.inference import (
     bootstrap_conditional_loss,
     bootstrap_count_ratio,
     bootstrap_crossover_roots,
+    bootstrap_crossover_status,
     bootstrap_mean,
     first_zero_crossover,
     paired_bootstrap_indices,
     pava_non_decreasing,
     percentile_interval,
 )
+
+
+@pytest.mark.parametrize(
+    ("point_crossed", "crossing_count", "expected"),
+    [
+        (False, 49, "not-observed"),
+        (False, 50, "undetermined"),
+        (False, 1950, "undetermined"),
+        (False, 1951, "undetermined"),
+        (True, 49, "undetermined"),
+        (True, 50, "undetermined"),
+        (True, 1950, "undetermined"),
+        (True, 1951, "observed"),
+    ],
+)
+def test_bootstrap_crossover_status_uses_exact_count_boundaries(
+    point_crossed: bool,
+    crossing_count: int,
+    expected: str,
+) -> None:
+    assert (
+        bootstrap_crossover_status(
+            point_crossed=point_crossed,
+            crossing_count=crossing_count,
+            bootstrap_replicates=2000,
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("crossing_count", "replicates"),
+    [(0, 0), (0, 41), (-1, 2000), (2001, 2000)],
+)
+def test_bootstrap_crossover_status_rejects_invalid_counts(
+    crossing_count: int,
+    replicates: int,
+) -> None:
+    with pytest.raises(ValueError):
+        bootstrap_crossover_status(
+            point_crossed=False,
+            crossing_count=crossing_count,
+            bootstrap_replicates=replicates,
+        )
 
 
 def test_pcg64dxsm_bootstrap_index_golden() -> None:

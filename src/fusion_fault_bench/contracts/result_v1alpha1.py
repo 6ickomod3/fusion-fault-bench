@@ -23,6 +23,7 @@ from fusion_fault_bench.contracts.manifest_v1alpha1 import (
     SeverityDirection,
     SeverityUnit,
 )
+from fusion_fault_bench.inference import bootstrap_crossover_status
 
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 GitRevision = Annotated[str, Field(pattern=r"^[0-9a-f]{40}$")]
@@ -383,13 +384,20 @@ class CrossoverRecordV1Alpha1(ContractModel):
         if self.tested_maximum <= identity_magnitude:
             raise ValueError("tested_maximum must exceed the identity magnitude")
 
-        alpha = 1.0 - self.confidence_level
-        lower_support = alpha / 2.0
-        upper_support = 1.0 - alpha / 2.0
+        crossing_count = round(self.bootstrap_crossing_fraction * self.bootstrap_replicates)
+        if self.bootstrap_crossing_fraction != crossing_count / self.bootstrap_replicates:
+            raise ValueError(
+                "bootstrap crossing fraction must be representable by the replicate count"
+            )
+        expected_status = bootstrap_crossover_status(
+            point_crossed=self.point_curve_crossed,
+            crossing_count=crossing_count,
+            bootstrap_replicates=self.bootstrap_replicates,
+        )
         if self.status == "observed":
             if not self.point_curve_crossed:
                 raise ValueError("observed crossover requires a point-curve crossing")
-            if self.bootstrap_crossing_fraction <= upper_support:
+            if expected_status != "observed":
                 raise ValueError("observed crossover requires sufficient bootstrap support")
             if (
                 self.point_estimate is None
@@ -410,7 +418,7 @@ class CrossoverRecordV1Alpha1(ContractModel):
         elif self.status == "not-observed":
             if self.point_curve_crossed:
                 raise ValueError("not-observed crossover requires a censored point curve")
-            if self.bootstrap_crossing_fraction >= lower_support:
+            if expected_status != "not-observed":
                 raise ValueError("not-observed crossover requires negligible bootstrap support")
             if self.point_estimate is not None:
                 raise ValueError("not-observed crossover cannot contain an estimate")
@@ -424,6 +432,10 @@ class CrossoverRecordV1Alpha1(ContractModel):
             if self.censoring != "right-above-tested-maximum":
                 raise ValueError("not-observed crossover must be right-censored")
         else:
+            if expected_status != "undetermined":
+                raise ValueError(
+                    "undetermined crossover disagrees with point and bootstrap support"
+                )
             if self.interval_lower is not None or self.interval_upper is not None:
                 raise ValueError("undetermined crossover cannot report a two-sided interval")
             if self.censoring != "mixed-bootstrap":

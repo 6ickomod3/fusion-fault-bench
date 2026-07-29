@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "description": "Final completion record committing to scientific and run provenance bytes.",
+  "properties": {
+    "artifact_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Artifact Sha256",
+      "type": "string"
+    },
+    "run_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Run Sha256",
+      "type": "string"
+    },
+    "schema": {
+      "const": "ffb.success/v1alpha1",
+      "title": "Schema",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "artifact_sha256",
+    "run_sha256"
+  ],
+  "title": "SuccessMarkerV1Alpha1",
+  "type": "object"
+}

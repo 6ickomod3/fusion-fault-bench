@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "IndexedPayloadPath": {
+      "enum": [
+        "manifest.json",
+        "sequence-metrics.ndjson",
+        "aggregate-metrics.ndjson",
+        "crossovers.ndjson",
+        "analytic-validation.json"
+      ],
+      "type": "string"
+    },
+    "PayloadFileEntryV1Alpha1": {
+      "additionalProperties": false,
+      "description": "One exact byte-level member committed by the payload index.",
+      "properties": {
+        "byte_length": {
+          "maximum": 536870912,
+          "minimum": 1,
+          "title": "Byte Length",
+          "type": "integer"
+        },
+        "path": {
+          "$ref": "#/$defs/IndexedPayloadPath"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "byte_length",
+        "sha256"
+      ],
+      "title": "PayloadFileEntryV1Alpha1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Deterministic envelope over the five scientific payload members.",
+  "properties": {
+    "artifact_contract": {
+      "const": "ffb.scientific-payload/v1",
+      "title": "Artifact Contract",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/PayloadFileEntryV1Alpha1"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "title": "Files",
+      "type": "array"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "run_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema": {
+      "const": "ffb.payload-index/v1alpha1",
+      "title": "Schema",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "artifact_contract",
+    "run_id",
+    "manifest_sha256",
+    "files"
+  ],
+  "title": "PayloadIndexV1Alpha1",
+  "type": "object"
+}

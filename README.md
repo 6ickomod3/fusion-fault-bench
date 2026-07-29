@@ -67,20 +67,31 @@ uv run ffb manifest validate \
 uv run pytest
 ```
 
-The current M0 tools require no GPU, model checkpoint, or dataset. The planned
-analytic and procedural paths retain that property. nuScenes-mini is
-user-provided and optional for the planned geometry and latent-scene grounding.
+The M1 analytic path can also produce and strictly reload a complete scientific
+artifact from a clean checkout:
+
+```bash
+uv run ffb run \
+  examples/manifests/analytic-bias-v1alpha1.json \
+  --output-dir reports/generated/analytic-camera-x-bias-a603d090f77a
+uv run ffb bundle validate \
+  reports/generated/analytic-camera-x-bias-a603d090f77a
+```
+
+The current tools require no GPU, model checkpoint, or dataset. nuScenes-mini
+is user-provided and optional for the planned geometry and latent-scene
+grounding.
 
 ## Evidence status
 
-**Current release scope: M0 contract and reproducibility foundation. There are
-no scientific findings yet.**
+**Current release scope: M0 foundation plus the preregistered M1 analytic
+implementation. There are no released scientific findings yet.**
 
 | Component | Status |
 |---|---|
 | Versioned manifest and result contracts | Validated |
 | Canonical manifest fingerprinting | Validated |
-| Analytic fusion/fault vertical slice | Planned |
+| Analytic fusion/fault vertical slice | Implemented; release evidence pending |
 | SE(3) and nuScenes projection grounding | Planned |
 | Temporal procedural benchmark | Planned |
 | Health-aware fallback | Planned |

@@ -1,0 +1,308 @@
+{
+  "$defs": {
+    "AnalyticCrossoverReferenceV1Alpha1": {
+      "additionalProperties": false,
+      "description": "Population crossover reference, separate from finite-sample inference.",
+      "properties": {
+        "continuous_point_estimate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Continuous Point Estimate"
+        },
+        "continuous_status": {
+          "enum": [
+            "finite",
+            "no-finite-root"
+          ],
+          "title": "Continuous Status",
+          "type": "string"
+        },
+        "direction": {
+          "$ref": "#/$defs/CrossoverDirection"
+        },
+        "grid_censoring": {
+          "enum": [
+            "none",
+            "right-above-tested-maximum"
+          ],
+          "title": "Grid Censoring",
+          "type": "string"
+        },
+        "grid_point_estimate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Grid Point Estimate"
+        },
+        "grid_status": {
+          "enum": [
+            "crossed",
+            "not-crossed"
+          ],
+          "title": "Grid Status",
+          "type": "string"
+        },
+        "severity_unit": {
+          "$ref": "#/$defs/AnalyticSeverityUnit"
+        },
+        "tested_maximum": {
+          "title": "Tested Maximum",
+          "type": "number"
+        }
+      },
+      "required": [
+        "direction",
+        "severity_unit",
+        "tested_maximum",
+        "grid_status",
+        "grid_point_estimate",
+        "grid_censoring",
+        "continuous_status",
+        "continuous_point_estimate"
+      ],
+      "title": "AnalyticCrossoverReferenceV1Alpha1",
+      "type": "object"
+    },
+    "AnalyticMethodId": {
+      "enum": [
+        "camera-only",
+        "lidar-only",
+        "fixed-fusion"
+      ],
+      "type": "string"
+    },
+    "AnalyticPopulationPointV1Alpha1": {
+      "additionalProperties": false,
+      "description": "One closed-form and empirical check for a method at one condition.",
+      "properties": {
+        "absolute_standardized_error": {
+          "minimum": 0.0,
+          "title": "Absolute Standardized Error",
+          "type": "number"
+        },
+        "analytic_mse_standard_error_m2": {
+          "exclusiveMinimum": 0,
+          "title": "Analytic Mse Standard Error M2",
+          "type": "number"
+        },
+        "empirical_mse_m2": {
+          "minimum": 0.0,
+          "title": "Empirical Mse M2",
+          "type": "number"
+        },
+        "expected_actual_variance_xy_m2": {
+          "$ref": "#/$defs/FloatPair"
+        },
+        "expected_mean_xy_m": {
+          "$ref": "#/$defs/FloatPair"
+        },
+        "expected_mse_m2": {
+          "minimum": 0.0,
+          "title": "Expected Mse M2",
+          "type": "number"
+        },
+        "expected_reported_variance_xy_m2": {
+          "$ref": "#/$defs/FloatPair"
+        },
+        "loss_unit": {
+          "const": "m^2",
+          "title": "Loss Unit",
+          "type": "string"
+        },
+        "mean_unit": {
+          "const": "m",
+          "title": "Mean Unit",
+          "type": "string"
+        },
+        "method_id": {
+          "$ref": "#/$defs/AnalyticMethodId"
+        },
+        "monte_carlo_passed": {
+          "title": "Monte Carlo Passed",
+          "type": "boolean"
+        },
+        "severity": {
+          "$ref": "#/$defs/SeverityCoordinate"
+        },
+        "variance_unit": {
+          "const": "m^2",
+          "title": "Variance Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "severity",
+        "method_id",
+        "mean_unit",
+        "variance_unit",
+        "loss_unit",
+        "expected_mean_xy_m",
+        "expected_actual_variance_xy_m2",
+        "expected_reported_variance_xy_m2",
+        "expected_mse_m2",
+        "empirical_mse_m2",
+        "analytic_mse_standard_error_m2",
+        "absolute_standardized_error",
+        "monte_carlo_passed"
+      ],
+      "title": "AnalyticPopulationPointV1Alpha1",
+      "type": "object"
+    },
+    "AnalyticSeverityUnit": {
+      "enum": [
+        "m",
+        "std-scale"
+      ],
+      "type": "string"
+    },
+    "CrossoverDirection": {
+      "enum": [
+        "negative",
+        "positive",
+        "increase"
+      ],
+      "type": "string"
+    },
+    "FloatPair": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "type": "array"
+    },
+    "SeverityCoordinate": {
+      "additionalProperties": false,
+      "description": "Machine-readable condition coordinate from a manifest fault grid.",
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/SeverityDirection"
+        },
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "magnitude": {
+          "title": "Magnitude",
+          "type": "number"
+        },
+        "unit": {
+          "$ref": "#/$defs/SeverityUnit"
+        }
+      },
+      "required": [
+        "index",
+        "magnitude",
+        "direction",
+        "unit"
+      ],
+      "title": "SeverityCoordinate",
+      "type": "object"
+    },
+    "SeverityDirection": {
+      "enum": [
+        "identity",
+        "negative",
+        "positive",
+        "increase"
+      ],
+      "type": "string"
+    },
+    "SeverityUnit": {
+      "enum": [
+        "m",
+        "rad",
+        "s",
+        "probability",
+        "std-scale"
+      ],
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Independent diagonal-Gaussian validation evidence for an M1 run.",
+  "properties": {
+    "all_monte_carlo_checks_passed": {
+      "title": "All Monte Carlo Checks Passed",
+      "type": "boolean"
+    },
+    "crossover_references": {
+      "items": {
+        "$ref": "#/$defs/AnalyticCrossoverReferenceV1Alpha1"
+      },
+      "maxItems": 2,
+      "minItems": 1,
+      "title": "Crossover References",
+      "type": "array"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "monte_carlo_standard_error_multiplier": {
+      "maximum": 6.0,
+      "minimum": 6.0,
+      "title": "Monte Carlo Standard Error Multiplier",
+      "type": "number"
+    },
+    "population_points": {
+      "items": {
+        "$ref": "#/$defs/AnalyticPopulationPointV1Alpha1"
+      },
+      "minItems": 3,
+      "title": "Population Points",
+      "type": "array"
+    },
+    "reference_model": {
+      "const": "independent-diagonal-gaussian-closed-form-v1",
+      "title": "Reference Model",
+      "type": "string"
+    },
+    "run_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema": {
+      "const": "ffb.analytic-validation/v1alpha1",
+      "title": "Schema",
+      "type": "string"
+    },
+    "variance_representation": {
+      "const": "diagonal-xy-m2",
+      "title": "Variance Representation",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "run_id",
+    "manifest_sha256",
+    "reference_model",
+    "variance_representation",
+    "monte_carlo_standard_error_multiplier",
+    "population_points",
+    "crossover_references",
+    "all_monte_carlo_checks_passed"
+  ],
+  "title": "AnalyticValidationV1Alpha1",
+  "type": "object"
+}

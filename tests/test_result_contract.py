@@ -376,6 +376,43 @@ def test_undetermined_crossover_encodes_point_curve_without_an_interval() -> Non
 @pytest.mark.parametrize(
     ("point_crossed", "point_estimate", "crossing_fraction"),
     [
+        (False, None, 50 / 2000),
+        (True, 1.1, 1950 / 2000),
+    ],
+)
+def test_exact_bootstrap_support_boundaries_are_undetermined(
+    point_crossed: bool,
+    point_estimate: float | None,
+    crossing_fraction: float,
+) -> None:
+    base = _crossover()
+    base.update(
+        {
+            "status": "undetermined",
+            "point_curve_crossed": point_crossed,
+            "point_estimate": point_estimate,
+            "interval_lower": None,
+            "interval_upper": None,
+            "censoring": "mixed-bootstrap",
+            "bootstrap_crossing_fraction": crossing_fraction,
+            "bootstrap_replicates": 2000,
+        }
+    )
+
+    assert CrossoverRecordV1Alpha1(**base).status == "undetermined"
+
+
+def test_crossover_fraction_must_be_representable_by_replicate_count() -> None:
+    base = _crossover()
+    base["bootstrap_crossing_fraction"] = 0.9901
+
+    with pytest.raises(ValidationError, match="representable"):
+        CrossoverRecordV1Alpha1(**base)
+
+
+@pytest.mark.parametrize(
+    ("point_crossed", "point_estimate", "crossing_fraction"),
+    [
         (True, 1.1, 0.0),
         (False, None, 1.0),
     ],

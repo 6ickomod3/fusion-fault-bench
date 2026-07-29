@@ -40,6 +40,7 @@ from fusion_fault_bench.inference import (
     bootstrap_conditional_loss,
     bootstrap_count_ratio,
     bootstrap_crossover_roots,
+    bootstrap_crossover_status,
     bootstrap_mean,
     first_zero_crossover,
     paired_bootstrap_indices,
@@ -1028,15 +1029,14 @@ def _validate_crossover_rows(
             zero_tolerance=manifest.evaluation.crossover.zero_tolerance_m2,
         )
         finite_roots = [root for root in roots if root is not None]
-        crossing_fraction = len(finite_roots) / bootstrap.replicates
-        alpha = 1.0 - bootstrap.confidence_level
+        crossing_count = len(finite_roots)
+        crossing_fraction = crossing_count / bootstrap.replicates
         point_crossed = point_root is not None
-        if point_crossed and crossing_fraction > 1.0 - alpha / 2.0:
-            expected_status = "observed"
-        elif not point_crossed and crossing_fraction < alpha / 2.0:
-            expected_status = "not-observed"
-        else:
-            expected_status = "undetermined"
+        expected_status = bootstrap_crossover_status(
+            point_crossed=point_crossed,
+            crossing_count=crossing_count,
+            bootstrap_replicates=bootstrap.replicates,
+        )
 
         if record.point_curve_crossed != point_crossed:
             errors.append(f"crossover point-curve status disagrees with sequence rows: {key!r}")
