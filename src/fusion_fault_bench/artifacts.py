@@ -1256,6 +1256,36 @@ def _atomic_rename_no_replace_at(
     raise OSError(error_number, os.strerror(error_number), destination_name)
 
 
+def publish_directory_no_replace(source: Path, destination: Path) -> None:
+    """Atomically rename one sibling directory without replacing a destination."""
+
+    source_path = _absolute_lexical(source)
+    destination_path = _absolute_lexical(destination)
+    if source_path.parent != destination_path.parent:
+        raise ArtifactValidationError(
+            "atomic directory publication requires source and destination siblings"
+        )
+    parent = destination_path.parent
+    parent_fd = _open_or_create_real_directory(parent)
+    try:
+        _assert_directory_fd_matches_path(parent_fd, parent, label="publication parent")
+        source_metadata = os.stat(source_path.name, dir_fd=parent_fd, follow_symlinks=False)
+        if not stat.S_ISDIR(source_metadata.st_mode):
+            raise ArtifactValidationError("publication source must be a real directory")
+        if _entry_exists_at(parent_fd, destination_path.name):
+            raise FileExistsError(f"publication destination already exists: {destination_path}")
+        _atomic_rename_no_replace_at(
+            parent_fd,
+            source_path.name,
+            parent_fd,
+            destination_path.name,
+        )
+        os.fsync(parent_fd)
+        _assert_directory_fd_matches_path(parent_fd, parent, label="publication parent")
+    finally:
+        os.close(parent_fd)
+
+
 def write_artifact(
     request: ArtifactWriteRequest,
     destination: Path,

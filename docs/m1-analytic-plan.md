@@ -1,7 +1,9 @@
 # M1 Analytic Vertical Slice
 
-Status: **pre-registered; the first execution was withheld for a provenance
-defect and no M1 evidence has been released**.
+Status: **released as
+[`m1-analytic-v0.1.0`](../reports/releases/m1-analytic-v0.1.0/README.md)**.
+The preregistration below remains the frozen pre-execution contract; this
+status note records its later evidence outcome.
 
 Adversarial-review amendment, recorded before the first release execution:
 `_SUCCESS` now commits to the exact volatile `run.json` bytes as well as the
@@ -35,6 +37,20 @@ Post-execution, pre-release provenance amendment:
   embedded in scientific records. Replacement payload digests are therefore
   expected to change even when every numerical value is identical; manifest
   digests must not change.
+
+Release closure:
+
+- Three primary and three repeat replacement bundles from clean source
+  `524c8f70ece3eca2e61796165b23ffe51baadfbc` passed strict validation on a
+  named Apple M3 Pro CPU.
+- All 18 registered stable-file comparisons were byte-identical within the
+  replacement revision.
+- Fifteen normalized scientific-file views containing 23,148 records matched
+  the excluded execution exactly after removing only `run_id`.
+- Independent analytic-oracle and adversarial results reviews passed.
+- The public release preserves the correctly reported-noise control as
+  finite-sample `undetermined`; no unfavorable status, direction, raw point,
+  or endpoint was removed.
 
 ## Purpose
 

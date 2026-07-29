@@ -76,6 +76,9 @@ uv run ffb run \
   --output-dir reports/generated/analytic-camera-x-bias-a603d090f77a
 uv run ffb bundle validate \
   reports/generated/analytic-camera-x-bias-a603d090f77a
+
+uv run python tools/m1_release.py validate \
+  reports/releases/m1-analytic-v0.1.0
 ```
 
 The current tools require no GPU, model checkpoint, or dataset. nuScenes-mini
@@ -84,18 +87,41 @@ grounding.
 
 ## Evidence status
 
-**Current release scope: M0 foundation plus the preregistered M1 analytic
-implementation. There are no released scientific findings yet.**
+**Released: M1 analytic estimator-output evidence on a named Apple M3 Pro CPU.**
+
+Across 200 paired sequences and 2,000 sequence-bootstrap replicates, fixed
+fusion crossed the healthy-LiDAR loss under signed camera \(x\)-bias and under
+camera-noise covariance underreporting. The correctly reported-noise control
+did not support a finite-sample crossover claim: its point curve crossed, but
+only 63.25% of bootstrap curves did, so the predeclared status is
+**undetermined**.
+
+| Controlled stress axis | Point-curve root (95% bootstrap interval) | Status | Population reference |
+|---|---:|---|---:|
+| Camera \(x\)-bias, negative | 3.213 m [1.310, 4.971] | Observed | 3.828 m grid / 3.869 m continuous |
+| Camera \(x\)-bias, positive | 2.964 m [1.129, 4.580] | Observed | 3.828 m grid / 3.869 m continuous |
+| Camera noise, correctly reported | 3.540 std-scale, interval undefined | Undetermined | No grid crossing through 4; no finite continuous root |
+| Camera noise, underreported | 1.292 std-scale [1.045, 1.583] | Observed | 1.463 grid / 1.466 continuous |
+
+Meters and standard-deviation scale are separate axes and are never combined.
+These are Gaussian estimator-output stress tests, not physical sensor
+tolerances or safety thresholds. See the
+[complete M1 release](reports/releases/m1-analytic-v0.1.0/README.md) and its
+[claim-evidence map](reports/releases/m1-analytic-v0.1.0/claim-evidence.md).
+
+![Signed camera x-bias results](reports/releases/m1-analytic-v0.1.0/figures/bias-fused-minus-healthy.svg)
+
+![Correctly reported versus underreported camera-noise results](reports/releases/m1-analytic-v0.1.0/figures/noise-reporting-fused-minus-healthy.svg)
 
 | Component | Status |
 |---|---|
 | Versioned manifest and result contracts | Validated |
 | Canonical manifest fingerprinting | Validated |
-| Analytic fusion/fault vertical slice | Implemented; release evidence pending |
+| Analytic fusion/fault vertical slice | Released as M1 |
 | SE(3) and nuScenes projection grounding | Planned |
 | Temporal procedural benchmark | Planned |
 | Health-aware fallback | Planned |
-| Released quantitative results | None |
+| Released quantitative results | M1 analytic Gaussian stress tests only |
 
 Results enter this README only after they trace to a released manifest,
 software revision, aggregate record, named CPU run, uncertainty interval, and

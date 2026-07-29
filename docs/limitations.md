@@ -7,11 +7,22 @@ does not render images, generate point clouds, run a learned detector, or model
 every raw-sensor artifact. The abstraction isolates fusion behavior but cannot
 establish detector robustness.
 
+The released M1 evidence is narrower still: a one-object, two-dimensional
+Gaussian analytic model with additive output bias and
+uncertainty-reporting stress. It does not yet exercise SE(3), projection,
+timestamps, dropout, procedural motion, nuScenes, or a health-aware gate.
+
 ## Conditional crossover
 
 A crossover depends on the chosen actual error model, reported covariance,
 field of view, region of interest, task loss, and fault persistence. It is not a
 universal threshold for a physical sensor.
+
+The M1 meter and standard-deviation-scale roots belong to different declared
+axes and cannot be combined or ranked as one severity. The correctly reported
+noise control has an `undetermined` finite-sample status; neither its point
+curve root nor its population no-root reference licenses a stronger
+finite-sample conclusion.
 
 ## Association
 

@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img">
+<title>Camera noise: correct covariance reporting versus underreporting</title>
+<desc>Identical axes; N=200 sequences; B=2,000 paired bootstrap replicates.</desc>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#172033}
+.grid{stroke:#dce2ea;stroke-width:1}
+.axis{stroke:#687386;stroke-width:1.4}
+.zero{stroke:#111827;stroke-width:1.8;stroke-dasharray:8 6}
+.error{stroke-width:1.6}
+.pava{fill:none;stroke-width:3.2;stroke-linejoin:round;stroke-linecap:round}
+.point{stroke:#fff;stroke-width:1.8}
+</style>
+<rect width="1200" height="700" fill="#ffffff"/>
+<text x="105" y="42" font-size="27" font-weight="700">Camera noise: correct covariance reporting versus underreporting</text>
+<text x="105" y="72" font-size="15" fill="#526078">Identical axes; N=200 sequences; B=2,000 paired bootstrap replicates.</text>
+<line class="grid" x1="105" y1="605.000" x2="1155" y2="605.000"/>
+<text x="91" y="610.000" font-size="13" text-anchor="end">-0.038</text>
+<line class="grid" x1="105" y1="507.000" x2="1155" y2="507.000"/>
+<text x="91" y="512.000" font-size="13" text-anchor="end">0.012</text>
+<line class="grid" x1="105" y1="409.000" x2="1155" y2="409.000"/>
+<text x="91" y="414.000" font-size="13" text-anchor="end">0.062</text>
+<line class="grid" x1="105" y1="311.000" x2="1155" y2="311.000"/>
+<text x="91" y="316.000" font-size="13" text-anchor="end">0.112</text>
+<line class="grid" x1="105" y1="213.000" x2="1155" y2="213.000"/>
+<text x="91" y="218.000" font-size="13" text-anchor="end">0.162</text>
+<line class="grid" x1="105" y1="115.000" x2="1155" y2="115.000"/>
+<text x="91" y="120.000" font-size="13" text-anchor="end">0.212</text>
+<line class="grid" x1="105.000" y1="115" x2="105.000" y2="605"/>
+<text x="105.000" y="632" font-size="13" text-anchor="middle">1</text>
+<line class="grid" x1="192.500" y1="115" x2="192.500" y2="605"/>
+<text x="192.500" y="632" font-size="13" text-anchor="middle">1.25</text>
+<line class="grid" x1="280.000" y1="115" x2="280.000" y2="605"/>
+<text x="280.000" y="632" font-size="13" text-anchor="middle">1.5</text>
+<line class="grid" x1="455.000" y1="115" x2="455.000" y2="605"/>
+<text x="455.000" y="632" font-size="13" text-anchor="middle">2</text>
+<line class="grid" x1="1155.000" y1="115" x2="1155.000" y2="605"/>
+<text x="1155.000" y="632" font-size="13" text-anchor="middle">4</text>
+<line id="zero-line" class="zero" x1="105" y1="530.635" x2="1155" y2="530.635"/>
+<line class="axis" x1="105" y1="115" x2="105" y2="605"/>
+<line class="axis" x1="105" y1="605" x2="1155" y2="605"/>
+<g id="series-correctly-reported" data-point-count="5">
+<polyline class="pava pava-curve" stroke="#2563eb" points="105.000,545.693 192.500,539.317 280.000,535.851 455.000,532.560 1155.000,530.060"/>
+<g class="raw-point" data-severity="1" data-estimate="-0.0076702020620388507">
+<title>Correctly reported covariance: severity=1, D_H=-0.0076702021, 95% interval=[-0.013726042, -0.001410371]</title>
+<line class="error" stroke="#2563eb" x1="105.000" y1="533.404" x2="105.000" y2="557.581"/>
+<line class="error" stroke="#2563eb" x1="99.000" y1="533.404" x2="111.000" y2="533.404"/>
+<line class="error" stroke="#2563eb" x1="99.000" y1="557.581" x2="111.000" y2="557.581"/>
+<circle class="point" fill="#2563eb" cx="105.000" cy="545.693" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="1.25" data-estimate="-0.0044226539329631888">
+<title>Correctly reported covariance: severity=1.25, D_H=-0.0044226539, 95% interval=[-0.0093525834, 0.00074709044]</title>
+<line class="error" stroke="#2563eb" x1="192.500" y1="529.169" x2="192.500" y2="548.995"/>
+<line class="error" stroke="#2563eb" x1="186.500" y1="529.169" x2="198.500" y2="529.169"/>
+<line class="error" stroke="#2563eb" x1="186.500" y1="548.995" x2="198.500" y2="548.995"/>
+<circle class="point" fill="#2563eb" cx="192.500" cy="539.317" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="1.5" data-estimate="-0.0026567137555863511">
+<title>Correctly reported covariance: severity=1.5, D_H=-0.0026567138, 95% interval=[-0.0068276254, 0.0017411995]</title>
+<line class="error" stroke="#2563eb" x1="280.000" y1="527.217" x2="280.000" y2="544.038"/>
+<line class="error" stroke="#2563eb" x1="274.000" y1="527.217" x2="286.000" y2="527.217"/>
+<line class="error" stroke="#2563eb" x1="274.000" y1="544.038" x2="286.000" y2="544.038"/>
+<circle class="point" fill="#2563eb" cx="280.000" cy="535.851" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="2" data-estimate="-0.00098036052018354468">
+<title>Correctly reported covariance: severity=2, D_H=-0.00098036052, 95% interval=[-0.0042085132, 0.0024269913]</title>
+<line class="error" stroke="#2563eb" x1="455.000" y1="525.871" x2="455.000" y2="538.897"/>
+<line class="error" stroke="#2563eb" x1="449.000" y1="525.871" x2="461.000" y2="525.871"/>
+<line class="error" stroke="#2563eb" x1="449.000" y1="538.897" x2="461.000" y2="538.897"/>
+<circle class="point" fill="#2563eb" cx="455.000" cy="532.560" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="4" data-estimate="0.00029313151532263843">
+<title>Correctly reported covariance: severity=4, D_H=0.00029313152, 95% interval=[-0.0013976621, 0.0020874274]</title>
+<line class="error" stroke="#2563eb" x1="1155.000" y1="526.537" x2="1155.000" y2="533.379"/>
+<line class="error" stroke="#2563eb" x1="1149.000" y1="526.537" x2="1161.000" y2="526.537"/>
+<line class="error" stroke="#2563eb" x1="1149.000" y1="533.379" x2="1161.000" y2="533.379"/>
+<circle class="point" fill="#2563eb" cx="1155.000" cy="530.060" r="5.5"/>
+</g>
+</g>
+<g id="series-underreported" data-point-count="5">
+<polyline class="pava pava-curve" stroke="#d1495b" points="105.000,545.693 192.500,533.140 280.000,518.103 455.000,480.579 1155.000,231.128"/>
+<g class="raw-point" data-severity="1" data-estimate="-0.0076702020620388507">
+<title>Underreported covariance: severity=1, D_H=-0.0076702021, 95% interval=[-0.013726042, -0.001410371]</title>
+<line class="error" stroke="#d1495b" x1="105.000" y1="533.404" x2="105.000" y2="557.581"/>
+<line class="error" stroke="#d1495b" x1="99.000" y1="533.404" x2="111.000" y2="533.404"/>
+<line class="error" stroke="#d1495b" x1="99.000" y1="557.581" x2="111.000" y2="557.581"/>
+<circle class="point" fill="#d1495b" cx="105.000" cy="545.693" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="1.25" data-estimate="-0.0012758636427507789">
+<title>Underreported covariance: severity=1.25, D_H=-0.0012758636, 95% interval=[-0.008678321, 0.0064158531]</title>
+<line class="error" stroke="#d1495b" x1="192.500" y1="518.040" x2="192.500" y2="547.672"/>
+<line class="error" stroke="#d1495b" x1="186.500" y1="518.040" x2="198.500" y2="518.040"/>
+<line class="error" stroke="#d1495b" x1="186.500" y1="547.672" x2="198.500" y2="547.672"/>
+<circle class="point" fill="#d1495b" cx="192.500" cy="533.140" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="1.5" data-estimate="0.0063837422984622779">
+<title>Underreported covariance: severity=1.5, D_H=0.0063837423, 95% interval=[-0.0025571817, 0.015614918]</title>
+<line class="error" stroke="#d1495b" x1="280.000" y1="499.982" x2="280.000" y2="535.655"/>
+<line class="error" stroke="#d1495b" x1="274.000" y1="499.982" x2="286.000" y2="499.982"/>
+<line class="error" stroke="#d1495b" x1="274.000" y1="535.655" x2="286.000" y2="535.655"/>
+<circle class="point" fill="#d1495b" cx="280.000" cy="518.103" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="2" data-estimate="0.025498756746663343">
+<title>Underreported covariance: severity=2, D_H=0.025498757, 95% interval=[0.013354225, 0.038658318]</title>
+<line class="error" stroke="#d1495b" x1="455.000" y1="454.746" x2="455.000" y2="504.420"/>
+<line class="error" stroke="#d1495b" x1="449.000" y1="454.746" x2="461.000" y2="454.746"/>
+<line class="error" stroke="#d1495b" x1="449.000" y1="504.420" x2="461.000" y2="504.420"/>
+<circle class="point" fill="#d1495b" cx="455.000" cy="480.579" r="5.5"/>
+</g>
+<g class="raw-point" data-severity="4" data-estimate="0.15256951541646693">
+<title>Underreported covariance: severity=4, D_H=0.15256952, 95% interval=[0.11944296, 0.18757002]</title>
+<line class="error" stroke="#d1495b" x1="1155.000" y1="162.419" x2="1155.000" y2="296.159"/>
+<line class="error" stroke="#d1495b" x1="1149.000" y1="162.419" x2="1161.000" y2="162.419"/>
+<line class="error" stroke="#d1495b" x1="1149.000" y1="296.159" x2="1161.000" y2="296.159"/>
+<circle class="point" fill="#d1495b" cx="1155.000" cy="231.128" r="5.5"/>
+</g>
+</g>
+<line x1="123" y1="139" x2="153" y2="139" stroke="#2563eb" stroke-width="3.2"/>
+<circle cx="138" cy="139" r="4.5" fill="#2563eb" stroke="#fff" stroke-width="1.5"/>
+<text x="163" y="144" font-size="14">Correctly reported covariance</text>
+<line x1="123" y1="166" x2="153" y2="166" stroke="#d1495b" stroke-width="3.2"/>
+<circle cx="138" cy="166" r="4.5" fill="#d1495b" stroke="#fff" stroke-width="1.5"/>
+<text x="163" y="171" font-size="14">Underreported covariance</text>
+<text x="630.000" y="666" font-size="15" text-anchor="middle">Configured camera standard-deviation scale</text>
+<text x="25" y="360.000" font-size="15" text-anchor="middle" transform="rotate(-90 25 360.000)">D_H = fusion loss - healthy loss (m²)</text>
+<text x="1155" y="687" font-size="12" text-anchor="end" fill="#526078">Points: raw means and 95% pointwise intervals; lines: PAVA fits. Below zero favors fusion.</text>
+</svg>

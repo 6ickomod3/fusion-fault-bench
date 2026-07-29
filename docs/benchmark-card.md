@@ -3,9 +3,10 @@
 ## Summary
 
 Fusion Fault Bench is a deterministic benchmark for camera-LiDAR
-estimator-output fusion under controlled proxy faults. The planned v0.1 release
+estimator-output fusion under controlled proxy faults. The v0.1 contract
 studies known-object BEV center estimates in a common front-camera/LiDAR region
-of interest.
+of interest. The released M1 slice is a narrower one-object Gaussian analytic
+case; geometry, temporal, and dataset-grounded modes remain planned.
 
 The benchmark is designed to answer a narrow evaluation question: when does
 fixed information fusion increase matched-center loss relative to a modality
@@ -28,17 +29,18 @@ how much of that loss an observable health gate can recover.
 - Planning, collision, closed-loop behavior, or simulator-policy evaluation.
 - Certification, operational fallback selection, or fleet deployment.
 
-## Planned v0.1 data modes
+## v0.1 data modes
 
-**Analytic:** one-object Gaussian cases with closed-form checks.
+**Analytic — released in M1:** one-object Gaussian camera bias and
+uncertainty-reporting cases with closed-form checks.
 
-**Procedural:** seeded constant-velocity scenes with controlled layouts and
-paired observation draws.
+**Procedural — planned:** seeded constant-velocity scenes with controlled
+layouts and paired observation draws.
 
-**nuScenes-mini grounding:** recorded annotations, poses, calibration, and
-timing provide latent scene structure. Estimator outputs remain simulated. Ten
-mini scenes are treated as exploratory grounding rather than external
-validation.
+**nuScenes-mini grounding — planned:** recorded annotations, poses,
+calibration, and timing provide latent scene structure. Estimator outputs
+remain simulated. Ten mini scenes are treated as exploratory grounding rather
+than external validation.
 
 ## Status vocabulary
 
@@ -48,7 +50,10 @@ validation.
 - **Released:** evidence is committed under `reports/releases/` and traces to a
   tagged software revision.
 
-No quantitative result is released at repository bootstrap.
+The current quantitative evidence is limited to
+[M1 analytic estimator-output stress tests](../reports/releases/m1-analytic-v0.1.0/README.md).
+The correctly reported-noise control is published with an `undetermined`
+finite-sample status; it is not converted into a favorable conclusion.
 
 ## Primary validity boundaries
 

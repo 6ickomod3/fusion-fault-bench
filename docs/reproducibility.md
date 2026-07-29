@@ -73,6 +73,63 @@ Cross-architecture byte identity is not claimed by M1.
 The run-record digest detects unsynchronized mutation but is not a signature;
 the public release Git commit is the authenticity boundary.
 
+## Released M1 evidence
+
+The curated M1 release can be checked without executing an experiment:
+
+```bash
+git checkout m1-analytic-v0.1.0
+uv sync --locked --group dev
+uv run python tools/m1_release.py validate \
+  reports/releases/m1-analytic-v0.1.0
+```
+
+The validator recomputes every curated file hash and length, manifest,
+scientific-payload digest, volatile run-record digest, record provenance link,
+omitted-sequence hash/count commitment, both exact SVGs from the aggregate
+rows, all three document hashes, and the exhaustive release index and file
+allowlist. The release records:
+
+- scientific source revision
+  `524c8f70ece3eca2e61796165b23ffe51baadfbc`;
+- `uv.lock` SHA-256
+  `ac20e73938328ee6ca0929b7ac8b39b76f81a26251025aa373aaf7ac181bb06f`;
+- Apple M3 Pro, 11 logical CPUs, 19,327,352,832 bytes of memory, arm64,
+  Darwin 24.5.0, and Python 3.12.13.
+
+To independently regenerate the scientific rows and run identities, use the
+recorded clean source revision rather than the later evidence-promotion tag:
+
+```bash
+git checkout 524c8f70ece3eca2e61796165b23ffe51baadfbc
+uv sync --locked --group dev
+
+uv run ffb run \
+  examples/manifests/analytic-bias-v1alpha1.json \
+  --output-dir reports/generated/analytic-camera-x-bias-a603d090f77a
+uv run ffb run \
+  examples/manifests/analytic-noise-correct-v1alpha1.json \
+  --output-dir reports/generated/analytic-camera-noise-correctly-reported-3ea7ffc2949c
+uv run ffb run \
+  examples/manifests/analytic-noise-underreported-v1alpha1.json \
+  --output-dir reports/generated/analytic-camera-noise-underreported-9d26e1b33f1f
+```
+
+Strictly validate each generated directory with `uv run ffb bundle validate
+<directory>`. Run into a second ignored output root to compare scientific
+bytes. The full sequence NDJSON files are intentionally omitted from Git
+because they total about 14.4 MB of deterministic synthetic rows; the
+release index retains each exact SHA-256, byte length, and record count.
+
+The amendment withheld six provenance-ineligible runs from the pre-fix
+revision. The one-time curator strictly loaded three retained old primary
+bundles and compared them with the three replacement primaries; the earlier
+repeat runs remained excluded. Those withheld artifacts are intentionally
+unavailable for public rebuilding. Their role is limited to the amendment
+audit recorded in
+[M1 verification](../reports/releases/m1-analytic-v0.1.0/verification.md);
+they are not needed to regenerate or validate the released scientific result.
+
 ## Local data
 
 nuScenes is optional until the geometry-grounding milestone and is never
@@ -96,4 +153,5 @@ excluded from manifests and public result records.
 | Transform and covariance property tests | Planned for M2 |
 | Independent-Gaussian analytic oracles | Validated in M1 |
 | nuScenes integrity and projection agreement | Planned for M2 |
-| Clean-CPU release reproduction | Planned for M6 |
+| Named-CPU analytic release and deterministic repeat | Released in M1 |
+| Full multi-family clean-CPU report reproduction | Planned for M6 |

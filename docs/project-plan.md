@@ -304,6 +304,9 @@ Accept when:
 
 ### M1: Analytic end-to-end vertical slice
 
+Status: **released**. See the
+[M1 analytic evidence](../reports/releases/m1-analytic-v0.1.0/README.md).
+
 Deliver:
 
 - One-object 2D Gaussian camera/LiDAR generator.
