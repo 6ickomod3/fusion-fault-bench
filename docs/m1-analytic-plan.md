@@ -1,6 +1,13 @@
 # M1 Analytic Vertical Slice
 
-Status: **pre-registered; no M1 result has been executed or released**.
+Status: **pre-registered; no release-eligible M1 artifact has been executed or
+released**.
+
+Adversarial-review amendment, recorded before the first release execution:
+`_SUCCESS` now commits to the exact volatile `run.json` bytes as well as the
+stable scientific artifact digest. This closes an integrity gap without
+changing any hypothesis, manifest, seed, severity, endpoint, sample count,
+estimand, result rule, or scientific payload identity.
 
 ## Purpose
 
@@ -150,7 +157,8 @@ The indexed scientific payload is the first five files. `payload-index.json` is
 a deterministic envelope over that payload, and byte identity covers both the
 five indexed members and the envelope. `run.json` contains timestamps,
 hardware, and other intentionally variable execution provenance and is outside
-the byte-identity promise. `_SUCCESS` is a completion marker.
+the byte-identity promise. `_SUCCESS` is a canonical completion record over
+both identities.
 
 Every JSON value uses the canonical byte and record ordering defined below.
 
@@ -159,9 +167,23 @@ payload members' byte lengths and SHA-256 digests; it does not list itself.
 `run.json.artifact_sha256` is a domain-separated SHA-256 of the exact canonical
 index bytes. `run.json` is excluded to avoid self-reference.
 
-`_SUCCESS` contains exactly the 64 lowercase hexadecimal
-`run.json.artifact_sha256` value followed by one LF byte. It is written last and
-must match both the run record and recomputed index digest.
+After the finalized canonical `run.json` bytes are built, their separate digest
+is
+
+```text
+SHA256(
+  UTF8("fusion-fault-bench/run-record/v1") || 0x00
+  || uint64_be(len(run_json_file_bytes))
+  || run_json_file_bytes
+)
+```
+
+`_SUCCESS` contains exactly one canonical JSON record plus LF with
+`schema="ffb.success/v1alpha1"`, the stable `artifact_sha256`, and the volatile
+`run_sha256`. It is written last. The loader recomputes and checks both. This
+detects unsynchronized corruption; authenticity against an attacker able to
+rewrite both the run and marker comes from the published release Git commit,
+not from an unkeyed hash alone.
 
 The committed contract adds these strict schemas:
 
@@ -178,6 +200,8 @@ The committed contract adds these strict schemas:
   fixed `variance_representation="diagonal-xy-m2"`,
   `monte_carlo_standard_error_multiplier`, ordered `population_points`,
   ordered `crossover_references`, and `all_monte_carlo_checks_passed`.
+- `ffb.success/v1alpha1` has `schema`, lowercase `artifact_sha256`, and
+  lowercase `run_sha256`.
 
 The exact analytic-validation nested records are:
 
@@ -295,12 +319,16 @@ operational limits fails before output creation.
 Destination nonexistence is checked without following links, including dangling
 links. Every existing path component from the filesystem root to the
 destination parent must be a real directory and not a symlink. Missing parent
-components are created one at a time and rechecked. Cleanup may remove only the
-exact `mkdtemp` staging directory returned to that invocation, after verifying
-its parent and reserved prefix; it never removes the requested destination or
-an arbitrary path. The runner discovers both `git rev-parse --absolute-git-dir`
-and the resolved `git rev-parse --git-common-dir`; the destination and staging
-directory must not equal or descend from either Git metadata directory.
+components are created one at a time using directory-relative operations. The
+writer pins the checked destination parent with a directory descriptor,
+exclusively creates a randomly named reserved-prefix staging directory beneath
+that descriptor, and performs staging writes, bounded cleanup, and atomic
+no-replace publication relative to pinned descriptors. Cleanup unlinks only the
+fixed artifact member allowlist from that exact staging directory and never
+removes the requested destination or an arbitrary path. The runner discovers
+both `git rev-parse --absolute-git-dir` and the resolved
+`git rev-parse --git-common-dir`; the destination and pinned staging parent
+must not equal or descend from either Git metadata directory.
 
 M1 requires the manifest to be a tracked regular file inside clean source
 checkout \(A\). The logical reproduction CWD is the root of checkout \(A\) at
