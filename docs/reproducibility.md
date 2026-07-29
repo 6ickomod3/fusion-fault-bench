@@ -194,6 +194,50 @@ export NUSCENES_ROOT=/absolute/path/to/nuScenes
 Absolute dataset paths belong only in local runtime configuration. They are
 excluded from manifests and public result records.
 
+## Released M3 temporal procedural evidence
+
+The aggregate-only M3 release is dataset-free and can be validated offline
+from a clean checkout:
+
+```bash
+git checkout m3-procedural-v0.1.0
+uv sync --locked --group dev
+uv run python tools/m3_release.py validate-release \
+  reports/releases/m3-procedural-v0.1.0 \
+  --official-identity examples/release-identities/m3-procedural-v0.1.0.json
+```
+
+The standalone validator checks the exact 88-file allowlist, official
+Git-bound identity, independent review bytes, all 429 aggregate and 10
+crossover rows, 71,700 omitted-row commitments, source payload indexes,
+primary/repeat run graphs, summaries, documentation, and three regenerated
+SVG figures.
+
+The scientific rows originate from revision
+`e8595fe428bcb9dfb269069e4b02972aff10f4ee`. Full regeneration executes the
+frozen matrix twice:
+
+```bash
+git checkout --detach e8595fe428bcb9dfb269069e4b02972aff10f4ee
+uv sync --locked --group dev
+uv run python tools/m3_release.py execute \
+  examples/matrices/m3-procedural-v1.json \
+  --first-output-dir reports/generated/m3-reproduction-first \
+  --second-output-dir reports/generated/m3-reproduction-second \
+  --evidence-dir reports/generated/m3-reproduction-evidence
+uv run python tools/m3_release.py validate \
+  examples/matrices/m3-procedural-v1.json \
+  --first-output-dir reports/generated/m3-reproduction-first \
+  --second-output-dir reports/generated/m3-reproduction-second \
+  --evidence-dir reports/generated/m3-reproduction-evidence
+```
+
+The two released runs measured 1218.376 and 1258.861 seconds with peak RSS
+369,000,448 and 389,431,296 bytes on an Apple M3 Pro. These are observations
+self-reported by the tracked child-process driver, not independently
+recomputable facts. All 48 indexed scientific member pairs were byte
+identical; cross-architecture byte identity is not claimed.
+
 ## Verification roadmap
 
 | Level | Current status |
@@ -201,10 +245,10 @@ excluded from manifests and public result records.
 | Contract and canonicalization unit tests | Validated in M0 |
 | Package build and isolated-wheel smoke test | Validated in M0 |
 | Analytic RNG, fusion, fault, metric, and artifact tests | Validated in M1 |
-| Geometry and temporal fault tests | Geometry foundation released in M2; temporal planned |
+| Geometry and temporal fault tests | Geometry foundation released in M2; temporal matrix released in M3 |
 | Transform and covariance property tests | Validated and released in M2 |
 | Independent-Gaussian analytic oracles | Validated in M1 |
 | Local nuScenes profile integrity and scalar projection cross-check | Attested and released in M2 |
 | Named-CPU analytic release and deterministic repeat | Released in M1 |
 | Named-CPU geometry release and deterministic stable-file repeat | Released in M2 |
-| Full multi-family clean-CPU report reproduction | Planned for M6 |
+| Full multi-family clean-CPU procedural fault report | Released in M3; health/replay synthesis planned for M6 |

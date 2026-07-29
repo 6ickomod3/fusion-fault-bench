@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1080" viewBox="0 0 1400 1080" role="img">
+<title>M3 signed fusion delta under six single-sensor proxy faults</title>
+<desc>All 54 unique fused-minus-healthy aggregate rows, 58 direction-branch points including shared identities, pointwise 95 percent intervals, and 10 equal-severity PAVA curves. Each panel retains its native physical unit.</desc>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#182230}.muted{fill:#5b677a}.axis{stroke:#8391a5;stroke-width:1}.zero{stroke:#9d3346;stroke-width:1;stroke-dasharray:5 4}.interval{stroke-width:1.3}.fit{fill:none;stroke-width:2.4}.raw{stroke:#fff;stroke-width:1}.panel{fill:#fbfcfe;stroke:#dce3ec}
+</style>
+<rect width="1400" height="1080" fill="#ffffff"/>
+<text x="48" y="42" font-size="25" font-weight="700">M3 signed fusion delta under six single-sensor proxy faults</text>
+<text class="muted" x="48" y="70" font-size="14">Signed estimate: fixed-fusion matched-center MSE minus designated healthy modality MSE. Positive is harmful within this benchmark.</text>
+<text class="muted" x="48" y="91" font-size="13">Intervals are pointwise paired-sequence bootstrap intervals; they are not simultaneous family-wise intervals.</text>
+<rect class="panel" x="48" y="116" width="642" height="285" rx="8"/>
+<text x="66" y="143" font-size="16" font-weight="650">lidar y bias</text>
+<text class="muted" x="66" y="162" font-size="12">severity (m), separate direction branches</text>
+<line class="axis" x1="120" y1="349" x2="664" y2="349"/>
+<line class="axis" x1="120" y1="171" x2="120" y2="349"/>
+<line class="zero" x1="120" y1="315.645" x2="664" y2="315.645"/>
+<line class="interval" stroke="#3366a8" x1="120.000" y1="336.724" x2="120.000" y2="336.363"/>
+<circle class="raw" fill="#3366a8" cx="120.000" cy="336.541" r="4"/>
+<line class="interval" stroke="#3366a8" x1="154.000" y1="336.136" x2="154.000" y2="335.771"/>
+<circle class="raw" fill="#3366a8" cx="154.000" cy="335.951" r="4"/>
+<line class="interval" stroke="#3366a8" x1="188.000" y1="334.351" x2="188.000" y2="333.983"/>
+<circle class="raw" fill="#3366a8" cx="188.000" cy="334.166" r="4"/>
+<line class="interval" stroke="#3366a8" x1="256.000" y1="327.200" x2="256.000" y2="326.822"/>
+<circle class="raw" fill="#3366a8" cx="256.000" cy="327.012" r="4"/>
+<line class="interval" stroke="#3366a8" x1="392.000" y1="298.578" x2="392.000" y2="298.164"/>
+<circle class="raw" fill="#3366a8" cx="392.000" cy="298.371" r="4"/>
+<line class="interval" stroke="#3366a8" x1="664.000" y1="184.018" x2="664.000" y2="183.492"/>
+<circle class="raw" fill="#3366a8" cx="664.000" cy="183.751" r="4"/>
+<polyline class="fit" stroke="#3366a8" points="120.000,336.541 154.000,335.951 188.000,334.166 256.000,327.012 392.000,298.371 664.000,183.751"/>
+<line stroke="#3366a8" stroke-width="2.4" x1="535" y1="140" x2="557" y2="140"/>
+<text x="563" y="144" font-size="11">negative</text>
+<line class="interval" stroke="#d06b2d" x1="120.000" y1="336.724" x2="120.000" y2="336.363"/>
+<circle class="raw" fill="#d06b2d" cx="120.000" cy="336.541" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="154.000" y1="336.122" x2="154.000" y2="335.758"/>
+<circle class="raw" fill="#d06b2d" cx="154.000" cy="335.937" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="188.000" y1="334.323" x2="188.000" y2="333.956"/>
+<circle class="raw" fill="#d06b2d" cx="188.000" cy="334.139" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="256.000" y1="327.145" x2="256.000" y2="326.769"/>
+<circle class="raw" fill="#d06b2d" cx="256.000" cy="326.958" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="392.000" y1="298.471" x2="392.000" y2="298.063"/>
+<circle class="raw" fill="#d06b2d" cx="392.000" cy="298.263" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="664.000" y1="183.792" x2="664.000" y2="183.276"/>
+<circle class="raw" fill="#d06b2d" cx="664.000" cy="183.535" r="4"/>
+<polyline class="fit" stroke="#d06b2d" points="120.000,336.541 154.000,335.937 188.000,334.139 256.000,326.958 392.000,298.263 664.000,183.535"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="535" y1="158" x2="557" y2="158"/>
+<text x="563" y="162" font-size="11">positive</text>
+<text class="muted" x="120" y="369" font-size="11">0</text>
+<text class="muted" x="664" y="369" font-size="11" text-anchor="end">4 m</text>
+<text class="muted" x="112" y="175" font-size="10" text-anchor="end">12.7399</text>
+<text class="muted" x="112" y="349" font-size="10" text-anchor="end">-2.93786 m²</text>
+<rect class="panel" x="730" y="116" width="642" height="285" rx="8"/>
+<text x="748" y="143" font-size="16" font-weight="650">camera noise correctly reported</text>
+<text class="muted" x="748" y="162" font-size="12">severity (std-scale), separate direction branches</text>
+<line class="axis" x1="802" y1="349" x2="1346" y2="349"/>
+<line class="axis" x1="802" y1="171" x2="802" y2="349"/>
+<line class="zero" x1="802" y1="183.276" x2="1346" y2="183.276"/>
+<line class="interval" stroke="#21856f" x1="802.000" y1="336.724" x2="802.000" y2="325.511"/>
+<circle class="raw" fill="#21856f" cx="802.000" cy="331.253" r="4"/>
+<line class="interval" stroke="#21856f" x1="847.333" y1="285.571" x2="847.333" y2="276.549"/>
+<circle class="raw" fill="#21856f" cx="847.333" cy="281.108" r="4"/>
+<line class="interval" stroke="#21856f" x1="892.667" y1="256.282" x2="892.667" y2="248.720"/>
+<circle class="raw" fill="#21856f" cx="892.667" cy="252.521" r="4"/>
+<line class="interval" stroke="#21856f" x1="983.333" y1="225.929" x2="983.333" y2="220.123"/>
+<circle class="raw" fill="#21856f" cx="983.333" cy="223.067" r="4"/>
+<line class="interval" stroke="#21856f" x1="1346.000" y1="195.005" x2="1346.000" y2="192.057"/>
+<circle class="raw" fill="#21856f" cx="1346.000" cy="193.565" r="4"/>
+<polyline class="fit" stroke="#21856f" points="802.000,331.253 847.333,281.108 892.667,252.521 983.333,223.067 1346.000,193.565"/>
+<line stroke="#21856f" stroke-width="2.4" x1="1217" y1="140" x2="1239" y2="140"/>
+<text x="1245" y="144" font-size="11">increase</text>
+<text class="muted" x="802" y="369" font-size="11">1</text>
+<text class="muted" x="1346" y="369" font-size="11" text-anchor="end">4 std-scale</text>
+<text class="muted" x="794" y="175" font-size="10" text-anchor="end">0.00125024</text>
+<text class="muted" x="794" y="349" font-size="10" text-anchor="end">-0.0168783 m²</text>
+<rect class="panel" x="48" y="426" width="642" height="285" rx="8"/>
+<text x="66" y="453" font-size="16" font-weight="650">camera noise underreported</text>
+<text class="muted" x="66" y="472" font-size="12">severity (std-scale), separate direction branches</text>
+<line class="axis" x1="120" y1="659" x2="664" y2="659"/>
+<line class="axis" x1="120" y1="481" x2="120" y2="659"/>
+<line class="zero" x1="120" y1="635.205" x2="664" y2="635.205"/>
+<line class="interval" stroke="#21856f" x1="120.000" y1="646.724" x2="120.000" y2="645.882"/>
+<circle class="raw" fill="#21856f" cx="120.000" cy="646.313" r="4"/>
+<line class="interval" stroke="#21856f" x1="165.333" y1="641.169" x2="165.333" y2="640.140"/>
+<circle class="raw" fill="#21856f" cx="165.333" cy="640.664" r="4"/>
+<line class="interval" stroke="#21856f" x1="210.667" y1="634.361" x2="210.667" y2="633.131"/>
+<circle class="raw" fill="#21856f" cx="210.667" cy="633.755" r="4"/>
+<line class="interval" stroke="#21856f" x1="301.333" y1="616.972" x2="301.333" y2="615.304"/>
+<circle class="raw" fill="#21856f" cx="301.333" cy="616.156" r="4"/>
+<line class="interval" stroke="#21856f" x1="664.000" y1="497.312" x2="664.000" y2="493.276"/>
+<circle class="raw" fill="#21856f" cx="664.000" cy="495.354" r="4"/>
+<polyline class="fit" stroke="#21856f" points="120.000,646.313 165.333,640.664 210.667,633.755 301.333,616.156 664.000,495.354"/>
+<line stroke="#21856f" stroke-width="2.4" x1="535" y1="450" x2="557" y2="450"/>
+<text x="563" y="454" font-size="11">increase</text>
+<text class="muted" x="120" y="679" font-size="11">1</text>
+<text class="muted" x="664" y="679" font-size="11" text-anchor="end">4 std-scale</text>
+<text class="muted" x="112" y="485" font-size="10" text-anchor="end">0.209217</text>
+<text class="muted" x="112" y="659" font-size="10" text-anchor="end">-0.0322832 m²</text>
+<rect class="panel" x="730" y="426" width="642" height="285" rx="8"/>
+<text x="748" y="453" font-size="16" font-weight="650">camera calibration x</text>
+<text class="muted" x="748" y="472" font-size="12">severity (m), separate direction branches</text>
+<line class="axis" x1="802" y1="659" x2="1346" y2="659"/>
+<line class="axis" x1="802" y1="481" x2="802" y2="659"/>
+<line class="zero" x1="802" y1="625.410" x2="1346" y2="625.410"/>
+<line class="interval" stroke="#3366a8" x1="802.000" y1="646.724" x2="802.000" y2="645.167"/>
+<circle class="raw" fill="#3366a8" cx="802.000" cy="645.964" r="4"/>
+<line class="interval" stroke="#3366a8" x1="836.000" y1="646.047" x2="836.000" y2="644.512"/>
+<circle class="raw" fill="#3366a8" cx="836.000" cy="645.284" r="4"/>
+<line class="interval" stroke="#3366a8" x1="870.000" y1="644.233" x2="870.000" y2="642.630"/>
+<circle class="raw" fill="#3366a8" cx="870.000" cy="643.442" r="4"/>
+<line class="interval" stroke="#3366a8" x1="938.000" y1="637.208" x2="938.000" y2="635.322"/>
+<circle class="raw" fill="#3366a8" cx="938.000" cy="636.270" r="4"/>
+<line class="interval" stroke="#3366a8" x1="1074.000" y1="609.287" x2="1074.000" y2="606.649"/>
+<circle class="raw" fill="#3366a8" cx="1074.000" cy="607.981" r="4"/>
+<line class="interval" stroke="#3366a8" x1="1346.000" y1="497.981" x2="1346.000" y2="493.276"/>
+<circle class="raw" fill="#3366a8" cx="1346.000" cy="495.613" r="4"/>
+<polyline class="fit" stroke="#3366a8" points="802.000,645.964 836.000,645.284 870.000,643.442 938.000,636.270 1074.000,607.981 1346.000,495.613"/>
+<line stroke="#3366a8" stroke-width="2.4" x1="1217" y1="450" x2="1239" y2="450"/>
+<text x="1245" y="454" font-size="11">negative</text>
+<line class="interval" stroke="#d06b2d" x1="802.000" y1="646.724" x2="802.000" y2="645.167"/>
+<circle class="raw" fill="#d06b2d" cx="802.000" cy="645.964" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="836.000" y1="646.246" x2="836.000" y2="644.686"/>
+<circle class="raw" fill="#d06b2d" cx="836.000" cy="645.482" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="870.000" y1="644.647" x2="870.000" y2="642.969"/>
+<circle class="raw" fill="#d06b2d" cx="870.000" cy="643.838" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="938.000" y1="637.989" x2="938.000" y2="636.042"/>
+<circle class="raw" fill="#d06b2d" cx="938.000" cy="637.062" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1074.000" y1="610.910" x2="1074.000" y2="608.081"/>
+<circle class="raw" fill="#d06b2d" cx="1074.000" cy="609.564" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1346.000" y1="501.200" x2="1346.000" y2="496.249"/>
+<circle class="raw" fill="#d06b2d" cx="1346.000" cy="498.779" r="4"/>
+<polyline class="fit" stroke="#d06b2d" points="802.000,645.964 836.000,645.482 870.000,643.838 938.000,637.062 1074.000,609.564 1346.000,498.779"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="1217" y1="468" x2="1239" y2="468"/>
+<text x="1245" y="472" font-size="11">positive</text>
+<text class="muted" x="802" y="679" font-size="11">0</text>
+<text class="muted" x="1346" y="679" font-size="11" text-anchor="end">4 m</text>
+<text class="muted" x="794" y="485" font-size="10" text-anchor="end">0.105886</text>
+<text class="muted" x="794" y="659" font-size="10" text-anchor="end">-0.0246291 m²</text>
+<rect class="panel" x="48" y="736" width="642" height="285" rx="8"/>
+<text x="66" y="763" font-size="16" font-weight="650">camera calibration yaw</text>
+<text class="muted" x="66" y="782" font-size="12">severity (rad), separate direction branches</text>
+<line class="axis" x1="120" y1="969" x2="664" y2="969"/>
+<line class="axis" x1="120" y1="791" x2="120" y2="969"/>
+<line class="zero" x1="120" y1="926.148" x2="664" y2="926.148"/>
+<line class="interval" stroke="#3366a8" x1="120.000" y1="956.724" x2="120.000" y2="954.490"/>
+<circle class="raw" fill="#3366a8" cx="120.000" cy="955.634" r="4"/>
+<line class="interval" stroke="#3366a8" x1="154.000" y1="956.290" x2="154.000" y2="954.025"/>
+<circle class="raw" fill="#3366a8" cx="154.000" cy="955.170" r="4"/>
+<line class="interval" stroke="#3366a8" x1="188.000" y1="954.698" x2="188.000" y2="952.394"/>
+<circle class="raw" fill="#3366a8" cx="188.000" cy="953.552" r="4"/>
+<line class="interval" stroke="#3366a8" x1="256.000" y1="948.120" x2="256.000" y2="945.632"/>
+<circle class="raw" fill="#3366a8" cx="256.000" cy="946.857" r="4"/>
+<line class="interval" stroke="#3366a8" x1="392.000" y1="921.331" x2="392.000" y2="917.942"/>
+<circle class="raw" fill="#3366a8" cx="392.000" cy="919.628" r="4"/>
+<line class="interval" stroke="#3366a8" x1="664.000" y1="812.956" x2="664.000" y2="806.957"/>
+<circle class="raw" fill="#3366a8" cx="664.000" cy="809.866" r="4"/>
+<polyline class="fit" stroke="#3366a8" points="120.000,955.634 154.000,955.170 188.000,953.552 256.000,946.857 392.000,919.628 664.000,809.866"/>
+<line stroke="#3366a8" stroke-width="2.4" x1="535" y1="760" x2="557" y2="760"/>
+<text x="563" y="764" font-size="11">negative</text>
+<line class="interval" stroke="#d06b2d" x1="120.000" y1="956.724" x2="120.000" y2="954.490"/>
+<circle class="raw" fill="#d06b2d" cx="120.000" cy="955.634" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="154.000" y1="956.048" x2="154.000" y2="953.805"/>
+<circle class="raw" fill="#d06b2d" cx="154.000" cy="954.945" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="188.000" y1="954.223" x2="188.000" y2="951.918"/>
+<circle class="raw" fill="#d06b2d" cx="188.000" cy="953.102" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="256.000" y1="947.185" x2="256.000" y2="944.674"/>
+<circle class="raw" fill="#d06b2d" cx="256.000" cy="945.956" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="392.000" y1="919.357" x2="392.000" y2="916.163"/>
+<circle class="raw" fill="#d06b2d" cx="392.000" cy="917.826" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="664.000" y1="809.039" x2="664.000" y2="803.276"/>
+<circle class="raw" fill="#d06b2d" cx="664.000" cy="806.264" r="4"/>
+<polyline class="fit" stroke="#d06b2d" points="120.000,955.634 154.000,954.945 188.000,953.102 256.000,945.956 392.000,917.826 664.000,806.264"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="535" y1="778" x2="557" y2="778"/>
+<text x="563" y="782" font-size="11">positive</text>
+<text class="muted" x="120" y="989" font-size="11">0</text>
+<text class="muted" x="664" y="989" font-size="11" text-anchor="end">0.08 rad</text>
+<text class="muted" x="112" y="795" font-size="10" text-anchor="end">0.0690765</text>
+<text class="muted" x="112" y="969" font-size="10" text-anchor="end">-0.0219024 m²</text>
+<rect class="panel" x="730" y="736" width="642" height="285" rx="8"/>
+<text x="748" y="763" font-size="16" font-weight="650">camera timestamp offset</text>
+<text class="muted" x="748" y="782" font-size="12">severity (s), separate direction branches</text>
+<line class="axis" x1="802" y1="969" x2="1346" y2="969"/>
+<line class="axis" x1="802" y1="791" x2="802" y2="969"/>
+<line class="zero" x1="802" y1="924.387" x2="1346" y2="924.387"/>
+<line class="interval" stroke="#3366a8" x1="802.000" y1="956.724" x2="802.000" y2="954.361"/>
+<circle class="raw" fill="#3366a8" cx="802.000" cy="955.571" r="4"/>
+<line class="interval" stroke="#3366a8" x1="836.000" y1="956.034" x2="836.000" y2="953.706"/>
+<circle class="raw" fill="#3366a8" cx="836.000" cy="954.870" r="4"/>
+<line class="interval" stroke="#3366a8" x1="870.000" y1="954.185" x2="870.000" y2="951.824"/>
+<circle class="raw" fill="#3366a8" cx="870.000" cy="953.023" r="4"/>
+<line class="interval" stroke="#3366a8" x1="938.000" y1="947.214" x2="938.000" y2="944.569"/>
+<circle class="raw" fill="#3366a8" cx="938.000" cy="945.893" r="4"/>
+<line class="interval" stroke="#3366a8" x1="1074.000" y1="919.749" x2="1074.000" y2="916.054"/>
+<circle class="raw" fill="#3366a8" cx="1074.000" cy="917.887" r="4"/>
+<line class="interval" stroke="#3366a8" x1="1346.000" y1="810.791" x2="1346.000" y2="803.276"/>
+<circle class="raw" fill="#3366a8" cx="1346.000" cy="806.896" r="4"/>
+<polyline class="fit" stroke="#3366a8" points="802.000,955.571 836.000,954.870 870.000,953.023 938.000,945.893 1074.000,917.887 1346.000,806.896"/>
+<line stroke="#3366a8" stroke-width="2.4" x1="1217" y1="760" x2="1239" y2="760"/>
+<text x="1245" y="764" font-size="11">negative</text>
+<line class="interval" stroke="#d06b2d" x1="802.000" y1="956.724" x2="802.000" y2="954.361"/>
+<circle class="raw" fill="#d06b2d" cx="802.000" cy="955.571" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="836.000" y1="956.294" x2="836.000" y2="953.932"/>
+<circle class="raw" fill="#d06b2d" cx="836.000" cy="955.127" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="870.000" y1="954.729" x2="870.000" y2="952.297"/>
+<circle class="raw" fill="#d06b2d" cx="870.000" cy="953.538" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="938.000" y1="948.269" x2="938.000" y2="945.474"/>
+<circle class="raw" fill="#d06b2d" cx="938.000" cy="946.923" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1074.000" y1="921.757" x2="1074.000" y2="917.862"/>
+<circle class="raw" fill="#d06b2d" cx="1074.000" cy="919.948" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1346.000" y1="814.616" x2="1346.000" y2="807.222"/>
+<circle class="raw" fill="#d06b2d" cx="1346.000" cy="811.016" r="4"/>
+<polyline class="fit" stroke="#d06b2d" points="802.000,955.571 836.000,955.127 870.000,953.538 938.000,946.923 1074.000,919.948 1346.000,811.016"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="1217" y1="778" x2="1239" y2="778"/>
+<text x="1245" y="782" font-size="11">positive</text>
+<text class="muted" x="802" y="989" font-size="11">0</text>
+<text class="muted" x="1346" y="989" font-size="11" text-anchor="end">0.8 s</text>
+<text class="muted" x="794" y="795" font-size="10" text-anchor="end">0.0644651</text>
+<text class="muted" x="794" y="969" font-size="10" text-anchor="end">-0.0215609 m²</text>
+<text class="muted" x="48" y="1050" font-size="12">Raw points and intervals are never replaced by the fitted PAVA curves. Meters, radians, seconds, and std-scales are not pooled.</text>
+</svg>

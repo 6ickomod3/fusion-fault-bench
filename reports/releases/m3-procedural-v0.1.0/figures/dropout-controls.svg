@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1030" viewBox="0 0 1400 1030" role="img">
+<title>M3 camera-dropout availability control</title>
+<desc>All 72 aggregate rows: every probability and method for coverage, undefined-output rate, then conditional matched-center loss. Undefined conditional losses are marked and never imputed as zero.</desc>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#182230}.muted{fill:#5b677a}.axis{stroke:#8391a5;stroke-width:1}.zero{stroke:#9d3346;stroke-width:1;stroke-dasharray:5 4}.interval{stroke-width:1.3}.fit{fill:none;stroke-width:2.4}.raw{stroke:#fff;stroke-width:1}.panel{fill:#fbfcfe;stroke:#dce3ec}
+</style>
+<rect width="1400" height="1030" fill="#ffffff"/>
+<text x="48" y="42" font-size="25" font-weight="700">M3 camera-dropout availability control</text>
+<text class="muted" x="48" y="70" font-size="14">Availability metrics are shown before conditional localization loss. Pointwise intervals use paired complete-sequence bootstrap resampling.</text>
+<rect class="panel" x="48" y="102" width="1304" height="245" rx="8"/>
+<text x="68" y="131" font-size="17" font-weight="650">Coverage (fraction)</text>
+<line class="axis" x1="180" y1="309" x2="1320" y2="309"/>
+<line class="axis" x1="180" y1="150" x2="180" y2="309"/>
+<line class="interval" stroke="#3c6ca8" x1="180.000" y1="150.000" x2="180.000" y2="150.000"/>
+<circle class="raw" fill="#3c6ca8" cx="180.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="294.000" y1="167.374" x2="294.000" y2="165.453"/>
+<circle class="raw" fill="#3c6ca8" cx="294.000" cy="166.397" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="465.000" y1="191.688" x2="465.000" y2="188.855"/>
+<circle class="raw" fill="#3c6ca8" cx="465.000" cy="190.263" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="750.000" y1="231.073" x2="750.000" y2="227.827"/>
+<circle class="raw" fill="#3c6ca8" cx="750.000" cy="229.483" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="1035.000" y1="272.066" x2="1035.000" y2="269.018"/>
+<circle class="raw" fill="#3c6ca8" cx="1035.000" cy="270.542" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="1320.000" y1="309.000" x2="1320.000" y2="309.000"/>
+<circle class="raw" fill="#3c6ca8" cx="1320.000" cy="309.000" r="4"/>
+<polyline class="fit" stroke="#3c6ca8" points="180.000,150.000 294.000,166.397 465.000,190.263 750.000,229.483 1035.000,270.542 1320.000,309.000"/>
+<line stroke="#3c6ca8" stroke-width="2.4" x1="520" y1="126" x2="540" y2="126"/>
+<text x="546" y="130" font-size="11">camera-only</text>
+<line class="interval" stroke="#7a5fa6" x1="180.000" y1="150.000" x2="180.000" y2="150.000"/>
+<circle class="raw" fill="#7a5fa6" cx="180.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="294.000" y1="150.000" x2="294.000" y2="150.000"/>
+<circle class="raw" fill="#7a5fa6" cx="294.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="465.000" y1="150.000" x2="465.000" y2="150.000"/>
+<circle class="raw" fill="#7a5fa6" cx="465.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="750.000" y1="150.000" x2="750.000" y2="150.000"/>
+<circle class="raw" fill="#7a5fa6" cx="750.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1035.000" y1="150.000" x2="1035.000" y2="150.000"/>
+<circle class="raw" fill="#7a5fa6" cx="1035.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1320.000" y1="150.000" x2="1320.000" y2="150.000"/>
+<circle class="raw" fill="#7a5fa6" cx="1320.000" cy="150.000" r="4"/>
+<polyline class="fit" stroke="#7a5fa6" points="180.000,150.000 294.000,150.000 465.000,150.000 750.000,150.000 1035.000,150.000 1320.000,150.000"/>
+<line stroke="#7a5fa6" stroke-width="2.4" x1="725" y1="126" x2="745" y2="126"/>
+<text x="751" y="130" font-size="11">lidar-only</text>
+<line class="interval" stroke="#d06b2d" x1="180.000" y1="150.000" x2="180.000" y2="150.000"/>
+<circle class="raw" fill="#d06b2d" cx="180.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="294.000" y1="167.374" x2="294.000" y2="165.453"/>
+<circle class="raw" fill="#d06b2d" cx="294.000" cy="166.397" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="465.000" y1="191.688" x2="465.000" y2="188.855"/>
+<circle class="raw" fill="#d06b2d" cx="465.000" cy="190.263" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="750.000" y1="231.073" x2="750.000" y2="227.827"/>
+<circle class="raw" fill="#d06b2d" cx="750.000" cy="229.483" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1035.000" y1="272.066" x2="1035.000" y2="269.018"/>
+<circle class="raw" fill="#d06b2d" cx="1035.000" cy="270.542" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1320.000" y1="309.000" x2="1320.000" y2="309.000"/>
+<circle class="raw" fill="#d06b2d" cx="1320.000" cy="309.000" r="4"/>
+<polyline class="fit" stroke="#d06b2d" points="180.000,150.000 294.000,166.397 465.000,190.263 750.000,229.483 1035.000,270.542 1320.000,309.000"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="930" y1="126" x2="950" y2="126"/>
+<text x="956" y="130" font-size="11">fixed-fusion</text>
+<line class="interval" stroke="#21856f" x1="180.000" y1="150.000" x2="180.000" y2="150.000"/>
+<circle class="raw" fill="#21856f" cx="180.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="294.000" y1="150.000" x2="294.000" y2="150.000"/>
+<circle class="raw" fill="#21856f" cx="294.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="465.000" y1="150.000" x2="465.000" y2="150.000"/>
+<circle class="raw" fill="#21856f" cx="465.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="750.000" y1="150.000" x2="750.000" y2="150.000"/>
+<circle class="raw" fill="#21856f" cx="750.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="1035.000" y1="150.000" x2="1035.000" y2="150.000"/>
+<circle class="raw" fill="#21856f" cx="1035.000" cy="150.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="1320.000" y1="150.000" x2="1320.000" y2="150.000"/>
+<circle class="raw" fill="#21856f" cx="1320.000" cy="150.000" r="4"/>
+<polyline class="fit" stroke="#21856f" points="180.000,150.000 294.000,150.000 465.000,150.000 750.000,150.000 1035.000,150.000 1320.000,150.000"/>
+<line stroke="#21856f" stroke-width="2.4" x1="1135" y1="126" x2="1155" y2="126"/>
+<text x="1161" y="130" font-size="11">fault-target-drop-policy</text>
+<text class="muted" x="180" y="329" font-size="11">0</text>
+<text class="muted" x="1320" y="329" font-size="11" text-anchor="end">1 dropout probability</text>
+<text class="muted" x="168" y="154" font-size="10" text-anchor="end">1</text>
+<text class="muted" x="168" y="309" font-size="10" text-anchor="end">0</text>
+<rect class="panel" x="48" y="387" width="1304" height="245" rx="8"/>
+<text x="68" y="416" font-size="17" font-weight="650">Undefined-output rate (fraction)</text>
+<line class="axis" x1="180" y1="594" x2="1320" y2="594"/>
+<line class="axis" x1="180" y1="435" x2="180" y2="594"/>
+<line class="interval" stroke="#3c6ca8" x1="180.000" y1="594.000" x2="180.000" y2="594.000"/>
+<circle class="raw" fill="#3c6ca8" cx="180.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="294.000" y1="578.547" x2="294.000" y2="576.626"/>
+<circle class="raw" fill="#3c6ca8" cx="294.000" cy="577.603" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="465.000" y1="555.145" x2="465.000" y2="552.312"/>
+<circle class="raw" fill="#3c6ca8" cx="465.000" cy="553.737" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="750.000" y1="516.173" x2="750.000" y2="512.927"/>
+<circle class="raw" fill="#3c6ca8" cx="750.000" cy="514.517" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="1035.000" y1="474.982" x2="1035.000" y2="471.934"/>
+<circle class="raw" fill="#3c6ca8" cx="1035.000" cy="473.458" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="1320.000" y1="435.000" x2="1320.000" y2="435.000"/>
+<circle class="raw" fill="#3c6ca8" cx="1320.000" cy="435.000" r="4"/>
+<polyline class="fit" stroke="#3c6ca8" points="180.000,594.000 294.000,577.603 465.000,553.737 750.000,514.517 1035.000,473.458 1320.000,435.000"/>
+<line stroke="#3c6ca8" stroke-width="2.4" x1="520" y1="411" x2="540" y2="411"/>
+<text x="546" y="415" font-size="11">camera-only</text>
+<line class="interval" stroke="#7a5fa6" x1="180.000" y1="594.000" x2="180.000" y2="594.000"/>
+<circle class="raw" fill="#7a5fa6" cx="180.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="294.000" y1="594.000" x2="294.000" y2="594.000"/>
+<circle class="raw" fill="#7a5fa6" cx="294.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="465.000" y1="594.000" x2="465.000" y2="594.000"/>
+<circle class="raw" fill="#7a5fa6" cx="465.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="750.000" y1="594.000" x2="750.000" y2="594.000"/>
+<circle class="raw" fill="#7a5fa6" cx="750.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1035.000" y1="594.000" x2="1035.000" y2="594.000"/>
+<circle class="raw" fill="#7a5fa6" cx="1035.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1320.000" y1="594.000" x2="1320.000" y2="594.000"/>
+<circle class="raw" fill="#7a5fa6" cx="1320.000" cy="594.000" r="4"/>
+<polyline class="fit" stroke="#7a5fa6" points="180.000,594.000 294.000,594.000 465.000,594.000 750.000,594.000 1035.000,594.000 1320.000,594.000"/>
+<line stroke="#7a5fa6" stroke-width="2.4" x1="725" y1="411" x2="745" y2="411"/>
+<text x="751" y="415" font-size="11">lidar-only</text>
+<line class="interval" stroke="#d06b2d" x1="180.000" y1="594.000" x2="180.000" y2="594.000"/>
+<circle class="raw" fill="#d06b2d" cx="180.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="294.000" y1="578.547" x2="294.000" y2="576.626"/>
+<circle class="raw" fill="#d06b2d" cx="294.000" cy="577.603" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="465.000" y1="555.145" x2="465.000" y2="552.312"/>
+<circle class="raw" fill="#d06b2d" cx="465.000" cy="553.737" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="750.000" y1="516.173" x2="750.000" y2="512.927"/>
+<circle class="raw" fill="#d06b2d" cx="750.000" cy="514.517" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1035.000" y1="474.982" x2="1035.000" y2="471.934"/>
+<circle class="raw" fill="#d06b2d" cx="1035.000" cy="473.458" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1320.000" y1="435.000" x2="1320.000" y2="435.000"/>
+<circle class="raw" fill="#d06b2d" cx="1320.000" cy="435.000" r="4"/>
+<polyline class="fit" stroke="#d06b2d" points="180.000,594.000 294.000,577.603 465.000,553.737 750.000,514.517 1035.000,473.458 1320.000,435.000"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="930" y1="411" x2="950" y2="411"/>
+<text x="956" y="415" font-size="11">fixed-fusion</text>
+<line class="interval" stroke="#21856f" x1="180.000" y1="594.000" x2="180.000" y2="594.000"/>
+<circle class="raw" fill="#21856f" cx="180.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="294.000" y1="594.000" x2="294.000" y2="594.000"/>
+<circle class="raw" fill="#21856f" cx="294.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="465.000" y1="594.000" x2="465.000" y2="594.000"/>
+<circle class="raw" fill="#21856f" cx="465.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="750.000" y1="594.000" x2="750.000" y2="594.000"/>
+<circle class="raw" fill="#21856f" cx="750.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="1035.000" y1="594.000" x2="1035.000" y2="594.000"/>
+<circle class="raw" fill="#21856f" cx="1035.000" cy="594.000" r="4"/>
+<line class="interval" stroke="#21856f" x1="1320.000" y1="594.000" x2="1320.000" y2="594.000"/>
+<circle class="raw" fill="#21856f" cx="1320.000" cy="594.000" r="4"/>
+<polyline class="fit" stroke="#21856f" points="180.000,594.000 294.000,594.000 465.000,594.000 750.000,594.000 1035.000,594.000 1320.000,594.000"/>
+<line stroke="#21856f" stroke-width="2.4" x1="1135" y1="411" x2="1155" y2="411"/>
+<text x="1161" y="415" font-size="11">fault-target-drop-policy</text>
+<text class="muted" x="180" y="614" font-size="11">0</text>
+<text class="muted" x="1320" y="614" font-size="11" text-anchor="end">1 dropout probability</text>
+<text class="muted" x="168" y="439" font-size="10" text-anchor="end">1</text>
+<text class="muted" x="168" y="594" font-size="10" text-anchor="end">0</text>
+<rect class="panel" x="48" y="672" width="1304" height="245" rx="8"/>
+<text x="68" y="701" font-size="17" font-weight="650">Conditional matched-center MSE (m²)</text>
+<line class="axis" x1="180" y1="879" x2="1320" y2="879"/>
+<line class="axis" x1="180" y1="720" x2="180" y2="879"/>
+<line class="interval" stroke="#3c6ca8" x1="180.000" y1="735.015" x2="180.000" y2="732.691"/>
+<circle class="raw" fill="#3c6ca8" cx="180.000" cy="733.866" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="294.000" y1="734.939" x2="294.000" y2="732.487"/>
+<circle class="raw" fill="#3c6ca8" cx="294.000" cy="733.729" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="465.000" y1="734.728" x2="465.000" y2="732.014"/>
+<circle class="raw" fill="#3c6ca8" cx="465.000" cy="733.354" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="750.000" y1="735.242" x2="750.000" y2="732.294"/>
+<circle class="raw" fill="#3c6ca8" cx="750.000" cy="733.786" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="1035.000" y1="736.165" x2="1035.000" y2="731.778"/>
+<circle class="raw" fill="#3c6ca8" cx="1035.000" cy="734.008" r="4"/>
+<line stroke="#3c6ca8" stroke-width="2" x1="1316.000" y1="727.000" x2="1324.000" y2="735.000"/>
+<line stroke="#3c6ca8" stroke-width="2" x1="1316.000" y1="735.000" x2="1324.000" y2="727.000"/>
+<polyline class="fit" stroke="#3c6ca8" points="180.000,733.866 294.000,733.729 465.000,733.354 750.000,733.786 1035.000,734.008"/>
+<line stroke="#3c6ca8" stroke-width="2.4" x1="520" y1="696" x2="540" y2="696"/>
+<text x="546" y="700" font-size="11">camera-only</text>
+<line class="interval" stroke="#7a5fa6" x1="180.000" y1="866.020" x2="180.000" y2="865.815"/>
+<circle class="raw" fill="#7a5fa6" cx="180.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="294.000" y1="866.020" x2="294.000" y2="865.815"/>
+<circle class="raw" fill="#7a5fa6" cx="294.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="465.000" y1="866.020" x2="465.000" y2="865.815"/>
+<circle class="raw" fill="#7a5fa6" cx="465.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="750.000" y1="866.020" x2="750.000" y2="865.815"/>
+<circle class="raw" fill="#7a5fa6" cx="750.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1035.000" y1="866.020" x2="1035.000" y2="865.815"/>
+<circle class="raw" fill="#7a5fa6" cx="1035.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1320.000" y1="866.020" x2="1320.000" y2="865.815"/>
+<circle class="raw" fill="#7a5fa6" cx="1320.000" cy="865.918" r="4"/>
+<polyline class="fit" stroke="#7a5fa6" points="180.000,865.918 294.000,865.918 465.000,865.918 750.000,865.918 1035.000,865.918 1320.000,865.918"/>
+<line stroke="#7a5fa6" stroke-width="2.4" x1="725" y1="696" x2="745" y2="696"/>
+<text x="751" y="700" font-size="11">lidar-only</text>
+<line class="interval" stroke="#d06b2d" x1="180.000" y1="867.105" x2="180.000" y2="866.913"/>
+<circle class="raw" fill="#d06b2d" cx="180.000" cy="867.008" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="294.000" y1="867.112" x2="294.000" y2="866.915"/>
+<circle class="raw" fill="#d06b2d" cx="294.000" cy="867.013" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="465.000" y1="867.131" x2="465.000" y2="866.905"/>
+<circle class="raw" fill="#d06b2d" cx="465.000" cy="867.015" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="750.000" y1="867.153" x2="750.000" y2="866.889"/>
+<circle class="raw" fill="#d06b2d" cx="750.000" cy="867.022" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1035.000" y1="867.181" x2="1035.000" y2="866.764"/>
+<circle class="raw" fill="#d06b2d" cx="1035.000" cy="866.972" r="4"/>
+<line stroke="#d06b2d" stroke-width="2" x1="1316.000" y1="743.000" x2="1324.000" y2="751.000"/>
+<line stroke="#d06b2d" stroke-width="2" x1="1316.000" y1="751.000" x2="1324.000" y2="743.000"/>
+<polyline class="fit" stroke="#d06b2d" points="180.000,867.008 294.000,867.013 465.000,867.015 750.000,867.022 1035.000,866.972"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="930" y1="696" x2="950" y2="696"/>
+<text x="956" y="700" font-size="11">fixed-fusion</text>
+<line class="interval" stroke="#21856f" x1="180.000" y1="867.105" x2="180.000" y2="866.913"/>
+<circle class="raw" fill="#21856f" cx="180.000" cy="867.008" r="4"/>
+<line class="interval" stroke="#21856f" x1="294.000" y1="866.020" x2="294.000" y2="865.815"/>
+<circle class="raw" fill="#21856f" cx="294.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#21856f" x1="465.000" y1="866.020" x2="465.000" y2="865.815"/>
+<circle class="raw" fill="#21856f" cx="465.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#21856f" x1="750.000" y1="866.020" x2="750.000" y2="865.815"/>
+<circle class="raw" fill="#21856f" cx="750.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#21856f" x1="1035.000" y1="866.020" x2="1035.000" y2="865.815"/>
+<circle class="raw" fill="#21856f" cx="1035.000" cy="865.918" r="4"/>
+<line class="interval" stroke="#21856f" x1="1320.000" y1="866.020" x2="1320.000" y2="865.815"/>
+<circle class="raw" fill="#21856f" cx="1320.000" cy="865.918" r="4"/>
+<polyline class="fit" stroke="#21856f" points="180.000,867.008 294.000,865.918 465.000,865.918 750.000,865.918 1035.000,865.918 1320.000,865.918"/>
+<line stroke="#21856f" stroke-width="2.4" x1="1135" y1="696" x2="1155" y2="696"/>
+<text x="1161" y="700" font-size="11">fault-target-drop-policy</text>
+<text class="muted" x="180" y="899" font-size="11">0</text>
+<text class="muted" x="1320" y="899" font-size="11" text-anchor="end">1 dropout probability</text>
+<text class="muted" x="168" y="724" font-size="10" text-anchor="end">2.19795</text>
+<text class="muted" x="168" y="879" font-size="10" text-anchor="end">0</text>
+<text class="muted" x="48" y="978" font-size="12">An &#215; marks an undefined conditional-loss aggregate. Missing output receives no zero localization penalty; coverage and undefined rate retain the denominator.</text>
+<text class="muted" x="48" y="999" font-size="12">Dropout is an availability control and has no crossover estimand.</text>
+</svg>

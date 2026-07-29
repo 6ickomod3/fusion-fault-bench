@@ -5,9 +5,10 @@
 Fusion Fault Bench is a deterministic benchmark for camera-LiDAR
 estimator-output fusion under controlled proxy faults. The v0.1 contract
 studies known-object BEV center estimates in a common front-camera/LiDAR region
-of interest. M1 releases a narrower one-object Gaussian analytic case, and M2
-releases its geometry implementation validation. Temporal fault sweeps and
-nuScenes latent-scene replay remain planned.
+of interest. M1 releases a narrower one-object Gaussian analytic case, M2
+releases its geometry implementation validation, and M3 releases the temporal
+procedural fault matrix. Observable health gating and nuScenes latent-scene
+replay remain later milestones.
 
 The benchmark is designed to answer a narrow evaluation question: when does
 fixed information fusion increase matched-center loss relative to a modality
@@ -35,8 +36,9 @@ how much of that loss an observable health gate can recover.
 **Analytic — released in M1:** one-object Gaussian camera bias and
 uncertainty-reporting cases with closed-form checks.
 
-**Procedural — planned:** seeded constant-velocity scenes with controlled
-layouts and paired observation draws.
+**Procedural — released in M3:** seeded constant-velocity scenes with
+controlled layouts, paired observation draws, metadata faults, dropout, and a
+common-mode blind-spot control.
 
 **nuScenes-mini geometry grounding — released in M2:** one local
 user-provided tree matching the declared official-mini profile passed
@@ -57,10 +59,13 @@ than external validation.
 - **Released:** evidence is committed under `reports/releases/` and traces to a
   tagged software revision.
 
-The current fault-performance evidence is limited to
-[M1 analytic estimator-output stress tests](../reports/releases/m1-analytic-v0.1.0/README.md).
+The current fault-performance evidence consists of
+[M1 analytic estimator-output stress tests](../reports/releases/m1-analytic-v0.1.0/README.md)
+and the
+[M3 procedural fault matrix](../reports/releases/m3-procedural-v0.1.0/README.md).
 The correctly reported-noise control is published with an `undetermined`
-finite-sample status; it is not converted into a favorable conclusion.
+finite-sample status in M1 and a `not-observed` result through `4×` in M3;
+neither is converted into a favorable conclusion.
 [M2](../reports/releases/m2-geometry-v0.1.0/README.md) contributes
 implementation-validation evidence, not another performance result.
 

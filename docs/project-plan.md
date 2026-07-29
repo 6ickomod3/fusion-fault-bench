@@ -366,9 +366,9 @@ Release outcome:
 
 ### M3: Temporal procedural benchmark
 
-Status: **pre-registered; implementation next**. See the
-[M3 temporal procedural pre-registration](m3-temporal-plan.md). M3 begins from
-the released M1 inference machinery and M2 geometry contracts; it remains
+Status: **released**. See the
+[M3 temporal procedural pre-registration](m3-temporal-plan.md) and
+[M3 release](../reports/releases/m3-procedural-v0.1.0/README.md). M3 remains
 CPU-only and dataset-independent.
 
 Deliver:
@@ -387,6 +387,20 @@ Accept when:
 - Every fault has an identity and analytic or monotonic severity-response check.
 - Procedural splits hold out declared layout and motion/range slices.
 - Smoke experiments run in CPU-only CI and fixed sweeps are deterministic.
+
+Release outcome:
+
+- all eight frozen matrix entries and every preregistered control passed their
+  implementation and evidence gates;
+- nine direction-specific crossovers were observed and correctly reported
+  camera noise was not observed to cross through the tested `4×` scale;
+- dropout retained coverage and undefined-output semantics, and shared
+  common-mode bias exposed the preregistered disagreement blind spot;
+- all 429 aggregates and 10 crossover rows were published without favorable
+  selection, while 71,700 sequence rows remain committed by exact
+  hash/length/count; and
+- two named-CPU runs matched on all 48 indexed scientific members and passed an
+  independent adversarial results review.
 
 ### M4: Health-aware fallback
 

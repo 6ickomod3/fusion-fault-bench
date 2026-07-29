@@ -1,6 +1,9 @@
 # M3 Temporal Procedural Benchmark Pre-registration
 
-Status: **pre-registered; not executed**.
+Status: **released as
+[`m3-procedural-v0.1.0`](../reports/releases/m3-procedural-v0.1.0/README.md)**.
+The preregistered intent below is preserved; post-run results and evidence live
+in the linked release.
 
 This document freezes the M3 population, generator, fault operators, experiment
 matrix, estimands, inference, validation gates, and claim boundary before any

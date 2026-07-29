@@ -1,6 +1,7 @@
 # Results
 
-Status: **M1 analytic evidence and M2 geometry-validation evidence released**.
+Status: **M1 analytic, M2 geometry-validation, and M3 temporal procedural
+evidence released**.
 
 The release is
 [`m1-analytic-v0.1.0`](../reports/releases/m1-analytic-v0.1.0/README.md).
@@ -93,3 +94,65 @@ terms, and recomputable-versus-attested boundary are recorded in the
 These values are implementation-validation errors and expected-profile
 aggregates, not local nuScenes projection residuals, calibration tolerances,
 or evidence of real sensor-noise transfer.
+
+## M3 temporal procedural benchmark
+
+The
+[`m3-procedural-v0.1.0`](../reports/releases/m3-procedural-v0.1.0/README.md)
+release applies the frozen estimator-output fault matrix to 48-frame,
+known-object constant-velocity sequences. Main experiments use 200 complete
+test sequences; the edge common-mode control uses 100. Inference uses 2,000
+paired complete-sequence bootstrap replicates and remains separate for every
+physical axis.
+
+| Controlled axis | Direction | Point root | Pointwise 95% interval / bound | Status |
+|---|---|---:|---:|---|
+| LiDAR \(y\)-bias (m) | negative | 1.396885 | [1.389999, 1.403711] | Observed |
+| LiDAR \(y\)-bias (m) | positive | 1.394257 | [1.387488, 1.400848] | Observed |
+| Correctly reported camera noise (std-scale) | increase | — | [4, \(+\infty\)) | **Not observed** |
+| Underreported camera noise (std-scale) | increase | 1.447532 | [1.425811, 1.468958] | Observed |
+| Camera calibration \(x\) (m) | negative | 1.383889 | [1.345956, 1.420950] | Observed |
+| Camera calibration \(x\) (m) | positive | 1.423728 | [1.380638, 1.462783] | Observed |
+| Camera calibration yaw (rad) | negative | 0.035211 | [0.034094, 0.036401] | Observed |
+| Camera calibration yaw (rad) | positive | 0.034083 | [0.032989, 0.035079] | Observed |
+| Camera timestamp offset (s) | negative | 0.353579 | [0.341724, 0.366203] | Observed |
+| Camera timestamp offset (s) | positive | 0.367082 | [0.352732, 0.380076] | Observed |
+
+Every observed bootstrap crossing fraction was one. The correctly reported
+noise curve remained beneficial through `4×`, with signed
+fixed-minus-healthy loss `-0.0010478879 m²` at the endpoint. Underreporting
+the same actual noise scale produced `+0.1897431948 m²`. This is a controlled
+covariance-reporting contrast, not an estimate of a physical noise regime.
+
+![M3 signed fusion delta curves](../reports/releases/m3-procedural-v0.1.0/figures/fusion-delta-curves.svg)
+
+### Availability and blind-spot controls
+
+Camera and fixed-fusion coverage at dropout probabilities
+\([0,.1,.25,.5,.75,1]\) was
+\([1,.896875,.746771,.500104,.241875,0]\). At full dropout their conditional
+localization losses are undefined, never zero-imputed; LiDAR-only and the
+diagnostic target-drop policy retain full coverage.
+
+Under shared common-mode \(x\)-bias, fixed-fusion matched-center MSE increased
+from `0.1650957575 m²` at identity to `16.1559127057 m²` at `-4 m` and
+`16.1742788093 m²` at `+4 m`. Camera-LiDAR disagreement nevertheless remained
+invariant to a maximum discrepancy of `7.1054273576e-15 m`, below the
+predeclared `1e-12 m` gate. Agreement alone therefore cannot identify this
+benchmark error.
+
+![M3 dropout control](../reports/releases/m3-procedural-v0.1.0/figures/dropout-controls.svg)
+
+![M3 common-mode blind spot](../reports/releases/m3-procedural-v0.1.0/figures/common-mode-control.svg)
+
+The aggregate-only package contains every one of the 429 aggregate and 10
+crossover records. It omits 71,700 local sequence rows while committing their
+exact hashes, byte lengths, and record counts. Two full runs on the named Apple
+M3 Pro matched on all 48 indexed scientific members. The
+[independent adversarial review](reviews/m3-results-review.md) found no
+release blocker.
+
+These results are procedural estimator-output stress tests. They are not
+physical calibration or timing tolerances, detector results, real
+sensor-noise transfer, nuScenes persistence, a health-aware fallback result,
+or safety evidence.

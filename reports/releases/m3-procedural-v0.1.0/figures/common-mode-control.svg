@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="650" viewBox="0 0 1400 650" role="img">
+<title>M3 common-mode position-bias control</title>
+<desc>All 33 camera-only, lidar-only, and fixed-fusion absolute-loss aggregate rows with pointwise intervals on signed native-meter severity. Cross-modal disagreement invariance is reported as a validated blind spot.</desc>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#182230}.muted{fill:#5b677a}.axis{stroke:#8391a5;stroke-width:1}.zero{stroke:#9d3346;stroke-width:1;stroke-dasharray:5 4}.interval{stroke-width:1.3}.fit{fill:none;stroke-width:2.4}.raw{stroke:#fff;stroke-width:1}.panel{fill:#fbfcfe;stroke:#dce3ec}
+</style>
+<rect width="1400" height="650" fill="#ffffff"/>
+<text x="48" y="42" font-size="25" font-weight="700">M3 common-mode position-bias control</text>
+<text class="muted" x="48" y="70" font-size="14">Absolute matched-center MSE under shared output bias is shown alongside validated camera-LiDAR disagreement invariance.</text>
+<text class="muted" x="48" y="92" font-size="13">Validated maximum disagreement discrepancy: 7.10543e-15 m; tolerance 1e-12 m; passed=true.</text>
+<rect class="panel" x="48" y="116" width="1304" height="448" rx="8"/>
+<line class="axis" x1="150" y1="520" x2="1330" y2="520"/>
+<line class="axis" x1="150" y1="145" x2="150" y2="520"/>
+<line class="zero" x1="740.000" y1="145" x2="740.000" y2="520"/>
+<line class="interval" stroke="#3c6ca8" x1="150.000" y1="180.403" x2="150.000" y2="176.642"/>
+<circle class="raw" fill="#3c6ca8" cx="150.000" cy="178.486" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="445.000" y1="407.800" x2="445.000" y2="405.640"/>
+<circle class="raw" fill="#3c6ca8" cx="445.000" cy="406.688" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="592.500" y1="464.225" x2="592.500" y2="462.802"/>
+<circle class="raw" fill="#3c6ca8" cx="592.500" cy="463.505" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="666.250" y1="478.178" x2="666.250" y2="476.998"/>
+<circle class="raw" fill="#3c6ca8" cx="666.250" cy="477.593" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="703.125" y1="481.613" x2="703.125" y2="480.493"/>
+<circle class="raw" fill="#3c6ca8" cx="703.125" cy="481.057" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="740.000" y1="482.691" x2="740.000" y2="481.564"/>
+<circle class="raw" fill="#3c6ca8" cx="740.000" cy="482.134" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="776.875" y1="481.383" x2="776.875" y2="480.258"/>
+<circle class="raw" fill="#3c6ca8" cx="776.875" cy="480.824" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="813.750" y1="477.725" x2="813.750" y2="476.528"/>
+<circle class="raw" fill="#3c6ca8" cx="813.750" cy="477.127" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="887.500" y1="463.299" x2="887.500" y2="461.828"/>
+<circle class="raw" fill="#3c6ca8" cx="887.500" cy="462.573" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="1035.000" y1="405.896" x2="1035.000" y2="403.749"/>
+<circle class="raw" fill="#3c6ca8" cx="1035.000" cy="404.824" r="4"/>
+<line class="interval" stroke="#3c6ca8" x1="1330.000" y1="176.629" x2="1330.000" y2="172.778"/>
+<circle class="raw" fill="#3c6ca8" cx="1330.000" cy="174.759" r="4"/>
+<polyline class="fit" stroke="#3c6ca8" points="150.000,178.486 445.000,406.688 592.500,463.505 666.250,477.593 703.125,481.057 740.000,482.134 776.875,480.824 813.750,477.127 887.500,462.573 1035.000,404.824 1330.000,174.759"/>
+<line stroke="#3c6ca8" stroke-width="2.4" x1="770" y1="91" x2="790" y2="91"/>
+<text x="796" y="95" font-size="11">camera-only</text>
+<line class="interval" stroke="#7a5fa6" x1="150.000" y1="211.697" x2="150.000" y2="210.438"/>
+<circle class="raw" fill="#7a5fa6" cx="150.000" cy="211.068" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="445.000" y1="440.508" x2="445.000" y2="439.860"/>
+<circle class="raw" fill="#7a5fa6" cx="445.000" cy="440.190" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="592.500" y1="497.641" x2="592.500" y2="497.293"/>
+<circle class="raw" fill="#7a5fa6" cx="592.500" cy="497.468" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="666.250" y1="511.888" x2="666.250" y2="511.685"/>
+<circle class="raw" fill="#7a5fa6" cx="666.250" cy="511.785" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="703.125" y1="515.435" x2="703.125" y2="515.296"/>
+<circle class="raw" fill="#7a5fa6" cx="703.125" cy="515.364" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="740.000" y1="516.605" x2="740.000" y2="516.513"/>
+<circle class="raw" fill="#7a5fa6" cx="740.000" cy="516.556" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="776.875" y1="515.414" x2="776.875" y2="515.314"/>
+<circle class="raw" fill="#7a5fa6" cx="776.875" cy="515.361" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="813.750" y1="511.852" x2="813.750" y2="511.709"/>
+<circle class="raw" fill="#7a5fa6" cx="813.750" cy="511.780" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="887.500" y1="497.592" x2="887.500" y2="497.321"/>
+<circle class="raw" fill="#7a5fa6" cx="887.500" cy="497.456" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1035.000" y1="440.452" x2="1035.000" y2="439.882"/>
+<circle class="raw" fill="#7a5fa6" cx="1035.000" cy="440.167" r="4"/>
+<line class="interval" stroke="#7a5fa6" x1="1330.000" y1="211.610" x2="1330.000" y2="210.434"/>
+<circle class="raw" fill="#7a5fa6" cx="1330.000" cy="211.022" r="4"/>
+<polyline class="fit" stroke="#7a5fa6" points="150.000,211.068 445.000,440.190 592.500,497.468 666.250,511.785 703.125,515.364 740.000,516.556 776.875,515.361 813.750,511.780 887.500,497.456 1035.000,440.167 1330.000,211.022"/>
+<line stroke="#7a5fa6" stroke-width="2.4" x1="955" y1="91" x2="975" y2="91"/>
+<text x="981" y="95" font-size="11">lidar-only</text>
+<line class="interval" stroke="#d06b2d" x1="150.000" y1="212.092" x2="150.000" y2="210.918"/>
+<circle class="raw" fill="#d06b2d" cx="150.000" cy="211.512" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="445.000" y1="440.866" x2="445.000" y2="440.246"/>
+<circle class="raw" fill="#d06b2d" cx="445.000" cy="440.557" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="592.500" y1="497.966" x2="592.500" y2="497.629"/>
+<circle class="raw" fill="#d06b2d" cx="592.500" cy="497.797" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="666.250" y1="512.196" x2="666.250" y2="511.997"/>
+<circle class="raw" fill="#d06b2d" cx="666.250" cy="512.096" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="703.125" y1="515.735" x2="703.125" y2="515.597"/>
+<circle class="raw" fill="#d06b2d" cx="703.125" cy="515.665" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="740.000" y1="516.893" x2="740.000" y2="516.804"/>
+<circle class="raw" fill="#d06b2d" cx="740.000" cy="516.848" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="776.875" y1="515.693" x2="776.875" y2="515.597"/>
+<circle class="raw" fill="#d06b2d" cx="776.875" cy="515.643" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="813.750" y1="512.123" x2="813.750" y2="511.986"/>
+<circle class="raw" fill="#d06b2d" cx="813.750" cy="512.052" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="887.500" y1="497.846" x2="887.500" y2="497.577"/>
+<circle class="raw" fill="#d06b2d" cx="887.500" cy="497.709" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1035.000" y1="440.663" x2="1035.000" y2="440.106"/>
+<circle class="raw" fill="#d06b2d" cx="1035.000" cy="440.382" r="4"/>
+<line class="interval" stroke="#d06b2d" x1="1330.000" y1="211.732" x2="1330.000" y2="210.608"/>
+<circle class="raw" fill="#d06b2d" cx="1330.000" cy="211.161" r="4"/>
+<polyline class="fit" stroke="#d06b2d" points="150.000,211.512 445.000,440.557 592.500,497.797 666.250,512.096 703.125,515.665 740.000,516.848 776.875,515.643 813.750,512.052 887.500,497.709 1035.000,440.382 1330.000,211.161"/>
+<line stroke="#d06b2d" stroke-width="2.4" x1="1140" y1="91" x2="1160" y2="91"/>
+<text x="1166" y="95" font-size="11">fixed-fusion</text>
+<text class="muted" x="150" y="542" font-size="11">-4 m</text>
+<text class="muted" x="740.0" y="542" font-size="11" text-anchor="middle">0 m</text>
+<text class="muted" x="1330" y="542" font-size="11" text-anchor="end">+4 m</text>
+<text class="muted" x="138" y="149" font-size="10" text-anchor="end">19.6392 m²</text>
+<text class="muted" x="138" y="520" font-size="10" text-anchor="end">0 m²</text>
+<text class="muted" x="48" y="606" font-size="12">This is an explicit common-mode blind-spot control, not a healthy-reference crossover. No target-drop or performance oracle is defined.</text>
+</svg>

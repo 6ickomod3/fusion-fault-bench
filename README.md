@@ -81,6 +81,9 @@ uv run python tools/m1_release.py validate \
   reports/releases/m1-analytic-v0.1.0
 uv run python tools/m2_release.py validate \
   reports/releases/m2-geometry-v0.1.0
+uv run python tools/m3_release.py validate-release \
+  reports/releases/m3-procedural-v0.1.0 \
+  --official-identity examples/release-identities/m3-procedural-v0.1.0.json
 ```
 
 The current tools require no GPU or model checkpoint. M1 and public release
@@ -132,15 +135,40 @@ See the
 
 ![M2 geometry validation summary](reports/releases/m2-geometry-v0.1.0/figures/geometry-validation-summary.svg)
 
+**Released: M3 temporal procedural fault matrix and deterministic repeat on
+the same named CPU.**
+
+The frozen matrix contains bias, correctly and incorrectly reported noise,
+camera extrinsic translation/yaw, timestamp offset, dropout, and common-mode
+controls. Across the six single-sensor crossover families, nine
+direction-specific roots were observed. Correctly reported camera noise was
+the required counterexample: fusion remained below healthy-LiDAR loss through
+the tested `4×` scale, while underreported covariance crossed at
+`1.4475×` \([1.4258,1.4690]\).
+
+At full camera dropout, camera-only and fixed-fusion conditional loss are
+undefined rather than zero-imputed. Under a shared `±4 m` common-mode bias,
+fixed-fusion loss rose above `16 m²` while camera-LiDAR disagreement remained
+invariant to `7.11e-15 m`, exposing an agreement-only health blind spot.
+
+The release publishes all 429 aggregate rows and all 10 crossover rows,
+commits the omitted 71,700 sequence rows by hash/length/count, and records 48
+of 48 byte-identical indexed-member comparisons across two full runs. See the
+[complete M3 release](reports/releases/m3-procedural-v0.1.0/README.md),
+[claim-evidence ledger](reports/releases/m3-procedural-v0.1.0/claim-evidence.md),
+and [independent results review](docs/reviews/m3-results-review.md).
+
+![M3 signed fusion delta curves](reports/releases/m3-procedural-v0.1.0/figures/fusion-delta-curves.svg)
+
 | Component | Status |
 |---|---|
 | Versioned manifest and result contracts | Validated |
 | Canonical manifest fingerprinting | Validated |
 | Analytic fusion/fault vertical slice | Released as M1 |
 | SE(3) and local nuScenes-mini grounding | Released as M2 validation evidence |
-| Temporal procedural benchmark | Pre-registered; implementation next |
-| Health-aware fallback | Planned |
-| Released fault-performance results | M1 analytic Gaussian stress tests only |
+| Temporal procedural benchmark | Released as M3 |
+| Health-aware fallback | M4 pre-registration next |
+| Released fault-performance results | M1 analytic and M3 procedural estimator-output stress tests |
 
 Results enter this README only after they trace to a released manifest,
 software revision, aggregate record, figure, named CPU run, and reproduction
@@ -161,6 +189,7 @@ contains deterministic validation gates and attestations, not an estimand.
 - [M2 geometry pre-registration](docs/m2-geometry-plan.md)
 - [M2 geometry release](reports/releases/m2-geometry-v0.1.0/README.md)
 - [M3 temporal procedural pre-registration](docs/m3-temporal-plan.md)
+- [M3 temporal procedural release](reports/releases/m3-procedural-v0.1.0/README.md)
 
 ## Explicit non-goals
 

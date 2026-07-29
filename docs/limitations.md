@@ -11,8 +11,8 @@ The released M1 evidence is narrower still: a one-object, two-dimensional
 Gaussian analytic model with additive output bias and
 uncertainty-reporting stress. M2 validates SE(3), projection, ROI, box, and
 covariance implementations, but it does not add a fault-performance result.
-Timestamps, dropout, procedural motion, latent-scene replay, and a
-health-aware gate remain unevaluated until later milestones.
+M3 adds timestamps, dropout, and procedural constant-velocity motion, but not
+latent-scene replay or a health-aware gate.
 
 ## Conditional crossover
 
@@ -38,7 +38,9 @@ benchmark is valid.
 Initial information fusion assumes independent sensor errors. Shared ego-pose
 or map-frame errors violate that assumption. A required common-mode control
 demonstrates that cross-modal agreement can remain high while both modalities
-are wrong.
+are wrong. In M3, a shared `±4 m` proxy bias raised fixed-fusion loss above
+`16 m²` while disagreement remained invariant within `7.11e-15 m`; this is a
+constructed blind spot, not a claim about common-mode fault prevalence.
 
 ## nuScenes-mini
 
@@ -61,6 +63,12 @@ Residual-based health scoring can identify inconsistency but may not uniquely
 identify its cause. Difficult geometry, covariance misspecification, and
 common-mode faults can be ambiguous. The benchmark retains an
 unknown/ambiguous decision and publishes attribution failures.
+
+M3 does not yet evaluate an observable health policy. Its target-drop policy
+knows the injected fault target, and its performance oracle uses
+complete-sequence hindsight. Neither is deployable. M4 must separately report
+observable attribution and downstream loss; detecting degradation does not
+imply that dropping a still-useful sensor improves fusion.
 
 ## Safety boundary
 
