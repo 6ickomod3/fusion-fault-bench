@@ -16,5 +16,19 @@ exploratory grounding of latent geometry, motion, calibration, and timing.
 Estimator outputs in that benchmark path will remain simulated. The project
 does not claim endorsement by Motional or the nuScenes authors.
 
-Review the current upstream terms before using this project outside personal,
-educational, or research evaluation.
+The current [Motional Dataset Terms](https://www.nuscenes.org/terms-of-use)
+state that data derived from nuScenes, including tables and charts, remains
+subject to those terms and to CC BY-NC-SA 4.0 unless separately licensed.
+Accordingly:
+
+- project code and repository-owned synthetic fixtures remain Apache-2.0;
+- any tracked release record or figure derived from a local nuScenes run is
+  marked `CC BY-NC-SA 4.0 plus Motional Dataset Terms`, with attribution and
+  non-endorsement language;
+- the Apache-2.0 license does not relicense those derived records or figures;
+  and
+- commercial users must obtain appropriate permission from Motional.
+
+This repository is prepared for personal, educational, and non-commercial
+research evaluation. Review the controlling upstream terms for your own use;
+terms may change after this document is published.

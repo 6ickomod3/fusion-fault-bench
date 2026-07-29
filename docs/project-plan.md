@@ -330,6 +330,10 @@ Accept when:
 
 ### M2: Geometry and nuScenes grounding
 
+Status: **pre-registered**. See the
+[M2 geometry validation plan](m2-geometry-plan.md). Implementation and local
+geometry execution have not started.
+
 Deliver:
 
 - Named frames, SE(3), quaternion, and camera projection utilities.

@@ -1,0 +1,279 @@
+{
+  "schema": "ffb.geometry-validation-manifest/v1",
+  "validation_id": "m2-geometry-and-nuscenes-mini-grounding-v1",
+  "dataset": {
+    "profile": "official-nuscenes-v1.0-mini",
+    "version_directory": "v1.0-mini",
+    "required_tables": [
+      "attribute",
+      "calibrated_sensor",
+      "category",
+      "ego_pose",
+      "instance",
+      "log",
+      "sample",
+      "sample_annotation",
+      "sample_data",
+      "scene",
+      "sensor",
+      "visibility"
+    ],
+    "camera_channel": "CAM_FRONT",
+    "reference_lidar_channel": "LIDAR_TOP",
+    "canonical_bev_frame": "reference-lidar-keyframe-ego",
+    "camera_visibility_frame": "front-camera-keyframe-ego",
+    "annotation_semantics": "recorded-sample-level-center-treated-as-benchmark-truth",
+    "blob_check_scope": "camera-and-reference-lidar-keyframes-only",
+    "expected_keyframe_blob_check_count": 808,
+    "expected_headline_counts": {
+      "scene": 10,
+      "sample": 404,
+      "sample_annotation": 18538
+    },
+    "diagnostic_selector": {
+      "scene": "lexicographically-first-scene-name",
+      "sample": "declared-first-sample-link",
+      "annotations": "all-sample-annotations-sorted-by-utf8-token"
+    },
+    "diagnostic_nonvacuity": {
+      "minimum_annotation_count": 1,
+      "minimum_finite_positive-depth-center_count": 1
+    },
+    "scalar_reference": "independent-stdlib-json-and-scalar-algebra-v1",
+    "public_local_projection_detail": "pass-fail-only",
+    "dataset_authentication": "summary-does-not-authenticate-dataset-bytes"
+  },
+  "public_dataset_terms": {
+    "source": "nuScenes v1.0-mini, Motional",
+    "license": "CC-BY-NC-SA-4.0-plus-Motional-Dataset-Terms",
+    "terms_url": "https://www.nuscenes.org/terms-of-use",
+    "attribution": "nuScenes: A multimodal dataset for autonomous driving, Caesar et al., 2020",
+    "non_endorsement": "Motional does not sponsor, approve, or endorse Fusion Fault Bench"
+  },
+  "geometry": {
+    "transform_notation": "T_target_from_source-column-vectors",
+    "frames": "right-handed",
+    "quaternion_order": "wxyz",
+    "quaternion_unit_norm_tolerance": 1e-06,
+    "rotation_orthogonality_tolerance": 1e-10,
+    "rotation_determinant_tolerance": 1e-10,
+    "projection_valid_min_depth_m": 0.0,
+    "center_roi_min_depth_m": 0.1,
+    "image_bounds": "strict-open",
+    "procedural_half_fov_bounds": "inclusive-closed",
+    "box_visibility": "nuscenes-devkit-any",
+    "box_visible_corner_min_depth_m": 1.0,
+    "box_all_corners_min_depth_m": 0.1,
+    "box_size_order": "width-length-height",
+    "roi_longitudinal_bounds": "inclusive-closed",
+    "roi_lateral_bounds": "inclusive-closed"
+  },
+  "synthetic_fixture": {
+    "path": "tests/fixtures/m2_geometry_reference_v1.json",
+    "file_sha256": "0676993f48e5a40034dfe497df7165b33f2d2f96dad234afd62af8e461beb252",
+    "fixture_id": "m2-nuscenes-convention-independent-v1",
+    "official_devkit_revision": "d9de17a73bdc06ce97a02f77ae7edb9b0406e851"
+  },
+  "property_validation": {
+    "rng_engine": "numpy-pcg64dxsm-v1",
+    "seed": 81985529216486895,
+    "transform_count": 256,
+    "draw_order": [
+      "left-quaternion-standard-normal-256x4-normalize",
+      "right-quaternion-standard-normal-256x4-normalize",
+      "left-translation-uniform-minus100-plus100-m-256x3",
+      "right-translation-uniform-minus100-plus100-m-256x3",
+      "point-standard-normal-times25-m-256x3"
+    ],
+    "rotation_identity_composition_max_abs_tolerance": 1e-12,
+    "translation_inverse_composition_max_abs_tolerance_m": 1e-10,
+    "point_round_trip_max_abs_tolerance_m": 1e-10,
+    "quaternion_sign_rotation_max_abs_tolerance": 1e-12,
+    "synthetic_projection_max_abs_tolerance_px": 1e-09,
+    "synthetic_depth_max_abs_tolerance_m": 1e-12,
+    "local_scalar_projection_max_abs_tolerance_px": 1e-09,
+    "local_scalar_depth_max_abs_tolerance_m": 1e-10,
+    "box_corner_max_abs_tolerance_m": 1e-12
+  },
+  "bearing_depth_covariance_validation": {
+    "parameter_order": [
+      "bearing_rad",
+      "optical_depth_m"
+    ],
+    "camera_vertical_coordinate_m": 0.5,
+    "translation_treatment": "constant-no-covariance-contribution",
+    "output_frame": "reference-lidar-keyframe-ego-bev-xy",
+    "actual_sampling_covariance": {
+      "role": "actual",
+      "matrix_rad2_rad_m_m2": [
+        [
+          1e-08,
+          5e-06
+        ],
+        [
+          5e-06,
+          0.04
+        ]
+      ]
+    },
+    "reported_estimator_covariance": {
+      "role": "reported",
+      "matrix_rad2_rad_m_m2": [
+        [
+          2.25e-08,
+          -3.75e-06
+        ],
+        [
+          -3.75e-06,
+          0.0625
+        ]
+      ]
+    },
+    "monte_carlo": {
+      "rng_engine": "numpy-pcg64dxsm-v1",
+      "seed": 13464654573299691533,
+      "sample_count": 200000,
+      "mean_bearing_rad_depth_m": [
+        0.2,
+        25.0
+      ],
+      "standard_normal_draw": "single-call-size-200000x2-float64",
+      "covariance_factor": "numpy-linalg-cholesky-lower",
+      "sample_construction": "mean-plus-lower-factor-times-column-standard-normal",
+      "nonpositive_depth_action": "fail-no-clip-condition-or-redraw",
+      "sample_covariance_ddof": 1,
+      "checked_symmetric_entries": [
+        "xx",
+        "xy",
+        "yy"
+      ],
+      "standard_error_multiplier": 6.0,
+      "nonlinear_roundoff_allowance_m2": 1e-08
+    },
+    "finite_difference": {
+      "scheme": "central",
+      "bearing_step_rad": 1e-06,
+      "depth_step_m": 0.0001,
+      "max_abs_tolerance": 1e-07
+    },
+    "full_covariance_action": "retain-symmetric-2x2-no-diagonalization",
+    "m1_fusion_integration": "not-part-of-m2"
+  },
+  "artifact": {
+    "artifact_contract": "ffb.geometry-validation-payload/v1",
+    "payload_index_schema": "ffb.geometry-payload-index/v1",
+    "success_schema": "ffb.success/v1alpha1",
+    "ordered_files": [
+      "manifest.json",
+      "geometry-validation.json",
+      "payload-index.json",
+      "run.json",
+      "_SUCCESS"
+    ],
+    "indexed_payload_files": [
+      "manifest.json",
+      "geometry-validation.json"
+    ],
+    "canonical_file_format": "key-sorted-compact-json-plus-lf",
+    "member_byte_cap": 1048576,
+    "tree_byte_cap": 5242880,
+    "logical_command": [
+      "ffb",
+      "geometry",
+      "validate",
+      "examples/validation/m2-geometry-v1.json",
+      "--dataset-root-env",
+      "NUSCENES_ROOT",
+      "--output-dir",
+      "reports/generated/m2-geometry"
+    ]
+  },
+  "public_summary_allowlist": {
+    "geometry_validation_fields": [
+      "schema",
+      "run_id",
+      "manifest_sha256",
+      "dataset_terms",
+      "dataset_validation",
+      "synthetic_geometry_validation",
+      "covariance_validation",
+      "all_checks_passed"
+    ],
+    "dataset_terms_fields": [
+      "source",
+      "license",
+      "terms_url",
+      "attribution",
+      "non_endorsement"
+    ],
+    "dataset_validation_fields": [
+      "profile",
+      "expected_headline_counts",
+      "headline_profile_passed_attested",
+      "structural_integrity_passed_attested",
+      "keyframe_blob_check_count",
+      "keyframe_blob_validation_passed_attested",
+      "local_projection_crosscheck_passed_attested",
+      "diagnostic_svg_generated_attested",
+      "dataset_authentication",
+      "all_checks_passed"
+    ],
+    "synthetic_geometry_validation_fields": [
+      "fixture_id",
+      "fixture_file_sha256",
+      "rotation_max_abs_error",
+      "translation_max_abs_error_m",
+      "point_round_trip_max_abs_error_m",
+      "quaternion_sign_max_abs_error",
+      "projection_max_abs_error_px",
+      "depth_max_abs_error_m",
+      "box_corner_max_abs_error_m",
+      "all_checks_passed"
+    ],
+    "covariance_validation_fields": [
+      "finite_difference_max_abs_error",
+      "monte_carlo_sample_count",
+      "covariance_entries",
+      "covariance_entry_max_abs_error_m2",
+      "covariance_entry_max_allowed_error_m2",
+      "covariance_entry_max_gate_ratio",
+      "actual_sampling_gate_passed",
+      "reported_role_separation_passed_attested",
+      "all_checks_passed"
+    ],
+    "covariance_entry_fields": [
+      "entry",
+      "absolute_error_m2",
+      "allowed_error_m2",
+      "gate_ratio",
+      "passed"
+    ],
+    "run_fields": [
+      "schema",
+      "run_id",
+      "manifest_sha256",
+      "package_version",
+      "git_revision",
+      "source_dirty",
+      "lockfile_sha256",
+      "command",
+      "environment",
+      "started_at",
+      "ended_at",
+      "status",
+      "artifact_sha256"
+    ]
+  },
+  "prohibited_public_dataset_fields": [
+    "observed-nonheadline-table-counts",
+    "archive-or-table-sha256",
+    "dataset-root",
+    "scene-sample-annotation-or-instance-identifiers",
+    "timestamps",
+    "filenames",
+    "calibration-pose-or-box-values",
+    "selected-sample-counts",
+    "local-projection-residuals-pixels-or-depths",
+    "diagnostic-svg"
+  ]
+}

@@ -7,6 +7,12 @@ rules that could otherwise be chosen after results are visible. Any change that
 affects the estimand requires a new manifest schema and a documented benchmark
 revision.
 
+M2 pre-implementation erratum: section 3 originally said `radial` limits while
+the frozen manifest schema, examples, and field names specify
+`x_min_m`/`x_max_m`. The term is corrected below to **ego-forward** limits.
+This resolves a contradictory label before geometry execution; it changes no
+schema, manifest value, M1 analytic result, or estimand.
+
 ## 1. Question and estimand
 
 Fusion Fault Bench asks:
@@ -84,7 +90,7 @@ estimation and fusion from detection and association.
 Only object states in the common front-camera/LiDAR support are scored:
 
 1. positive ego-forward range;
-2. within the manifest's radial and lateral limits;
+2. within the manifest's ego-forward and lateral limits;
 3. within the front camera's declared field of view or calibrated image bounds;
 4. eligible for both modality estimators before a fault is injected.
 

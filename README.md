@@ -118,7 +118,7 @@ tolerances or safety thresholds. See the
 | Versioned manifest and result contracts | Validated |
 | Canonical manifest fingerprinting | Validated |
 | Analytic fusion/fault vertical slice | Released as M1 |
-| SE(3) and nuScenes projection grounding | Planned |
+| SE(3) and nuScenes projection grounding | M2 pre-registered |
 | Temporal procedural benchmark | Planned |
 | Health-aware fallback | Planned |
 | Released quantitative results | M1 analytic Gaussian stress tests only |
@@ -138,6 +138,7 @@ reproduction command.
 - [Results](docs/results.md)
 - [Project plan](docs/project-plan.md)
 - [M1 analytic pre-registration](docs/m1-analytic-plan.md)
+- [M2 geometry pre-registration](docs/m2-geometry-plan.md)
 
 ## Explicit non-goals
 

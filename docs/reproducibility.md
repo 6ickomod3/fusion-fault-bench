@@ -149,9 +149,9 @@ excluded from manifests and public result records.
 | Contract and canonicalization unit tests | Validated in M0 |
 | Package build and isolated-wheel smoke test | Validated in M0 |
 | Analytic RNG, fusion, fault, metric, and artifact tests | Validated in M1 |
-| Geometry and temporal fault tests | Planned for M2–M3 |
-| Transform and covariance property tests | Planned for M2 |
+| Geometry and temporal fault tests | Geometry pre-registered; temporal planned |
+| Transform and covariance property tests | Pre-registered for M2 |
 | Independent-Gaussian analytic oracles | Validated in M1 |
-| nuScenes integrity and projection agreement | Planned for M2 |
+| nuScenes integrity and projection agreement | Pre-registered for M2 |
 | Named-CPU analytic release and deterministic repeat | Released in M1 |
 | Full multi-family clean-CPU report reproduction | Planned for M6 |
