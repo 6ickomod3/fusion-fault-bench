@@ -438,15 +438,23 @@ Accept when:
 No minimum improvement is required for completion; a valid negative result is
 acceptable.
 
-### M5: nuScenes latent replay and selected v0.2 complexity
+### M5: nuScenes latent replay
+
+Status: **preregistered; implementation and replay outcomes pending**. See the
+[frozen M5 replay plan](m5-replay-plan.md) and
+[adversarial plan review](reviews/m5-plan-review.md).
 
 Deliver:
 
-- nuScenes-mini matched-center temporal replay using local metadata.
+- All-ten-scene nuScenes-mini matched-center temporal replay using local
+  metadata.
 - Comparison of procedural and replay ranges, motions, visibility, and timing.
-- Repetition of the predeclared v0.1 fault matrix on eligible replay slices.
-- Only if v0.1 remains valid: selected association, miss/false-positive, set
-  loss, robust-fusion, or learned-health extensions.
+- Repetition of the complete predeclared M3 v0.1 persistent-fault matrix on
+  eligible replay support.
+- Apply-only transfer of the released M4 observable-health rule without
+  refitting, normalization, threshold, policy, or latch changes.
+- No v0.2 method selection in M5 or M6. Any later extension requires a
+  separate preregistration and fresh untouched evaluation data.
 
 Accept when:
 
@@ -456,7 +464,10 @@ Accept when:
   are reported rather than hidden.
 - Replay claims are limited to persistence under recorded latent geometry and
   motion, with scene-level uncertainty.
-- Any v0.2 extension is reported separately from the v0.1 estimand.
+- Complete-scene bootstrap plus leave-one-scene and leave-one-private-log-group
+  sensitivity are published.
+- Persistent and health panels pass independent implementation and
+  results/claims reviews without favorable-result selection.
 
 ### M6: Public report
 

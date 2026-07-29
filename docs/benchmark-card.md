@@ -8,7 +8,8 @@ studies known-object BEV center estimates in a common front-camera/LiDAR region
 of interest. M1 releases a narrower one-object Gaussian analytic case, M2
 releases its geometry implementation validation, M3 releases the temporal
 procedural fault matrix, and M4 releases one frozen observable health-aware
-fallback benchmark. nuScenes latent-scene replay remains a later milestone.
+fallback benchmark. M5 nuScenes latent-scene replay is preregistered but not
+implemented or released.
 
 The benchmark is designed to answer a narrow evaluation question: when does
 fixed information fusion increase matched-center loss relative to a modality
@@ -51,14 +52,17 @@ sanitized metadata-integrity, referenced-key-frame existence, and scalar
 projection attestations. The release authenticates no dataset bytes and
 contains no per-frame payload.
 
-**nuScenes-mini latent replay — planned for M5:** recorded annotations, poses,
-calibration, and timing provide latent scene structure. Estimator outputs
-remain simulated. Ten mini scenes are treated as exploratory grounding rather
-than external validation.
+**nuScenes-mini latent replay — preregistered for M5:** recorded annotations,
+poses, calibration, and timing provide latent scene structure. Estimator
+outputs remain simulated. All ten mini scenes are treated as finite
+exploratory grounding rather than external validation. No replay descriptor or
+fault outcome is yet public evidence.
 
 ## Status vocabulary
 
 - **Planned:** specified but not implemented.
+- **Preregistered:** scientific intent and review passed before outcome use,
+  but implementation/evidence is not yet validated.
 - **Implemented:** code and targeted tests exist.
 - **Validated:** acceptance checks and adversarial review passed.
 - **Released:** evidence is committed under `reports/releases/` and traces to a
