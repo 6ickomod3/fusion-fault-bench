@@ -444,9 +444,13 @@ Status: **implementation checkpoint passed; replay outcomes pending**. See the
 [frozen M5 replay plan](m5-replay-plan.md),
 [adversarial plan review](reviews/m5-plan-review.md),
 [outcome-blind resource-scope clarification](m5-resource-scope-amendment.md),
-[implementation review](reviews/m5-implementation-review.md), and
-[pre-outcome technical walkthrough](m5-technical-walkthrough.md). No local
-nuScenes replay or M5 result has been promoted at this checkpoint.
+[implementation review](reviews/m5-implementation-review.md),
+[release-pipeline pre-registration](m5-release-pipeline-plan.md), and
+[pre-outcome technical walkthrough](m5-technical-walkthrough.md). The
+release-pipeline plan receives its own
+[adversarial review](reviews/m5-release-pipeline-plan-review.md) before
+implementation. No local nuScenes replay or M5 result has been promoted at
+this checkpoint.
 
 Deliver:
 

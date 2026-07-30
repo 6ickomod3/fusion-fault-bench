@@ -233,6 +233,8 @@ contains deterministic validation gates and attestations, not an estimand.
 - [M5 adversarial plan review](docs/reviews/m5-plan-review.md)
 - [M5 outcome-blind resource-scope clarification](docs/m5-resource-scope-amendment.md)
 - [M5 adversarial implementation review](docs/reviews/m5-implementation-review.md)
+- [M5 release-pipeline pre-registration](docs/m5-release-pipeline-plan.md)
+- [M5 release-pipeline adversarial plan review](docs/reviews/m5-release-pipeline-plan-review.md)
 - [M5 technical walkthrough (pre-outcome)](docs/m5-technical-walkthrough.md)
 
 ## Explicit non-goals
