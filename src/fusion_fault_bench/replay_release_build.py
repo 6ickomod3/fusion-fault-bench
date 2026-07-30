@@ -76,6 +76,18 @@ class ReplayReleaseBuildError(ValueError):
     """Final release construction failed before release authority was established."""
 
 
+def _require_matching_publication_digest(
+    *,
+    expected: str,
+    published: str,
+    validated: str,
+) -> None:
+    if published != expected or validated != expected:
+        raise ReplayReleaseBuildError(
+            "M5 final publication digest differs from the validated preflight"
+        )
+
+
 def _fingerprint(value: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
     return (
         value.st_dev,
@@ -469,12 +481,16 @@ def _build_reviewed_release(
         preflight_validated = validate_release_package(preflight_path)
         if preflight_validated.release_package_sha256 != preflight.release_package_sha256:
             raise ReplayReleaseBuildError("M5 preflight package validation digest changed")
+        expected_release_package_sha256 = preflight_validated.release_package_sha256
 
     prepublish_authority()
     published = publish_release_package(content, output_dir)
     validated = validate_release_package(output_dir)
-    if validated.release_package_sha256 != published.release_package_sha256:
-        raise ReplayReleaseBuildError("M5 published package validation digest changed")
+    _require_matching_publication_digest(
+        expected=expected_release_package_sha256,
+        published=published.release_package_sha256,
+        validated=validated.release_package_sha256,
+    )
     return validated
 
 

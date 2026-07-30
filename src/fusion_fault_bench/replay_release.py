@@ -104,10 +104,10 @@ _SAFE_PLACEHOLDER_RELATIVE_PATH_PATTERN = re.compile(
 )
 _FROZEN_METHODOLOGY_SHA256 = {
     "evidence/release-pipeline-plan.md": (
-        "2b1f7c29a3be92418b6ca1fecb5a9cb44822617081187aef824931fed5657f66"
+        "0a645323d346668707442eb2e9cd76bac221f8a0c9ff48c4baad5bf078ce946d"
     ),
     "evidence/release-pipeline-plan-review.md": (
-        "929fce2f74256bee527979c77554f2ce41bb230bac60d9b7ffbb2098607545d3"
+        "3a881c41de758d98a65e96a627499ad5cf1b4c4c5bf9a1d7fcece507d3e4c6af"
     ),
     "evidence/resource-scope-amendment.md": (
         "f7eb19e03661bec1663b1a2f6ce953e465e8a3a76d63277ece5bee4e59708aff"
@@ -595,6 +595,11 @@ def _publish_exact_tree[LoadedT](
         staging_name, staging_fd = create_staging_directory_at(parent_fd)
         staging = parent / staging_name
         try:
+            assert_directory_descriptor_matches_path(
+                staging_fd,
+                staging,
+                label="M5 release staging directory",
+            )
             _make_directories(staging_fd, paths)
             written: list[str] = []
             for group in write_groups:
@@ -605,6 +610,11 @@ def _publish_exact_tree[LoadedT](
                 for path in written:
                     _verify_nested(staging_fd, path, files[path])
             loader(staging)
+            assert_directory_descriptor_matches_path(
+                staging_fd,
+                staging,
+                label="M5 release staging directory",
+            )
             assert_directory_descriptor_matches_path(parent_fd, parent, label="destination parent")
             reject_directory_descriptor_in_git_metadata(parent_fd, git_metadata)
             if entry_exists_at(parent_fd, target.name):
@@ -616,9 +626,20 @@ def _publish_exact_tree[LoadedT](
                 target.name,
             )
             published = True
+            assert_directory_descriptor_matches_path(
+                staging_fd,
+                target,
+                label="M5 published release directory",
+            )
             os.fsync(parent_fd)
             assert_directory_descriptor_matches_path(parent_fd, parent, label="destination parent")
-            return loader(target)
+            loaded = loader(target)
+            assert_directory_descriptor_matches_path(
+                staging_fd,
+                target,
+                label="M5 published release directory",
+            )
+            return loaded
         except BaseException:
             if not published:
                 _cleanup_nested(

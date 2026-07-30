@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import subprocess
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -72,6 +73,7 @@ def test_clean_authority_normalizes_and_cross_checks_snapshots(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.chdir(tmp_path)
     clean = SimpleNamespace(source_root=tmp_path, git_revision=_REVISION)
     implementation = SimpleNamespace(scientific_git_revision=_REVISION)
     observed: list[object] = []
@@ -100,10 +102,16 @@ def test_clean_authority_normalizes_and_cross_checks_snapshots(
         workflow._clean_authority(tmp_path)
 
 
+def test_clean_authority_rejects_a_different_working_tree(tmp_path: Path) -> None:
+    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="working directory"):
+        workflow._clean_authority(tmp_path)
+
+
 def test_clean_authority_wraps_discovery_failure(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
         workflow,
         "discover_clean_source",
@@ -114,7 +122,7 @@ def test_clean_authority_wraps_discovery_failure(
 
 
 def test_normalized_replay_paths_accept_exact_attempt() -> None:
-    output = Path(f"reports/generated/m5-replay-primary-{_REVISION}-r2")
+    output = Path(f"reports/generated/m5-replay-primary-{_REVISION}-r1")
     timing = output.with_name(f"{output.name}.time-l.txt")
     assert workflow._normalized_run_paths(
         run_label="primary",
@@ -149,7 +157,13 @@ def test_normalized_replay_paths_accept_exact_attempt() -> None:
             "primary",
             Path("reports/generated/not-an-attempt"),
             Path("reports/generated/not-an-attempt.time-l.txt"),
-            "does not bind",
+            "frozen r1",
+        ),
+        (
+            "primary",
+            Path(f"reports/generated/m5-replay-primary-{_REVISION}-r2"),
+            Path(f"reports/generated/m5-replay-primary-{_REVISION}-r2.time-l.txt"),
+            "frozen r1",
         ),
         (
             "repeat",
@@ -180,9 +194,11 @@ def test_authenticated_executable_requires_executable_single_regular_file(
     executable = tmp_path / "ffb"
     executable.write_bytes(b"#!/bin/sh\nexit 0\n")
     executable.chmod(0o700)
-    assert workflow._authenticated_executable(executable, label="ffb") == os.fspath(
-        executable.resolve()
-    )
+    executable_path, fingerprint = workflow._authenticated_executable(executable, label="ffb")
+    assert executable_path == os.fspath(executable.resolve())
+    assert fingerprint.byte_length == executable.stat().st_size
+    assert fingerprint.link_count == 1
+    assert fingerprint.sha256 == "306c6ca7407560340797866e077e053627ad409277d1b9da58106fce4cf717cb"
 
     executable.chmod(0o600)
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="safe regular"):
@@ -197,18 +213,20 @@ def test_authenticated_executable_rejects_symlink_and_hardlink(tmp_path: Path) -
     executable.chmod(0o700)
     redirected = tmp_path / "redirected"
     redirected.symlink_to(executable)
-    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="safe regular"):
+    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="unavailable"):
         workflow._authenticated_executable(redirected, label="ffb")
 
     hardlink = tmp_path / "hardlink"
     os.link(executable, hardlink)
-    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="safe regular"):
+    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="unavailable"):
         workflow._authenticated_executable(executable, label="ffb")
 
 
 @pytest.mark.parametrize("raw", (None, "relative/cache", "/definitely/missing/m5-cache"))
 def test_authenticated_input_rejects_absent_relative_or_missing(raw: str | None) -> None:
-    message = "absolute input" if raw is None else "normalized absolute|unavailable"
+    message = (
+        "absolute input" if raw is None else "normalized absolute|unavailable|safe real directory"
+    )
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match=message):
         workflow._authenticated_input_directory(
             raw,
@@ -248,11 +266,32 @@ def _execution_mocks(
     )
     monkeypatch.setattr(workflow, "collect_runtime_environment", lambda: environment)
     monkeypatch.setattr(workflow.shutil, "which", lambda _name: os.fspath(expected_ffb))
+    fingerprint = workflow.ReplayExecutableFingerprint(
+        device=1,
+        inode=2,
+        mode=stat.S_IFREG | 0o700,
+        link_count=1,
+        owner_uid=3,
+        owner_gid=4,
+        byte_length=10,
+        modified_time_ns=5,
+        changed_time_ns=6,
+        sha256="d" * 64,
+    )
     monkeypatch.setattr(
         workflow,
         "_authenticated_executable",
-        lambda path, **_kwargs: os.fspath(path.resolve()),
+        lambda path, **_kwargs: (os.fspath(path.resolve()), fingerprint),
     )
+    monkeypatch.setattr(
+        workflow,
+        "_software_verification_authority",
+        lambda _clean, _implementation: (
+            f"reports/generated/m5-software-verification-{_REVISION}.json",
+            "e" * 64,
+        ),
+    )
+    monkeypatch.setattr(workflow, "_require_attempt_lifecycle", lambda *_a, **_k: None)
     monkeypatch.setattr(workflow, "_require_upstream_sync", lambda _root, _revision: "origin/main")
     for name in workflow._THREAD_ENVIRONMENT_KEYS:
         monkeypatch.setenv(name, "1")
@@ -287,6 +326,8 @@ def test_execution_authority_builds_complete_outcome_blind_token(
     )
     assert token.environment is environment
     assert token.upstream_ref == "origin/main"
+    assert token.software_verification_sha256 == "e" * 64
+    assert token.ffb_executable_fingerprint.sha256 == "d" * 64
 
 
 def test_execution_authority_rejects_thread_drift(
@@ -394,6 +435,11 @@ def test_candidate_prepare_wrapper_delegates_and_reloads(
         lambda _root, _implementation: (report, attestation),
     )
     monkeypatch.setattr(
+        workflow,
+        "_authenticate_completed_replays",
+        lambda **_kwargs: object(),
+    )
+    monkeypatch.setattr(
         replay_release_candidate,
         "prepare_review_candidate",
         lambda **kwargs: delegated.setdefault("prepare", kwargs),
@@ -405,12 +451,14 @@ def test_candidate_prepare_wrapper_delegates_and_reloads(
     )
     output = Path(f"reports/generated/m5-review-candidate-{_REVISION}")
 
+    primary = Path(f"reports/generated/m5-replay-primary-{_REVISION}-r1")
+    repeat = Path(f"reports/generated/m5-replay-repeat-{_REVISION}-r1")
     observed = workflow.prepare_review_candidate(
-        primary_artifact=Path("primary"),
-        repeat_artifact=Path("repeat"),
-        primary_time_l=Path("primary-time"),
-        repeat_time_l=Path("repeat-time"),
-        software_verification=Path("software"),
+        primary_artifact=primary,
+        repeat_artifact=repeat,
+        primary_time_l=primary.with_name(f"{primary.name}.time-l.txt"),
+        repeat_time_l=repeat.with_name(f"{repeat.name}.time-l.txt"),
+        software_verification=Path(f"reports/generated/m5-software-verification-{_REVISION}.json"),
         output_dir=output,
         source_root=tmp_path,
     )
@@ -434,13 +482,22 @@ def test_candidate_prepare_rejects_wrong_destination(
         "_read_review_authority",
         lambda _root, _implementation: (report, attestation),
     )
+    monkeypatch.setattr(
+        workflow,
+        "_authenticate_completed_replays",
+        lambda **_kwargs: object(),
+    )
+    primary = Path(f"reports/generated/m5-replay-primary-{_REVISION}-r1")
+    repeat = Path(f"reports/generated/m5-replay-repeat-{_REVISION}-r1")
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="destination"):
         workflow.prepare_review_candidate(
-            primary_artifact=Path("primary"),
-            repeat_artifact=Path("repeat"),
-            primary_time_l=Path("primary-time"),
-            repeat_time_l=Path("repeat-time"),
-            software_verification=Path("software"),
+            primary_artifact=primary,
+            repeat_artifact=repeat,
+            primary_time_l=primary.with_name(f"{primary.name}.time-l.txt"),
+            repeat_time_l=repeat.with_name(f"{repeat.name}.time-l.txt"),
+            software_verification=Path(
+                f"reports/generated/m5-software-verification-{_REVISION}.json"
+            ),
             output_dir=Path("wrong"),
             source_root=tmp_path,
         )
@@ -510,6 +567,18 @@ def test_build_facade_delegates_authority_functions_and_wraps_failure(
         return result
 
     monkeypatch.setattr(workflow_build, "orchestrate_reviewed_release", orchestrate)
+    clean = SimpleNamespace(source_root=Path("."), git_revision=_REVISION)
+    monkeypatch.setattr(workflow, "_clean_authority", lambda _root: (clean, object()))
+    monkeypatch.setattr(
+        workflow,
+        "_authenticate_completed_replays",
+        lambda **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        workflow,
+        "_require_frozen_candidate_inputs",
+        lambda **_kwargs: None,
+    )
     arguments = {
         "candidate": Path("candidate"),
         "results_review": Path("review"),

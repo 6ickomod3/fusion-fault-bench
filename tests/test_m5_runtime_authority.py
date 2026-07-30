@@ -67,6 +67,19 @@ def test_runtime_input_rejects_nonprivate_redirected_and_unnormalized_paths(
             require_private=False,
         )
 
+    real_parent = tmp_path / "real-parent"
+    real_parent.mkdir()
+    nested = real_parent / "nested"
+    nested.mkdir()
+    redirected_parent = tmp_path / "redirected-parent"
+    redirected_parent.symlink_to(real_parent, target_is_directory=True)
+    with pytest.raises(ReplayReleaseWorkflowError, match="safe real directory"):
+        _authenticated_input_directory(
+            os.fspath(redirected_parent / "nested"),
+            label="dataset root",
+            require_private=False,
+        )
+
 
 def test_runtime_dataset_cache_and_source_overlap_is_detectable(tmp_path: Path) -> None:
     child = tmp_path / "child"

@@ -323,3 +323,24 @@ def test_build_rejects_any_other_release_destination(tmp_path: Path) -> None:
             implementation_attestation=b"attestation\n",
             prepublish_authority=lambda: None,
         )
+
+
+@pytest.mark.parametrize(
+    ("published", "validated"),
+    (
+        (
+            ("0" * 64, _PACKAGE_SHA256),
+            (_PACKAGE_SHA256, "0" * 64),
+        )
+    ),
+)
+def test_final_publication_digest_must_equal_preflight(
+    published: str,
+    validated: str,
+) -> None:
+    with pytest.raises(ReplayReleaseBuildError, match="validated preflight"):
+        release_build._require_matching_publication_digest(
+            expected=_PACKAGE_SHA256,
+            published=published,
+            validated=validated,
+        )

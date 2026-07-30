@@ -690,3 +690,7 @@ frozen estimator-output fusion and health-monitoring mechanisms persist across
 ten recorded nuScenes-mini latent scenes; it does not yet claim a replay
 result, physical sensor robustness, detector quality, fleet generalization,
 production readiness, or safety benefit.
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->

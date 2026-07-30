@@ -231,3 +231,7 @@ maps each number to an exact aggregate selector.
 M4 remains a known-ID procedural estimator-output benchmark. It does not
 evaluate detector AP, raw-sensor effects, natural fault rates, nuScenes
 persistence, planning, collisions, or a production fallback.
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->

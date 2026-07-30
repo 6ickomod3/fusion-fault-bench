@@ -97,3 +97,7 @@ recovery with undefined fixed-fusion conditional loss, not zero-imputed gains.
 
 See [Benchmark Contract v0.1](benchmark-contract-v0.1.md) for normative
 definitions and [Limitations](limitations.md) for the public claim boundary.
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->

@@ -21,9 +21,11 @@ from collections.abc import Callable, Sequence
 from contextlib import suppress
 from pathlib import Path
 from types import ModuleType
+from typing import cast
 
 from fusion_fault_bench.artifacts import canonical_json_bytes
 from fusion_fault_bench.replay_release import (
+    LoadedReplayReviewCandidate,
     attest_results_review,
     load_release_package,
     sync_reviewed_evidence,
@@ -42,6 +44,7 @@ _REVIEW_REPORT_BYTE_CAP = 1024 * 1024
 _DECISION_BYTE_CAP = 1024 * 1024
 _CHILD_OUTPUT_BYTE_CAP = 64 * 1024
 _CHILD_OUTPUT_READ_BYTES = 8192
+_SUCCESS_RECEIPT_BYTE_CAP = 64 * 1024
 _DIGEST_ATTRIBUTES = (
     "candidate_sha256",
     "release_package_sha256",
@@ -267,6 +270,32 @@ def _require_generated_path(path: Path, *, label: str) -> tuple[str, Path]:
     return raw, _absolute_lexical(path)
 
 
+def _valid_execution_fingerprint(value: object) -> bool:
+    digest = getattr(value, "sha256", None)
+    mode = getattr(value, "mode", None)
+    integer_fields = (
+        "device",
+        "inode",
+        "link_count",
+        "owner_uid",
+        "owner_gid",
+        "byte_length",
+        "modified_time_ns",
+        "changed_time_ns",
+    )
+    return (
+        isinstance(digest, str)
+        and len(digest) == 64
+        and all(character in "0123456789abcdef" for character in digest)
+        and type(mode) is int
+        and stat.S_ISREG(mode)
+        and mode & 0o111 != 0
+        and all(type(getattr(value, field, None)) is int for field in integer_fields)
+        and getattr(value, "link_count", None) == 1
+        and getattr(value, "byte_length", 0) > 0
+    )
+
+
 def _kill_child_group(process: subprocess.Popen[bytes]) -> None:
     with suppress(ProcessLookupError):
         os.killpg(process.pid, signal.SIGKILL)
@@ -340,7 +369,7 @@ def run_replay_command(args: argparse.Namespace) -> int:
         args.output_dir,
         label="replay output",
     )
-    _log_argument, log_absolute = _require_generated_path(
+    log_argument, log_absolute = _require_generated_path(
         args.time_l_output,
         label="replay timing log",
     )
@@ -356,10 +385,24 @@ def run_replay_command(args: argparse.Namespace) -> int:
     )
     time_executable = getattr(execution_token, "time_executable", None)
     ffb_executable = getattr(execution_token, "ffb_executable", None)
+    source_root = getattr(execution_token, "source_root", None)
+    success_argument = getattr(execution_token, "success_argument", None)
+    time_fingerprint = getattr(execution_token, "time_executable_fingerprint", None)
+    ffb_fingerprint = getattr(execution_token, "ffb_executable_fingerprint", None)
     if (
         time_executable != _TIME_EXECUTABLE
         or not isinstance(ffb_executable, str)
         or not Path(ffb_executable).is_absolute()
+        or not isinstance(source_root, Path)
+        or source_root != _absolute_lexical(Path("."))
+        or output_absolute != source_root / output_argument
+        or log_absolute != source_root / log_argument
+        or getattr(execution_token, "output_argument", None) != output_argument
+        or getattr(execution_token, "time_l_argument", None) != log_argument
+        or not isinstance(success_argument, str)
+        or success_argument != f"{output_argument}.success.json"
+        or not _valid_execution_fingerprint(time_fingerprint)
+        or not _valid_execution_fingerprint(ffb_fingerprint)
     ):
         raise M5ReleaseDriverError("M5 replay execution authority is invalid")
 
@@ -436,6 +479,26 @@ def run_replay_command(args: argparse.Namespace) -> int:
                     output_dir=args.output_dir,
                     time_l_output=args.time_l_output,
                 )
+        if returncode == 0:
+            receipt = _call_workflow(
+                "build_replay_execution_success_receipt",
+                token=execution_token,
+            )
+            receipt_path = getattr(receipt, "path", None)
+            receipt_value = getattr(receipt, "value", None)
+            if (
+                not isinstance(receipt_path, Path)
+                or receipt_path != Path(success_argument)
+                or not isinstance(receipt_value, bytes)
+                or not receipt_value
+                or len(receipt_value) > _SUCCESS_RECEIPT_BYTE_CAP
+            ):
+                raise M5ReleaseDriverError("M5 replay success receipt is invalid")
+            _write_exclusive_file(receipt_path, receipt_value)
+            _call_workflow(
+                "verify_replay_execution_success_receipt",
+                token=execution_token,
+            )
         return returncode
     finally:
         if log_descriptor is not None:
@@ -465,10 +528,13 @@ def validate_review_candidate_command(args: argparse.Namespace) -> object:
 
 
 def attest_results_review_command(args: argparse.Namespace) -> object:
-    candidate = _call_workflow(
-        "load_validated_review_candidate",
-        path=args.candidate,
-        source_root=args.source_root,
+    candidate = cast(
+        LoadedReplayReviewCandidate,
+        _call_workflow(
+            "load_validated_review_candidate",
+            path=args.candidate,
+            source_root=args.source_root,
+        ),
     )
     report = _read_bounded_regular_file(
         args.review_report,

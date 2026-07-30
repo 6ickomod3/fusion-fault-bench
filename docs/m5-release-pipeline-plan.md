@@ -105,14 +105,36 @@ or P1 findings.
 Both local runs, candidate preparation, and final machine-artifact
 construction must authenticate the same:
 
-- clean Git revision;
+- clean Git revision and a process working directory equal to that real source root;
 - tracked replay intent bytes and canonical digest;
 - lockfile digest and locked environment;
 - package version;
 - named Darwin CPU environment;
 - exact logical command
-  `ffb replay run --output-dir <safe reports/generated path>`; and
+  `ffb replay run --output-dir <safe reports/generated path>`;
+- stable inode, metadata, and SHA-256 fingerprints for the exact locked `ffb`
+  executable and Darwin `/usr/bin/time`; and
 - unchanged source snapshot before and after each authoritative operation.
+
+The revision-specific software-verification attestation must exist before the
+primary replay. Its normalized path and exact SHA-256 are part of each replay
+preflight, postflight, and success receipt and therefore cannot be substituted
+after an outcome-bearing run.
+
+Each replay preflight also proves live upstream equality. The local tracking
+ref, `HEAD`, and one exact remote branch response from a bounded,
+noninteractive `git ls-remote` must agree. The query sets
+`GIT_TERMINAL_PROMPT=0`; SSH transport additionally requires batch mode and
+strict known-host checking. A timeout, prompt requirement, unknown host,
+authentication failure, ambiguous response, or remote mismatch fails closed
+without exposing the remote URL or credentials.
+
+There is exactly one primary `r1` and one repeat `r1` attempt for a scientific
+revision, always in that order. No operator-selected ordinal exists. A
+content-bound owner-only `.success.json` receipt is published only after the
+replay exits successfully, the timing log is complete, and postflight
+authority is unchanged. Candidate and release construction require both
+receipts and reject partial, sibling, out-of-order, retried, or `rN` evidence.
 
 Here, a clean scientific source means that every tracked file and index entry
 equals `HEAD`, the implementation-snapshot digest is unchanged, and no
@@ -773,9 +795,9 @@ retried at the same path.
 
 ## 14. Frozen command workflow
 
-The following command shape is fixed; concrete output suffixes use the clean
-scientific revision and an operator run ordinal chosen before execution.
-After release tooling implementation and its independent review, the
+The following command shape is fixed. Concrete replay outputs use the clean
+scientific revision and exactly the literal `r1`; there is no selectable run
+ordinal. After release tooling implementation and its independent review, the
 reviewer-authored report and ignored decision input are first canonicalized:
 
 ```bash
@@ -790,7 +812,16 @@ uv run --frozen --no-sync python tools/m5_release.py \
 
 The report and attestation then pass the full source/privacy suite and are
 committed and pushed with no implementation-snapshot change. Only from that
-clean, remotely synchronized scientific revision does execution begin:
+clean, remotely synchronized scientific revision does execution begin. Each
+replay preflight and postflight repeats the exact live, bounded, noninteractive
+upstream proof described in Section 2.
+
+The revision-specific UV cache path must be absent, and the frozen commands
+create it once with owner-only mode before any `uv run` can use it. Failure to
+create that exact private directory blocks execution rather than authorizing a
+replacement cache or replay attempt. Software verification completes before
+either replay and its exact revision-specific bytes are subsequently bound
+into both execution authorities and receipts.
 
 ```bash
 git status --short --untracked-files=all
@@ -799,6 +830,7 @@ uv sync --locked --group dev
 
 export NUSCENES_ROOT=<user-provided-nuscenes-root>
 export UV_CACHE_DIR=<private-temporary-directory>/ffb-m5-uv-cache-<revision>
+mkdir -m 700 "$UV_CACHE_DIR"
 export OPENBLAS_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
@@ -848,21 +880,30 @@ uv run --frozen --no-sync python tools/m5_release.py validate-review-candidate \
   reports/generated/m5-review-candidate-<revision>
 ```
 
-`run-replay` validates real parents and absent output/log destinations, then
-reserves the private timing log with descriptor-relative
-`O_CREAT | O_EXCL | O_NOFOLLOW` and mode `0600`. It passes that already owned
-descriptor to Darwin `/usr/bin/time -l -o /dev/fd/<fd>` and launches exactly
+`run-replay` validates real parents, the exact frozen `r1` lifecycle, and
+absent output/log/receipt destinations, then reserves the private timing log
+with descriptor-relative `O_CREAT | O_EXCL | O_NOFOLLOW` and mode `0600`. It
+passes that already owned descriptor to Darwin
+`/usr/bin/time -l -o /dev/fd/<fd>` and launches exactly
 `ffb replay run --output-dir <declared-output>`. Thus `/usr/bin/time` measures
 the actual replay process after the locked environment is prepared, writes
 only its resource block to the reserved log, and cannot truncate a preexisting
 path or mix dependency-tool/child stderr into the strict parser. The wrapper
-propagates the replay exit status, fsyncs a complete log, and never retries,
-deletes, or overwrites a failed attempt. Primary and repeat run sequentially
-with fresh predeclared destinations. Any failure blocks authoritative
-execution at that revision; it does not authorize a new ordinal or another
-outcome-bearing run. Resumption requires an explicit public protocol/incident
-amendment, a new committed scientific revision, and fresh primary and repeat
-runs under that revision.
+propagates the replay exit status and fsyncs a complete log.
+
+Only after a zero exit and an unchanged postflight authority does the wrapper
+exclusively publish and reload the owner-only
+`m5-replay-<label>-<revision>-r1.success.json` receipt. The receipt binds the
+software-verification digest, runtime/environment authority, executable
+fingerprints, source/review authority, inputs, and fixed output/log paths.
+Primary must complete with its receipt before repeat can start; candidate and
+release construction reauthenticate both completed receipts. A partial,
+sibling, out-of-order, prior, or non-`r1` attempt fails closed. The wrapper
+never retries, deletes, or overwrites a failed attempt. Any failure blocks
+authoritative execution at that revision; it does not authorize another
+ordinal or outcome-bearing run. Resumption requires an explicit public
+protocol/incident amendment, a new committed scientific revision, and fresh
+primary and repeat `r1` runs under that revision.
 
 The independent reviewer then reviews that exact ignored candidate and authors
 the report and decision input without changing candidate bytes. The
@@ -902,20 +943,42 @@ uv run --frozen --no-sync ffb replay bundle validate \
   reports/releases/m5-nuscenes-replay-v0.1.0/artifact
 ```
 
-`sync-reviewed-evidence` copies only the exact package review bytes to the two
-fixed absent destinations using the same exclusive, no-follow, fsync, and
-post-rename-parent-fsync rules. It refuses existing paths and performs no
+`sync-reviewed-evidence` publishes only the exact package review bytes to the
+two fixed destinations using exclusive, no-follow, fsync, and
+post-rename-parent-fsync rules. Its fixed owner-only
+`.ffb-m5-reviewed-evidence-staging` state is package-bound and crash
+recoverable: an exact staged or published partial pair causes only the missing
+member to be published, and an exact complete pair is accepted without
+rewriting either file. Any mismatched partial/full pair, symlinked,
+hard-linked, non-regular, extra, or otherwise unsafe output or staged member
+fails closed without replacement. The command performs no
 scientific regeneration. The build refuses an unresolved review blocker, but
 no command infers or rewrites the reviewer disposition.
 
 ## 15. Release closeout
 
-After the package is built, the release-specific sections of `README.md`,
-`docs/results.md`, `docs/benchmark-card.md`, `docs/limitations.md`,
-`docs/reproducibility.md`, `docs/project-plan.md`,
-`docs/dataset-preparation.md`, and `docs/m5-technical-walkthrough.md` are
-updated only from the reviewed public-claim projection and package sidecars.
-They may summarize but may not introduce another quantitative selector.
+After the package is built, each of `README.md`, `docs/results.md`,
+`docs/benchmark-card.md`, `docs/limitations.md`, `docs/reproducibility.md`,
+`docs/project-plan.md`, `docs/dataset-preparation.md`, and
+`docs/m5-technical-walkthrough.md` must equal its blob at the scientific
+revision with exactly one frozen placeholder replaced by the same deterministic
+reviewed projection. That projection contains only the release-package
+SHA-256, public-claim-projection SHA-256, fixed-order H5 result/role rows, the
+public release path, and explicit no-new-claim text. Any other byte change,
+additional selector, quantitative statement, private path, secret, raw
+dataset filename, or generated-local path fails validation.
+
+`validate-publication` accepts exactly two Git states. The pre-stage pending
+state has `HEAD` at the scientific revision, no unmerged entry, staged change,
+or special index flag, exactly those eight modified documents, and exactly the
+41 release-package files plus the two public results-review files untracked.
+All 51 pending file contents are stably fingerprinted before validation and
+must remain byte-identical afterward. The clean state must descend from the
+packaged scientific revision. In both states the packaged implementation
+review bytes must equal the current tracked report and attestation and validate
+against the current implementation snapshot; the package is semantically
+validated before and after the document/review checks with one unchanged
+digest.
 
 The complete closeout suite is:
 
@@ -952,13 +1015,18 @@ absent, must import the package, print the version, expose the replay CLI,
 render the replay-validation and replay-resource schemas, and validate the
 tracked M5 package. Dependency installation is not part of the offline proof.
 
-Before staging and again before pushing:
+Immediately before staging, authenticate the exact pending state described
+above, run the release and publication validators, and record the one package
+digest. Then stage and commit exactly the eight projections, 41 package files,
+and two public results-review files. Immediately before pushing, require the
+clean descendant state and rerun the same validators against the same package
+digest. At both boundaries:
 
 - inspect tracked, untracked, and staged names;
 - require no tracked `interview/`, `reports/generated/`, dataset, raw-log, or
   local-artifact member;
 - run the bounded tracked/staged privacy and secret audit;
-- run `git diff --check` and the release and publication validators; and
+- run `git diff --check`; and
 - verify that the package and review copies are byte-identical and below the
   cap.
 
@@ -974,8 +1042,10 @@ commit resolution must agree exactly.
 M5 release acceptance requires all of the following:
 
 1. this release workflow was frozen before outcome inspection;
-2. release tooling and tests were committed before the authoritative runs;
-3. both runs bind the same clean source and pass every local-data gate;
+2. release tooling, tests, and a release-permitting whole-revision review were
+   committed and live-upstream synchronized before the authoritative runs;
+3. revision-specific software verification precedes both exact `r1` runs, and
+   both receipts bind the same clean source and pass every local-data gate;
 4. all eight scientific members match exactly with zero mismatch;
 5. both external resource records pass their strict command, environment,
    dominance, wall-time, and RSS gates;
@@ -990,7 +1060,8 @@ M5 release acceptance requires all of the following:
     has no unresolved P0 or P1 blocker;
 11. the strict 14-file machine artifact and complete sidecar package validate
     offline without the dataset;
-12. methodology, limitations, reproducibility, results, claim ledger,
+12. all eight closeout documents equal their deterministic reviewed projection,
+    and methodology, limitations, reproducibility, results, claim ledger,
     technical walkthrough, and figures agree;
 13. the full software, build, wheel, privacy, license, size, and no-overwrite
     gates pass;

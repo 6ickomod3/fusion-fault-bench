@@ -46,9 +46,23 @@ def _execution_workflow(
     fail_preflight: bool = False,
     fail_postflight: bool = False,
 ) -> tuple[SimpleNamespace, SimpleNamespace]:
+    fingerprint = SimpleNamespace(
+        device=1,
+        inode=2,
+        mode=stat.S_IFREG | 0o755,
+        link_count=1,
+        owner_uid=3,
+        owner_gid=4,
+        byte_length=5,
+        modified_time_ns=6,
+        changed_time_ns=7,
+        sha256="a" * 64,
+    )
     token = SimpleNamespace(
         time_executable="/usr/bin/time",
         ffb_executable="/locked/environment/bin/ffb",
+        time_executable_fingerprint=fingerprint,
+        ffb_executable_fingerprint=fingerprint,
     )
 
     def authenticate_replay_execution(**arguments: object) -> object:
@@ -56,6 +70,11 @@ def _execution_workflow(
         observed["authenticate"] = arguments
         if fail_preflight:
             raise ValueError("rejected preflight")
+        output_argument = str(arguments["output_dir"])
+        token.source_root = Path(os.path.abspath(arguments["source_root"]))
+        token.output_argument = output_argument
+        token.time_l_argument = str(arguments["time_l_output"])
+        token.success_argument = f"{output_argument}.success.json"
         return token
 
     def verify_replay_execution_unchanged(**arguments: object) -> object:
@@ -65,10 +84,24 @@ def _execution_workflow(
             raise ValueError("rejected postflight")
         return token
 
+    def build_replay_execution_success_receipt(**arguments: object) -> object:
+        events.append("build-receipt")
+        observed["build-receipt"] = arguments
+        return SimpleNamespace(
+            path=Path(token.success_argument),
+            value=b'{"schema":"test-success"}\n',
+        )
+
+    def verify_replay_execution_success_receipt(**arguments: object) -> None:
+        events.append("verify-receipt")
+        observed["verify-receipt"] = arguments
+
     return (
         SimpleNamespace(
             authenticate_replay_execution=authenticate_replay_execution,
             verify_replay_execution_unchanged=verify_replay_execution_unchanged,
+            build_replay_execution_success_receipt=(build_replay_execution_success_receipt),
+            verify_replay_execution_success_receipt=(verify_replay_execution_success_receipt),
         ),
         token,
     )
@@ -141,7 +174,13 @@ def test_run_replay_authenticates_reserves_and_postflights_exact_command(
         "output_dir": Path(output),
         "time_l_output": Path(log),
     }
-    assert events == ["authenticate", "child", "verify"]
+    assert events == [
+        "authenticate",
+        "child",
+        "verify",
+        "build-receipt",
+        "verify-receipt",
+    ]
     assert observed["authenticate"] == authority_arguments
     assert observed["verify"] == {"token": token, **authority_arguments}
     assert observed["command"] == (
@@ -158,6 +197,49 @@ def test_run_replay_authenticates_reserves_and_postflights_exact_command(
     log_path = tmp_path / log
     assert log_path.read_bytes().startswith(b"1.00 real")
     assert stat.S_IMODE(log_path.stat().st_mode) == 0o600
+    receipt_path = tmp_path / f"{output}.success.json"
+    assert receipt_path.read_bytes() == b'{"schema":"test-success"}\n'
+    assert stat.S_IMODE(receipt_path.stat().st_mode) == 0o600
+    assert observed["build-receipt"] == {"token": token}
+    assert observed["verify-receipt"] == {"token": token}
+
+
+def test_run_replay_rejects_execution_authority_from_another_working_tree(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "reports/generated").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    events: list[str] = []
+    observed: dict[str, object] = {}
+    facade, token = _execution_workflow(events, observed)
+    authenticate = facade.authenticate_replay_execution
+
+    def foreign_authority(**arguments: object) -> object:
+        result = authenticate(**arguments)
+        token.source_root = tmp_path.parent
+        return result
+
+    facade.authenticate_replay_execution = foreign_authority
+    monkeypatch.setattr(m5_release, "_workflow_api", lambda: facade)
+    monkeypatch.setattr(
+        m5_release,
+        "_run_bounded_child",
+        lambda *_args, **_kwargs: pytest.fail("foreign authority launched replay"),
+    )
+    log = Path("reports/generated/primary.time-l.txt")
+    assert (
+        m5_release.main(
+            _run_arguments(
+                label="primary",
+                output="reports/generated/primary-r1",
+                log=log.as_posix(),
+            )
+        )
+        == 2
+    )
+    assert events == ["authenticate"]
+    assert not log.exists()
 
 
 def test_run_replay_propagates_failure_once_and_preserves_log(

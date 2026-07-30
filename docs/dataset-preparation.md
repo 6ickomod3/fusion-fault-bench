@@ -150,3 +150,7 @@ detector inference is involved.
 M5 will use eligible annotations, poses, and timing as latent matched-center
 sequence structure. Estimator errors will still be simulated; replay will not
 turn the benchmark into a raw-sensor evaluation.
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->

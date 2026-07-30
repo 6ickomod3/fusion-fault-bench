@@ -556,3 +556,7 @@ architecture.
 
 The project will cite and distinguish these works rather than presenting their
 fault taxonomies or model contributions as new.
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->

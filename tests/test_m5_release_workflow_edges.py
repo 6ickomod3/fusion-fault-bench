@@ -50,16 +50,40 @@ def test_review_authority_rejects_symlink_mismatch_and_noncanonical_attestation(
 def test_upstream_sync_requires_named_ref_at_exact_revision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    answers = iter(("origin/main", _REVISION))
-    monkeypatch.setattr(workflow, "_git_text", lambda *_args: next(answers))
+    def configure(*, tracking_revision: str = _REVISION) -> None:
+        answers = {
+            ("symbolic-ref", "--quiet", "--short", "HEAD"): "main",
+            ("config", "--get", "branch.main.remote"): "origin",
+            ("config", "--get", "branch.main.merge"): "refs/heads/main",
+            (
+                "rev-parse",
+                "--abbrev-ref",
+                "--symbolic-full-name",
+                "@{upstream}",
+            ): "origin/main",
+            ("rev-parse", "--symbolic-full-name", "@{upstream}"): ("refs/remotes/origin/main"),
+            ("rev-parse", "@{upstream}"): tracking_revision,
+            ("remote", "get-url", "origin"): "git@example.invalid:repo.git",
+        }
+        monkeypatch.setattr(
+            workflow,
+            "_git_text",
+            lambda _root, *arguments: answers[arguments],
+        )
+        monkeypatch.setattr(
+            workflow,
+            "_live_remote_bytes",
+            lambda *_args, **_kwargs: f"{_REVISION}\trefs/heads/main\n".encode("ascii"),
+        )
+
+    configure()
     assert workflow._require_upstream_sync(Path("."), _REVISION) == "origin/main"
 
     monkeypatch.setattr(workflow, "_git_text", lambda *_args: "")
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="upstream"):
         workflow._require_upstream_sync(Path("."), _REVISION)
 
-    answers = iter(("origin/main", "b" * 40))
-    monkeypatch.setattr(workflow, "_git_text", lambda *_args: next(answers))
+    configure(tracking_revision="b" * 40)
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="upstream"):
         workflow._require_upstream_sync(Path("."), _REVISION)
 
@@ -101,6 +125,11 @@ def test_execution_authority_rejects_missing_or_foreign_ffb(
         "_read_review_authority",
         lambda *_args: (b"report", b"attestation"),
     )
+    monkeypatch.setattr(
+        workflow,
+        "_software_verification_authority",
+        lambda *_args: ("reports/generated/software.json", "d" * 64),
+    )
     roots = iter(((tmp_path.parent / "dataset", (1, 2)), (tmp_path.parent / "cache", (3, 4))))
     monkeypatch.setattr(
         workflow,
@@ -116,7 +145,10 @@ def test_execution_authority_rejects_missing_or_foreign_ffb(
     monkeypatch.setattr(
         workflow,
         "_authenticated_executable",
-        lambda _path, **_kwargs: str(tmp_path.parent / "foreign-ffb"),
+        lambda _path, **_kwargs: (
+            str(tmp_path.parent / "foreign-ffb"),
+            SimpleNamespace(),
+        ),
     )
     for name in workflow._THREAD_ENVIRONMENT_KEYS:
         monkeypatch.setenv(name, "1")
@@ -146,6 +178,8 @@ def test_candidate_prepare_rejects_postflight_source_drift(
         "_read_review_authority",
         lambda *_args: (b"report", b"attestation"),
     )
+    monkeypatch.setattr(workflow, "_authenticate_completed_replays", lambda **_kwargs: object())
+    monkeypatch.setattr(workflow, "_require_frozen_candidate_inputs", lambda **_kwargs: None)
     monkeypatch.setattr(
         replay_release_candidate,
         "prepare_review_candidate",

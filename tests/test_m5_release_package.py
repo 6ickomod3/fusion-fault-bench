@@ -15,9 +15,12 @@ from fusion_fault_bench.contracts.replay_release_v1 import (
     ReplaySoftwareVerificationCheckV1,
     ReplaySoftwareVerificationV1,
 )
+from fusion_fault_bench.replay_publication import (
+    M5_PUBLICATION_DOCUMENT_PATHS,
+    ReplayPublicationProjectionError,
+)
 from fusion_fault_bench.replay_release import build_review_candidate_files
 from fusion_fault_bench.replay_release_package import (
-    M5_PUBLICATION_DOCUMENT_PATHS,
     ReplayReleasePackageValidationError,
     derive_results_review_bindings,
     reconstruct_reviewed_candidate,
@@ -247,9 +250,23 @@ def test_publication_requires_exact_review_copies_and_package_projection(
         claim_projection_sha256=claim_sha256,
     )
     monkeypatch.setattr(release_package, "validate_release_package", lambda _path: validated)
+    projection_calls: list[tuple[object, Path]] = []
 
+    def validate_projection(
+        observed: object,
+        root: Path,
+        **_kwargs: object,
+    ) -> None:
+        projection_calls.append((observed, root))
+
+    monkeypatch.setattr(
+        release_package,
+        "validate_publication_documents",
+        validate_projection,
+    )
     release = tmp_path / M5_RELEASE_DESTINATION_PATH
     assert validate_publication(release, tmp_path) == package_sha256
+    assert projection_calls == [(validated, tmp_path)]
 
     (tmp_path / "docs/reviews/m5-results-review.md").write_bytes(b"# Changed review\n")
     with pytest.raises(ReplayReleasePackageValidationError, match="differs"):
@@ -273,9 +290,18 @@ def test_publication_rejects_document_not_bound_to_claim_projection(
         claim_projection_sha256=claim_sha256,
     )
     monkeypatch.setattr(release_package, "validate_release_package", lambda _path: validated)
-    (tmp_path / "docs/results.md").write_bytes(b"m5-nuscenes-replay-v0.1.0\n")
 
-    with pytest.raises(ReplayReleasePackageValidationError, match="exact package projection"):
+    def reject_projection(*_args: object, **_kwargs: object) -> None:
+        raise ReplayPublicationProjectionError(
+            "release documentation differs from the reviewed projection"
+        )
+
+    monkeypatch.setattr(
+        release_package,
+        "validate_publication_documents",
+        reject_projection,
+    )
+    with pytest.raises(ReplayReleasePackageValidationError, match="reviewed projection"):
         validate_publication(tmp_path / M5_RELEASE_DESTINATION_PATH, tmp_path)
 
 

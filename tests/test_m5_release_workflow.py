@@ -6,7 +6,11 @@ from typing import Any
 
 import pytest
 
-from fusion_fault_bench import replay_release_package, replay_release_software
+from fusion_fault_bench import (
+    replay_publication_authority,
+    replay_release_package,
+    replay_release_software,
+)
 from fusion_fault_bench import replay_release_workflow as workflow
 from fusion_fault_bench.contracts.replay_release_v1 import M5_RELEASE_DESTINATION_PATH
 
@@ -116,7 +120,12 @@ def test_publication_validator_uses_clean_root_and_postflights(
     implementation = object()
     authority_calls: list[Path] = []
     observed: list[tuple[Path, Path]] = []
+    package_calls: list[Path] = []
     digest = "b" * 64
+    validated = SimpleNamespace(
+        artifact=SimpleNamespace(run=SimpleNamespace(git_revision="1" * 40)),
+        release_package_sha256=digest,
+    )
 
     def clean_authority(source_root: Path) -> tuple[object, object]:
         authority_calls.append(source_root)
@@ -127,11 +136,32 @@ def test_publication_validator_uses_clean_root_and_postflights(
         return digest
 
     monkeypatch.setattr(workflow, "_clean_authority", clean_authority)
+    monkeypatch.setattr(
+        workflow,
+        "_read_review_authority",
+        lambda *_args: (b"report", b"attestation"),
+    )
+    monkeypatch.setattr(
+        replay_release_package,
+        "validate_release_package",
+        lambda release: package_calls.append(release) or validated,
+    )
     monkeypatch.setattr(replay_release_package, "validate_publication", validate)
+    monkeypatch.setattr(
+        replay_publication_authority,
+        "require_scientific_revision_ancestor",
+        lambda *_args: None,
+    )
+    monkeypatch.setattr(
+        replay_publication_authority,
+        "validate_current_implementation_review",
+        lambda *_args, **_kwargs: None,
+    )
 
     release = Path(M5_RELEASE_DESTINATION_PATH)
-    assert workflow.validate_publication(release=release, source_root=Path(".")) == digest
-    assert authority_calls == [Path("."), Path(".")]
+    assert workflow.validate_publication(release=release, source_root=tmp_path) == digest
+    assert authority_calls == [tmp_path, tmp_path]
+    assert package_calls == [tmp_path / release, tmp_path / release]
     assert observed == [(tmp_path / release, tmp_path)]
 
 
@@ -139,20 +169,45 @@ def test_publication_validator_rejects_postflight_source_drift(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    digest = "c" * 64
+    validated = SimpleNamespace(
+        artifact=SimpleNamespace(run=SimpleNamespace(git_revision="1" * 40)),
+        release_package_sha256=digest,
+    )
     first = (SimpleNamespace(source_root=tmp_path), object())
     second = (SimpleNamespace(source_root=tmp_path), object())
     authorities = iter((first, second))
     monkeypatch.setattr(workflow, "_clean_authority", lambda _root: next(authorities))
     monkeypatch.setattr(
+        workflow,
+        "_read_review_authority",
+        lambda *_args: (b"report", b"attestation"),
+    )
+    monkeypatch.setattr(
+        replay_release_package,
+        "validate_release_package",
+        lambda _path: validated,
+    )
+    monkeypatch.setattr(
         replay_release_package,
         "validate_publication",
-        lambda _release, _source: "c" * 64,
+        lambda _release, _source: digest,
+    )
+    monkeypatch.setattr(
+        replay_publication_authority,
+        "require_scientific_revision_ancestor",
+        lambda *_args: None,
+    )
+    monkeypatch.setattr(
+        replay_publication_authority,
+        "validate_current_implementation_review",
+        lambda *_args, **_kwargs: None,
     )
 
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="changed"):
         workflow.validate_publication(
-            release=Path(M5_RELEASE_DESTINATION_PATH),
-            source_root=Path("."),
+            release=tmp_path / M5_RELEASE_DESTINATION_PATH,
+            source_root=tmp_path,
         )
 
 

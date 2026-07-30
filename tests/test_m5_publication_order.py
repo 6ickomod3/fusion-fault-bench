@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
+import pytest
+
 import fusion_fault_bench.replay_release as release_module
-from fusion_fault_bench.artifacts import canonical_json_bytes
+from fusion_fault_bench.artifacts import ArtifactValidationError, canonical_json_bytes
 from fusion_fault_bench.contracts.replay_artifact_v1 import (
     M5_REPLAY_IDENTITY_SET_SHA256,
     REPLAY_ARTIFACT_PATHS,
@@ -104,3 +107,42 @@ def test_release_commit_markers_follow_their_complete_payloads(
     assert success_position == 13
     assert all(path.startswith("artifact/") for path in observed[:success_position])
     assert observed[-1] == "release-sidecar-index.json"
+
+
+def test_release_rejects_staging_path_swap_at_rename(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    original = release_module.atomic_rename_directory_no_replace_at
+
+    def swap_before_rename(
+        source_dir_fd: int,
+        source_name: str,
+        destination_dir_fd: int,
+        destination_name: str,
+    ) -> None:
+        os.rename(
+            source_name,
+            ".displaced-owned-staging",
+            src_dir_fd=source_dir_fd,
+            dst_dir_fd=source_dir_fd,
+        )
+        os.mkdir(source_name, mode=0o700, dir_fd=source_dir_fd)
+        original(
+            source_dir_fd,
+            source_name,
+            destination_dir_fd,
+            destination_name,
+        )
+
+    monkeypatch.setattr(
+        release_module,
+        "atomic_rename_directory_no_replace_at",
+        swap_before_rename,
+    )
+    destination = tmp_path / "release"
+
+    with pytest.raises(ArtifactValidationError, match="published release directory changed"):
+        publish_release_package(_package(), destination)
+
+    assert destination.is_dir()

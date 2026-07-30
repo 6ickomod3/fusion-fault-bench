@@ -21,6 +21,7 @@ from fusion_fault_bench.contracts.replay_release_v1 import (
     ReplayResultsReviewDecisionV1,
 )
 from fusion_fault_bench.replay_release import (
+    LoadedReplayReleasePackage,
     LoadedReplayReviewCandidate,
     ReplayReleaseError,
     ReplayReleasePackageContent,
@@ -34,6 +35,7 @@ from fusion_fault_bench.replay_release import (
     publish_review_candidate,
     sync_reviewed_evidence,
 )
+from fusion_fault_bench.replay_review_sync import ReplayReviewSyncError
 
 _DIGEST_A = "a" * 64
 _DIGEST_B = "b" * 64
@@ -99,6 +101,32 @@ def _package_content() -> ReplayReleasePackageContent:
         scientific_git_revision="1" * 40,
         machine_files={path: _package_member(path) for path in REPLAY_ARTIFACT_PATHS},
         sidecar_files={path: _package_member(path) for path in M5_RELEASE_SIDECAR_INDEXED_PATHS},
+    )
+
+
+def _sync_fixture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[LoadedReplayReleasePackage, Path, Path, Path]:
+    destination = tmp_path / "release"
+    loaded = publish_release_package(_package_content(), destination)
+    reloaded = load_release_package(destination)
+
+    class ValidatedPackage:
+        package = reloaded
+
+    monkeypatch.setattr(
+        "fusion_fault_bench.replay_release_package.validate_release_package",
+        lambda _path: ValidatedPackage(),
+    )
+    source_root = tmp_path / "source"
+    (source_root / "docs/reviews").mkdir(parents=True)
+    subprocess.run(("git", "init", "-q", source_root), check=True)
+    return (
+        loaded,
+        source_root,
+        Path("docs/reviews/m5-results-review.md"),
+        Path("docs/reviews/m5-results-review-attestation.json"),
     )
 
 
@@ -228,13 +256,130 @@ def test_outer_release_package_build_publish_reload_and_sync(
         "evidence/results-review-attestation.json"
     ]
     assert validated_paths == [destination]
-    with pytest.raises(FileExistsError, match="absent"):
+    sync_reviewed_evidence(
+        loaded,
+        report_output=report,
+        attestation_output=attestation,
+        source_root=source_root,
+    )
+    assert validated_paths == [destination, destination]
+    assert not (source_root / "docs/reviews/.ffb-m5-reviewed-evidence-staging").exists()
+
+
+@pytest.mark.parametrize("existing_name", ("report", "attestation"))
+def test_sync_resumes_an_exact_partial_public_pair(
+    existing_name: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded, source_root, report, attestation = _sync_fixture(tmp_path, monkeypatch)
+    values = {
+        "report": loaded.files["evidence/results-review.md"],
+        "attestation": loaded.files["evidence/results-review-attestation.json"],
+    }
+    paths = {"report": report, "attestation": attestation}
+    (source_root / paths[existing_name]).write_bytes(values[existing_name])
+
+    sync_reviewed_evidence(
+        loaded,
+        report_output=report,
+        attestation_output=attestation,
+        source_root=source_root,
+    )
+
+    assert (source_root / report).read_bytes() == values["report"]
+    assert (source_root / attestation).read_bytes() == values["attestation"]
+    assert not (source_root / "docs/reviews/.ffb-m5-reviewed-evidence-staging").exists()
+
+
+def test_sync_resumes_after_interruption_between_publications(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from fusion_fault_bench import replay_review_sync
+
+    loaded, source_root, report, attestation = _sync_fixture(tmp_path, monkeypatch)
+    original_rename = replay_review_sync.atomic_rename_directory_no_replace_at
+    calls = 0
+
+    def interrupt_second_publication(*args: object) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise OSError("simulated interruption")
+        original_rename(*args)
+
+    monkeypatch.setattr(
+        replay_review_sync,
+        "atomic_rename_directory_no_replace_at",
+        interrupt_second_publication,
+    )
+    with pytest.raises(OSError, match="simulated interruption"):
         sync_reviewed_evidence(
             loaded,
             report_output=report,
             attestation_output=attestation,
             source_root=source_root,
         )
+
+    assert (source_root / report).read_bytes() == loaded.files["evidence/results-review.md"]
+    assert not (source_root / attestation).exists()
+    assert (source_root / "docs/reviews/.ffb-m5-reviewed-evidence-staging").is_dir()
+
+    monkeypatch.setattr(
+        replay_review_sync,
+        "atomic_rename_directory_no_replace_at",
+        original_rename,
+    )
+    sync_reviewed_evidence(
+        loaded,
+        report_output=report,
+        attestation_output=attestation,
+        source_root=source_root,
+    )
+
+    assert (source_root / attestation).read_bytes() == loaded.files[
+        "evidence/results-review-attestation.json"
+    ]
+    assert not (source_root / "docs/reviews/.ffb-m5-reviewed-evidence-staging").exists()
+
+
+def test_sync_rejects_mismatched_existing_public_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded, source_root, report, attestation = _sync_fixture(tmp_path, monkeypatch)
+    (source_root / report).write_bytes(b"not the reviewed package bytes\n")
+
+    with pytest.raises(ReplayReviewSyncError, match="differs from the release package"):
+        sync_reviewed_evidence(
+            loaded,
+            report_output=report,
+            attestation_output=attestation,
+            source_root=source_root,
+        )
+
+    assert not (source_root / attestation).exists()
+
+
+def test_sync_rejects_unsafe_existing_public_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    loaded, source_root, report, attestation = _sync_fixture(tmp_path, monkeypatch)
+    external = tmp_path / "external-review.md"
+    external.write_bytes(loaded.files["evidence/results-review.md"])
+    (source_root / report).symlink_to(external)
+
+    with pytest.raises(ReplayReviewSyncError, match="unsafe"):
+        sync_reviewed_evidence(
+            loaded,
+            report_output=report,
+            attestation_output=attestation,
+            source_root=source_root,
+        )
+
+    assert not (source_root / attestation).exists()
 
 
 def test_sync_rejects_semantically_invalid_package_before_writing(

@@ -56,6 +56,11 @@ from fusion_fault_bench.replay_figures import (
     build_figure_bundle,
     canonical_figure_spec_files,
 )
+from fusion_fault_bench.replay_publication import (
+    M5_PUBLICATION_DOCUMENT_PATHS,
+    ReplayPublicationProjectionError,
+    validate_publication_documents,
+)
 from fusion_fault_bench.replay_release import (
     LoadedReplayReleasePackage,
     load_release_package,
@@ -79,10 +84,10 @@ from fusion_fault_bench.replay_release_validation import (
 _FROZEN_METHODOLOGY_SHA256: Mapping[str, str] = MappingProxyType(
     {
         "evidence/release-pipeline-plan.md": (
-            "2b1f7c29a3be92418b6ca1fecb5a9cb44822617081187aef824931fed5657f66"
+            "0a645323d346668707442eb2e9cd76bac221f8a0c9ff48c4baad5bf078ce946d"
         ),
         "evidence/release-pipeline-plan-review.md": (
-            "929fce2f74256bee527979c77554f2ce41bb230bac60d9b7ffbb2098607545d3"
+            "3a881c41de758d98a65e96a627499ad5cf1b4c4c5bf9a1d7fcece507d3e4c6af"
         ),
         "evidence/resource-scope-amendment.md": (
             "f7eb19e03661bec1663b1a2f6ce953e465e8a3a76d63277ece5bee4e59708aff"
@@ -132,17 +137,6 @@ _PRESENTATION_TO_RELEASE: Mapping[str, str] = MappingProxyType(
         "presentation/claim-evidence.md": "claim-evidence.md",
         "presentation/verification.md": "verification.md",
     }
-)
-
-M5_PUBLICATION_DOCUMENT_PATHS = (
-    "README.md",
-    "docs/results.md",
-    "docs/benchmark-card.md",
-    "docs/limitations.md",
-    "docs/reproducibility.md",
-    "docs/project-plan.md",
-    "docs/dataset-preparation.md",
-    "docs/m5-technical-walkthrough.md",
 )
 
 
@@ -985,23 +979,14 @@ def validate_publication(release: Path, source_root: Path) -> str:
         if public_value != validated.package.files[package_path]:
             _fail(f"public evidence copy differs from the release package: {public_path}")
 
-    required_tokens = (
-        b"m5-nuscenes-replay-v0.1.0",
-        validated.release_package_sha256.encode("ascii"),
-        validated.claim_projection_sha256.encode("ascii"),
-    )
-    for relative in M5_PUBLICATION_DOCUMENT_PATHS:
-        value = _read_publication_file(root, relative)
-        try:
-            value.decode("utf-8")
-        except UnicodeDecodeError as error:
-            raise ReplayReleasePackageValidationError(
-                f"release documentation is not UTF-8: {relative}"
-            ) from error
-        if b"\x00" in value or b"\r" in value or not value.endswith(b"\n"):
-            _fail(f"release documentation has noncanonical text framing: {relative}")
-        if any(token not in value for token in required_tokens):
-            _fail(f"release documentation lacks the exact package projection: {relative}")
+    try:
+        validate_publication_documents(
+            validated,
+            root,
+            read_current=_read_publication_file,
+        )
+    except ReplayPublicationProjectionError as error:
+        raise ReplayReleasePackageValidationError(str(error)) from error
     return validated.release_package_sha256
 
 

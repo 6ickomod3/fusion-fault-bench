@@ -335,3 +335,7 @@ sequence rows are not public.
 | Full multi-family clean-CPU procedural fault report | Released in M3 |
 | Observable health-aware fallback and deterministic repeat | Released in M4 |
 | nuScenes latent-scene replay | Planned for M5 |
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->

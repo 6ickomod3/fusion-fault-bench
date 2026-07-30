@@ -94,3 +94,7 @@ inference from the curated release without rerunning the benchmark.
 Matched-center loss and fallback regret are benchmark metrics, not collision or
 safety metrics. The project makes no production-readiness, certification, or
 operational fallback claim.
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->

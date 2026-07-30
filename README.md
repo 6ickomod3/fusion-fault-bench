@@ -250,3 +250,7 @@ contains deterministic validation gates and attestations, not an estimand.
 The Apache-2.0 license covers project code only. nuScenes and other external
 assets remain governed by their own terms; see
 [Data and model terms](DATA_AND_MODEL_TERMS.md).
+
+<!-- FFB-M5-RELEASE-PROJECTION-V1:START -->
+M5 reviewed release projection pending.
+<!-- FFB-M5-RELEASE-PROJECTION-V1:END -->
