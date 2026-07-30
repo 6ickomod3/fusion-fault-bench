@@ -194,6 +194,26 @@ export NUSCENES_ROOT=/absolute/path/to/nuScenes
 Absolute dataset paths belong only in local runtime configuration. They are
 excluded from manifests and public result records.
 
+## Preregistered M5 resource-measurement boundary
+
+M5 remains outcome-pending. Its one-process cap means one scientific replay
+worker and no benchmark multiprocessing. Environment discovery, clean-source
+provenance checks, and resource-measurement helpers may execute sequentially;
+they are not additional scientific replay workers. The frozen wording and
+machine field are scoped in the
+[outcome-blind resource amendment](m5-resource-scope-amendment.md).
+
+Each of the primary and repeat replay CLI lifetimes is measured externally with
+Darwin `/usr/bin/time -l`. This is an operator-recorded, self-reported
+measurement boundary, not an independent resource attestation. The strict
+importer accepts only the complete canonical 18-line Darwin format and requires
+the external wall time and peak RSS to cover the diagnostic values persisted
+inside the corresponding local artifact. Raw logs stay under ignored local
+output, and their paths are never serialized. The public profile retains only
+each raw-log SHA-256 and byte length, exact local artifact/run/environment/
+command bindings, and the parsed values; its headline elapsed time and peak RSS
+are the exact maxima across the two runs.
+
 ## Released M3 temporal procedural evidence
 
 The aggregate-only M3 release is dataset-free and can be validated offline

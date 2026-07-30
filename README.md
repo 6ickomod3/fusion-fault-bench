@@ -201,7 +201,7 @@ Apple M3 Pro. See the
 | SE(3) and local nuScenes-mini grounding | Released as M2 validation evidence |
 | Temporal procedural benchmark | Released as M3 |
 | Observable health-aware fallback | Released as M4 |
-| nuScenes-mini latent replay | M5 preregistered; implementation and outcomes pending |
+| nuScenes-mini latent replay | M5 implementation checkpoint passed; local replay and results-release gates pending |
 | Released fault-performance results | M1, M3, and M4 procedural estimator-output stress tests |
 
 Results enter this README only after they trace to a released manifest,
@@ -231,6 +231,9 @@ contains deterministic validation gates and attestations, not an estimand.
 - [M4 technical walkthrough](docs/m4-technical-walkthrough.md)
 - [M5 nuScenes-mini latent replay pre-registration](docs/m5-replay-plan.md)
 - [M5 adversarial plan review](docs/reviews/m5-plan-review.md)
+- [M5 outcome-blind resource-scope clarification](docs/m5-resource-scope-amendment.md)
+- [M5 adversarial implementation review](docs/reviews/m5-implementation-review.md)
+- [M5 technical walkthrough (pre-outcome)](docs/m5-technical-walkthrough.md)
 
 ## Explicit non-goals
 

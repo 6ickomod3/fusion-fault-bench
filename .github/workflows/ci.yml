@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -77,5 +77,8 @@ jobs:
           /tmp/ffb-wheel-smoke/bin/ffb schema show geometry-validation > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb schema show procedural-validation > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb schema show health-intent > /dev/null
+          /tmp/ffb-wheel-smoke/bin/ffb schema show replay-validation > /dev/null
+          /tmp/ffb-wheel-smoke/bin/ffb schema show replay-execution-resource-evidence \
+            > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb manifest validate \
             examples/manifests/analytic-bias-v1alpha1.json

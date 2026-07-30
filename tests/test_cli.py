@@ -329,6 +329,185 @@ def test_health_schemas_are_exposed(capsys) -> None:
         assert schema
 
 
+def test_replay_cli_runs_repeats_and_validates_without_echoing_paths(
+    tmp_path,
+    monkeypatch,
+    capsys,
+) -> None:
+    primary_artifact = SimpleNamespace(
+        artifact_sha256="7" * 64,
+        run_sha256="8" * 64,
+    )
+    repeat_artifact = SimpleNamespace(
+        artifact_sha256="9" * 64,
+        run_sha256="a" * 64,
+    )
+    primary = SimpleNamespace(artifact=primary_artifact)
+    repeat = SimpleNamespace(artifact=repeat_artifact)
+    repeated = SimpleNamespace(
+        primary=primary,
+        repeat=repeat,
+        repeat_verification={"schema": "ffb.test-replay-repeat/v1"},
+    )
+    loaded_repeat = SimpleNamespace(
+        primary=primary_artifact,
+        repeat=repeat_artifact,
+        repeat_verification={"schema": "ffb.test-loaded-replay-repeat/v1"},
+    )
+    curated_input = SimpleNamespace(
+        profile_summary={
+            "schema": "ffb.test-replay-profile/v1",
+            "resource_evidence": "externally-timed-primary-repeat",
+        },
+    )
+    curated = SimpleNamespace(
+        release_index=SimpleNamespace(
+            artifact_contract="ffb.replay-curated-payload/v1",
+        ),
+        artifact_sha256="b" * 64,
+        run_sha256="c" * 64,
+    )
+    calls: list[object] = []
+
+    def run_local(path):
+        calls.append(path)
+        return primary
+
+    def run_repeat(*, primary_output_dir, repeat_output_dir):
+        calls.extend((primary_output_dir, repeat_output_dir))
+        return repeated
+
+    def verify_repeat(*, primary_path, repeat_path):
+        calls.append(("verify-repeat", primary_path, repeat_path))
+        return loaded_repeat
+
+    def curate_repeat(evidence, *, primary_log_path, repeat_log_path):
+        calls.append(("curate-repeat", evidence, primary_log_path, repeat_log_path))
+        return curated_input
+
+    def load_local(path):
+        calls.append(path)
+        return primary_artifact
+
+    def load_curated(path):
+        calls.append(path)
+        return curated
+
+    monkeypatch.setattr("fusion_fault_bench.cli.run_replay_local", run_local)
+    monkeypatch.setattr("fusion_fault_bench.cli.run_replay_repeat", run_repeat)
+    monkeypatch.setattr("fusion_fault_bench.cli.verify_replay_repeat_artifacts", verify_repeat)
+    monkeypatch.setattr("fusion_fault_bench.cli.curate_replay_verified_repeat", curate_repeat)
+    monkeypatch.setattr("fusion_fault_bench.cli.load_replay_local_artifact", load_local)
+    monkeypatch.setattr("fusion_fault_bench.cli.load_replay_curated_artifact", load_curated)
+
+    private_run = tmp_path / "private-replay-run"
+    assert (
+        main(
+            [
+                "replay",
+                "run",
+                "--output-dir",
+                str(private_run),
+            ]
+        )
+        == 0
+    )
+    run_output = capsys.readouterr().out
+    assert run_output.startswith(f"wrote M5 replay local artifact artifact_sha256={'7' * 64}")
+    assert str(tmp_path) not in run_output
+
+    private_primary = tmp_path / "private-primary"
+    private_repeat = tmp_path / "private-repeat"
+    assert (
+        main(
+            [
+                "replay",
+                "repeat",
+                "--primary-output-dir",
+                str(private_primary),
+                "--repeat-output-dir",
+                str(private_repeat),
+            ]
+        )
+        == 0
+    )
+    repeat_output = capsys.readouterr().out
+    assert repeat_output.startswith(
+        f"verified M5 replay repeat primary_artifact_sha256={'7' * 64} "
+        f"repeat_artifact_sha256={'9' * 64}"
+    )
+    assert str(tmp_path) not in repeat_output
+
+    primary_time_log = tmp_path / "private-primary-time-l.txt"
+    repeat_time_log = tmp_path / "private-repeat-time-l.txt"
+    assert (
+        main(
+            [
+                "replay",
+                "verify-repeat",
+                "--primary-artifact",
+                str(private_primary),
+                "--repeat-artifact",
+                str(private_repeat),
+                "--primary-time-log",
+                str(primary_time_log),
+                "--repeat-time-log",
+                str(repeat_time_log),
+            ]
+        )
+        == 0
+    )
+    verified_output = capsys.readouterr().out
+    assert verified_output.startswith(
+        f"verified separately timed M5 replay artifacts "
+        f"primary_artifact_sha256={'7' * 64} "
+        f"repeat_artifact_sha256={'9' * 64}"
+    )
+    assert str(tmp_path) not in verified_output
+
+    private_local = tmp_path / "private-local-artifact"
+    assert main(["replay", "local", "validate", str(private_local)]) == 0
+    local_output = capsys.readouterr().out
+    assert local_output.startswith("valid ffb.replay-local-source/v1 ")
+    assert str(tmp_path) not in local_output
+
+    private_bundle = tmp_path / "private-curated-artifact"
+    assert main(["replay", "bundle", "validate", str(private_bundle)]) == 0
+    bundle_output = capsys.readouterr().out
+    assert bundle_output.startswith("valid ffb.replay-curated-payload/v1 ")
+    assert str(tmp_path) not in bundle_output
+    assert calls == [
+        private_run,
+        private_primary,
+        private_repeat,
+        ("verify-repeat", private_primary, private_repeat),
+        ("curate-repeat", loaded_repeat, primary_time_log, repeat_time_log),
+        private_local,
+        private_bundle,
+    ]
+
+
+def test_replay_schemas_are_exposed(capsys) -> None:
+    for name in (
+        "replay-cluster-sensitivity",
+        "replay-descriptor-aggregate",
+        "replay-execution-resource-evidence",
+        "replay-experiment-identity",
+        "replay-figure-record",
+        "replay-health-aggregate",
+        "replay-persistent-aggregate",
+        "replay-persistent-crossover",
+        "replay-profile-summary",
+        "replay-release-index",
+        "replay-repeat-verification",
+        "replay-source-commitment",
+        "replay-validation",
+    ):
+        assert main(["schema", "show", name]) == 0
+        schema = json.loads(capsys.readouterr().out)
+        assert schema["type"] == "object"
+
+
 def test_geometry_cli_never_echoes_rejected_dataset_arguments() -> None:
     secret_path = "/Users/private-owner/datasets/nuScenes"
     base = [
@@ -367,3 +546,41 @@ def test_geometry_cli_never_echoes_rejected_dataset_arguments() -> None:
         assert completed.returncode == 2
         assert secret_path not in combined
         assert combined == "error: invalid command arguments\n" or combined.startswith("error: M2 ")
+
+
+def test_replay_cli_never_accepts_or_echoes_dataset_arguments() -> None:
+    secret_path = "/Users/private-owner/datasets/nuScenes"
+    base = [
+        sys.executable,
+        "-m",
+        "fusion_fault_bench",
+        "replay",
+        "run",
+    ]
+    cases = (
+        [
+            *base,
+            "--dataset-root",
+            secret_path,
+            "--output-dir",
+            "reports/generated/m5-replay",
+        ],
+        [
+            *base,
+            secret_path,
+            "--output-dir",
+            "reports/generated/m5-replay",
+        ],
+    )
+
+    for command in cases:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        combined = completed.stdout + completed.stderr
+        assert completed.returncode == 2
+        assert secret_path not in combined
+        assert combined == "error: invalid command arguments\n"

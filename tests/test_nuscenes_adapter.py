@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import traceback
 from collections.abc import Callable
 from dataclasses import fields
@@ -10,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from fusion_fault_bench.adapters import nuscenes as nuscenes_adapter
 from fusion_fault_bench.adapters.nuscenes import (
     DATASET_AUTHENTICATION,
     PROFILE,
@@ -424,6 +426,46 @@ def test_symlinked_metadata_tables_are_rejected(tmp_path: Path) -> None:
     outside.write_text("[]", encoding="utf-8")
     table.unlink()
     table.symlink_to(outside)
+
+    _assert_sanitized_error(root, NuScenesAdapterErrorCode.TABLE_INVALID)
+
+
+def test_hardlinked_metadata_tables_are_rejected(tmp_path: Path) -> None:
+    root, _ = _write_dataset(tmp_path)
+    table = root / VERSION_DIRECTORY / "attribute.json"
+    outside = tmp_path / "private-table-hardlink-secret.json"
+    os.link(table, outside)
+
+    _assert_sanitized_error(root, NuScenesAdapterErrorCode.TABLE_INVALID)
+
+
+def test_metadata_table_replacement_between_lstat_and_open_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, _ = _write_dataset(tmp_path)
+    table = root / VERSION_DIRECTORY / "attribute.json"
+    replacement = tmp_path / "private-table-replacement-secret.json"
+    replacement.write_text("[]", encoding="utf-8")
+    displaced = tmp_path / "private-table-displaced-secret.json"
+    original_open = os.open
+    swapped = False
+
+    def swapping_open(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        nonlocal swapped
+        if not swapped and Path(path) == table:
+            swapped = True
+            table.replace(displaced)
+            replacement.replace(table)
+        return original_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(nuscenes_adapter.os, "open", swapping_open)
 
     _assert_sanitized_error(root, NuScenesAdapterErrorCode.TABLE_INVALID)
 

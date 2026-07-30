@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import stat
 from collections import defaultdict
 from collections.abc import Callable, Mapping
@@ -519,20 +520,65 @@ def _resolve_version_root(root: object) -> tuple[Path, Path]:
 
 def _read_table(version_root: Path, table: str) -> list[Any]:
     path = version_root / f"{table}.json"
+    descriptor = -1
     try:
         path_stat = path.lstat()
-        if stat.S_ISLNK(path_stat.st_mode) or not stat.S_ISREG(path_stat.st_mode):
+        if (
+            stat.S_ISLNK(path_stat.st_mode)
+            or not stat.S_ISREG(path_stat.st_mode)
+            or path_stat.st_nlink != 1
+        ):
             _raise(NuScenesAdapterErrorCode.TABLE_INVALID)
-        with path.open("r", encoding="utf-8") as stream:
+        descriptor = os.open(
+            path,
+            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+        )
+        opened_stat = os.fstat(descriptor)
+        initial_fingerprint = (
+            path_stat.st_dev,
+            path_stat.st_ino,
+            path_stat.st_size,
+            path_stat.st_mtime_ns,
+            path_stat.st_ctime_ns,
+        )
+        opened_fingerprint = (
+            opened_stat.st_dev,
+            opened_stat.st_ino,
+            opened_stat.st_size,
+            opened_stat.st_mtime_ns,
+            opened_stat.st_ctime_ns,
+        )
+        if (
+            not stat.S_ISREG(opened_stat.st_mode)
+            or opened_stat.st_nlink != 1
+            or opened_fingerprint != initial_fingerprint
+        ):
+            _raise(NuScenesAdapterErrorCode.TABLE_INVALID)
+        stream = os.fdopen(descriptor, "r", encoding="utf-8")
+        descriptor = -1
+        with stream:
             value = json.load(
                 stream,
                 object_pairs_hook=_unique_json_object,
                 parse_constant=_reject_nonstandard_number,
             )
+            final_stat = os.fstat(stream.fileno())
+            final_fingerprint = (
+                final_stat.st_dev,
+                final_stat.st_ino,
+                final_stat.st_size,
+                final_stat.st_mtime_ns,
+                final_stat.st_ctime_ns,
+            )
+            if final_stat.st_nlink != 1 or final_fingerprint != opened_fingerprint:
+                _raise(NuScenesAdapterErrorCode.TABLE_INVALID)
     except NuScenesAdapterError:
         raise
     except (OSError, UnicodeError, json.JSONDecodeError, RecursionError, ValueError):
         _raise(NuScenesAdapterErrorCode.TABLE_INVALID)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
     if not isinstance(value, list):
         _raise(NuScenesAdapterErrorCode.TABLE_INVALID)
     return cast("list[Any]", value)
