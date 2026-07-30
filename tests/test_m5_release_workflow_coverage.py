@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import stat
 import subprocess
@@ -194,17 +195,23 @@ def test_authenticated_executable_requires_executable_single_regular_file(
     executable = tmp_path / "ffb"
     executable.write_bytes(b"#!/bin/sh\nexit 0\n")
     executable.chmod(0o700)
-    executable_path, fingerprint = workflow._authenticated_executable(executable, label="ffb")
-    assert executable_path == os.fspath(executable.resolve())
+    executable_path, fingerprint, descriptor, body = workflow._open_authenticated_executable(
+        executable, label="ffb"
+    )
+    try:
+        assert executable_path == os.fspath(executable.resolve())
+        assert body == b"#!/bin/sh\nexit 0\n"
+    finally:
+        os.close(descriptor)
     assert fingerprint.byte_length == executable.stat().st_size
     assert fingerprint.link_count == 1
     assert fingerprint.sha256 == "306c6ca7407560340797866e077e053627ad409277d1b9da58106fce4cf717cb"
 
     executable.chmod(0o600)
-    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="safe regular"):
-        workflow._authenticated_executable(executable, label="ffb")
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="unavailable"):
-        workflow._authenticated_executable(tmp_path / "missing", label="ffb")
+        workflow._open_authenticated_executable(executable, label="ffb")
+    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="unavailable"):
+        workflow._open_authenticated_executable(tmp_path / "missing", label="ffb")
 
 
 def test_authenticated_executable_rejects_symlink_and_hardlink(tmp_path: Path) -> None:
@@ -214,12 +221,12 @@ def test_authenticated_executable_rejects_symlink_and_hardlink(tmp_path: Path) -
     redirected = tmp_path / "redirected"
     redirected.symlink_to(executable)
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="unavailable"):
-        workflow._authenticated_executable(redirected, label="ffb")
+        workflow._open_authenticated_executable(redirected, label="ffb")
 
     hardlink = tmp_path / "hardlink"
     os.link(executable, hardlink)
     with pytest.raises(workflow.ReplayReleaseWorkflowError, match="unavailable"):
-        workflow._authenticated_executable(executable, label="ffb")
+        workflow._open_authenticated_executable(executable, label="ffb")
 
 
 @pytest.mark.parametrize("raw", (None, "relative/cache", "/definitely/missing/m5-cache"))
@@ -280,9 +287,16 @@ def _execution_mocks(
     )
     monkeypatch.setattr(
         workflow,
-        "_authenticated_executable",
-        lambda path, **_kwargs: (os.fspath(path.resolve()), fingerprint),
+        "_ffb_interpreter_path",
+        lambda _body, **_kwargs: tmp_path / "real-python",
     )
+
+    def open_executable(path: Path, **_kwargs: object) -> tuple[str, object, int, bytes]:
+        descriptor = os.open(expected_ffb, os.O_RDONLY)
+        body = f"#!{tmp_path}/.venv/bin/python3\n".encode()
+        return os.fspath(path.resolve()), fingerprint, descriptor, body
+
+    monkeypatch.setattr(workflow, "_open_authenticated_executable", open_executable)
     monkeypatch.setattr(
         workflow,
         "_software_verification_authority",
@@ -328,6 +342,8 @@ def test_execution_authority_builds_complete_outcome_blind_token(
     assert token.upstream_ref == "origin/main"
     assert token.software_verification_sha256 == "e" * 64
     assert token.ffb_executable_fingerprint.sha256 == "d" * 64
+    assert token.ffb_interpreter_fingerprint.sha256 == "d" * 64
+    workflow.close_replay_execution_authority(token=token)
 
 
 def test_execution_authority_rejects_thread_drift(
@@ -387,7 +403,18 @@ def test_execution_authority_rejects_overlapping_inputs_and_non_darwin(
 def test_execution_token_postflight_accepts_identity_and_rejects_drift(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    token = SimpleNamespace(value="stable")
+    fingerprint = object()
+    token = SimpleNamespace(
+        value="stable",
+        ffb_executable_descriptor=1,
+        ffb_executable_fingerprint=fingerprint,
+        ffb_interpreter_descriptor=2,
+        ffb_interpreter_fingerprint=fingerprint,
+        time_executable_descriptor=3,
+        time_executable_fingerprint=fingerprint,
+    )
+    monkeypatch.setattr(workflow, "verify_replay_launch_authority", lambda **_kwargs: None)
+    monkeypatch.setattr(workflow, "close_replay_execution_authority", lambda **_kwargs: None)
     monkeypatch.setattr(workflow, "_execution_authority", lambda **_kwargs: token)
     workflow.verify_replay_execution_unchanged(
         token=cast(Any, token),
@@ -410,6 +437,183 @@ def test_execution_token_postflight_accepts_identity_and_rejects_drift(
             output_dir=Path("output"),
             time_l_output=Path("timing"),
         )
+
+
+def test_ffb_shebang_binds_the_exact_locked_interpreter(tmp_path: Path) -> None:
+    interpreter = tmp_path / ".venv/bin/python3"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.write_bytes(b"python binary")
+    interpreter.chmod(0o700)
+
+    assert (
+        workflow._ffb_interpreter_path(
+            f"#!{interpreter}\nprint('bound')\n".encode(),
+            source_root=tmp_path,
+        )
+        == interpreter
+    )
+    for invalid in (
+        b"#!/usr/bin/env python3\n",
+        f"#!{interpreter} -I\n".encode(),
+        b"print('no shebang')\n",
+    ):
+        with pytest.raises(workflow.ReplayReleaseWorkflowError, match="shebang"):
+            workflow._ffb_interpreter_path(invalid, source_root=tmp_path)
+
+
+def test_authenticated_launch_descriptor_detects_path_swap(
+    tmp_path: Path,
+) -> None:
+    executable = tmp_path / "ffb"
+    executable.write_bytes(b"#!/bin/sh\noriginal\n")
+    executable.chmod(0o700)
+    _path, fingerprint, descriptor, _body = workflow._open_authenticated_executable(
+        executable,
+        label="ffb",
+    )
+    try:
+        replacement = tmp_path / "replacement"
+        replacement.write_bytes(b"#!/bin/sh\nreplacement\n")
+        replacement.chmod(0o700)
+        os.replace(replacement, executable)
+
+        with pytest.raises(workflow.ReplayReleaseWorkflowError, match="changed during replay"):
+            workflow._verify_descriptor_fingerprint(descriptor, fingerprint, label="ffb")
+        _new_path, new_fingerprint, new_descriptor, _new_body = (
+            workflow._open_authenticated_executable(executable, label="ffb")
+        )
+        os.close(new_descriptor)
+        assert new_fingerprint != fingerprint
+    finally:
+        os.close(descriptor)
+
+
+def _receipt_test_token(tmp_path: Path) -> Any:
+    fingerprint = workflow.ReplayExecutableFingerprint(
+        device=1,
+        inode=2,
+        mode=stat.S_IFREG | 0o700,
+        link_count=1,
+        owner_uid=3,
+        owner_gid=4,
+        byte_length=5,
+        modified_time_ns=6,
+        changed_time_ns=7,
+        sha256="a" * 64,
+    )
+    return SimpleNamespace(
+        source_root=tmp_path,
+        run_label="primary",
+        scientific_git_revision=_REVISION,
+        dataset_root_identity=(1, 2),
+        uv_cache_root_identity=(3, 4),
+        lockfile_sha256="b" * 64,
+        package_version="0.1.0",
+        implementation_snapshot_sha256="c" * 64,
+        implementation_attestation_sha256="d" * 64,
+        software_verification_argument=(
+            f"reports/generated/m5-software-verification-{_REVISION}.json"
+        ),
+        software_verification_sha256="e" * 64,
+        upstream_ref="origin/main",
+        environment=SimpleNamespace(os_name="Darwin"),
+        ffb_executable="/locked/ffb",
+        ffb_executable_fingerprint=fingerprint,
+        ffb_interpreter="/locked/python",
+        ffb_interpreter_fingerprint=fingerprint,
+        time_executable="/usr/bin/time",
+        time_executable_fingerprint=fingerprint,
+    )
+
+
+def test_success_receipt_rejects_same_name_artifact_and_timing_replacements(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from fusion_fault_bench.contracts.replay_artifact_v1 import REPLAY_ARTIFACT_PATHS
+
+    output_name, timing_name, receipt_name = workflow._attempt_arguments(_REVISION, "primary")
+    output = tmp_path / output_name
+    output.mkdir(parents=True)
+    for member_name in REPLAY_ARTIFACT_PATHS:
+        member = output / member_name
+        member.write_bytes(member_name.encode())
+        member.chmod(0o600)
+    timing = tmp_path / timing_name
+    timing.write_bytes(b"stable timing\n")
+    timing.chmod(0o600)
+
+    tree_before = workflow._artifact_tree_snapshot(output)
+    timing_body, timing_metadata = workflow._read_stable_regular_file(
+        timing,
+        byte_cap=workflow._TIMING_LOG_BYTE_CAP,
+        label="timing",
+        require_private=True,
+    )
+    timing_before = workflow._fingerprint_record(
+        workflow._fingerprint_from_bytes(timing_body, timing_metadata)
+    )
+    baseline = {
+        "artifact_sha256": "1" * 64,
+        "run_sha256": "2" * 64,
+        "run_id": "run-before",
+        "artifact_tree": tree_before,
+        "artifact_tree_sha256": hashlib.sha256(
+            workflow.canonical_json_bytes(tree_before)
+        ).hexdigest(),
+        "timing_log_fingerprint": timing_before,
+    }
+    token = _receipt_test_token(tmp_path)
+    receipt = workflow._success_receipt_bytes(
+        token,
+        run_label="primary",
+        attempt_evidence=baseline,
+    )
+
+    replaced_member = output / REPLAY_ARTIFACT_PATHS[0]
+    replacement = tmp_path / "member-replacement"
+    replacement.write_bytes(replaced_member.read_bytes())
+    replacement.chmod(0o600)
+    os.replace(replacement, replaced_member)
+    tree_after = workflow._artifact_tree_snapshot(output)
+    assert tree_after != tree_before
+
+    timing_replacement = tmp_path / "timing-replacement"
+    timing_replacement.write_bytes(timing_body)
+    timing_replacement.chmod(0o600)
+    os.replace(timing_replacement, timing)
+    timing_after_body, timing_after_metadata = workflow._read_stable_regular_file(
+        timing,
+        byte_cap=workflow._TIMING_LOG_BYTE_CAP,
+        label="timing",
+        require_private=True,
+    )
+    changed = {
+        **baseline,
+        "artifact_tree": tree_after,
+        "artifact_tree_sha256": hashlib.sha256(
+            workflow.canonical_json_bytes(tree_after)
+        ).hexdigest(),
+        "timing_log_fingerprint": workflow._fingerprint_record(
+            workflow._fingerprint_from_bytes(timing_after_body, timing_after_metadata)
+        ),
+    }
+    assert changed["timing_log_fingerprint"] != timing_before
+    assert (
+        workflow._success_receipt_bytes(
+            token,
+            run_label="primary",
+            attempt_evidence=changed,
+        )
+        != receipt
+    )
+
+    receipt_path = tmp_path / receipt_name
+    receipt_path.write_bytes(receipt)
+    receipt_path.chmod(0o600)
+    monkeypatch.setattr(workflow, "_attempt_evidence", lambda *_a, **_k: changed)
+    with pytest.raises(workflow.ReplayReleaseWorkflowError, match="completed attempt"):
+        workflow._require_attempt_lifecycle(token, phase="completed")
 
 
 def _candidate_authorities(tmp_path: Path) -> tuple[SimpleNamespace, object, bytes, bytes]:

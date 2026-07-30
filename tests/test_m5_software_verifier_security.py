@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import subprocess
+import zipfile
 from dataclasses import replace
 from pathlib import Path
 from typing import cast
@@ -197,13 +198,30 @@ def test_wheel_smoke_detects_built_wheel_mutation_and_cleans_temp(
 
     def regular_file_bytes(path: Path, *, byte_cap: int, label: str) -> bytes:
         nonlocal wheel_reads
+        if label == "installed ffb entrypoint":
+            return b"#!/trusted/python\n"
         value = original_regular_file_bytes(path, byte_cap=byte_cap, label=label)
         if path == wheel:
             wheel_reads += 1
             return b"initial" if wheel_reads == 1 else b"mutated"
         return value
 
+    uv_authority = software._ExecutableFingerprint(
+        path=Path("/trusted/uv"),
+        device=1,
+        inode=1,
+        byte_length=10,
+        mtime_ns=1,
+        sha256="e" * 64,
+    )
     monkeypatch.setattr(software, "_regular_file_bytes", regular_file_bytes)
+    monkeypatch.setattr(software, "_trusted_uv_authority", lambda _environment: uv_authority)
+    monkeypatch.setattr(
+        software,
+        "_require_locked_tool_install",
+        lambda _root: (tmp_path / ".venv/lib/python3.12/site-packages", "f" * 64),
+    )
+    monkeypatch.setattr(software, "_fingerprint_executable", lambda *_args, **_kwargs: uv_authority)
     monkeypatch.setattr(software, "_run_command", lambda *_args, **_kwargs: b"ok\n")
     with pytest.raises(software.ReplaySoftwareVerificationError, match="changed"):
         software._run_built_wheel_smoke(
@@ -363,3 +381,175 @@ def test_built_wheel_smoke_entrypoint_success_failure_and_dispatch(
     assert "invalid" in capfd.readouterr().err
     monkeypatch.setattr(software, "_built_wheel_smoke_main", lambda: 7)
     assert software._main(("built-wheel-smoke",)) == 7
+
+
+def test_software_environment_drops_ambient_injection_and_path_substitution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cache = tmp_path / "cache"
+    cache.mkdir(mode=0o700)
+    hostile = {
+        "PATH": f"{tmp_path}/fake-bin:/usr/bin",
+        "HOME": os.fspath(tmp_path / "fake-home"),
+        "PYTEST_ADDOPTS": "--collect-only",
+        "PYTEST_PLUGINS": "attacker",
+        "PYTHONPATH": os.fspath(tmp_path / "attacker"),
+        "PYTHONHOME": os.fspath(tmp_path / "fake-python"),
+        "PYTHONSTARTUP": os.fspath(tmp_path / "startup.py"),
+        "COVERAGE_PROCESS_START": os.fspath(tmp_path / "coverage.ini"),
+        "COVERAGE_RCFILE": os.fspath(tmp_path / "coverage.ini"),
+        "COV_CORE_SOURCE": os.fspath(tmp_path / "attacker"),
+        "LD_PRELOAD": os.fspath(tmp_path / "inject.so"),
+        "DYLD_INSERT_LIBRARIES": os.fspath(tmp_path / "inject.dylib"),
+        "RUFF_CONFIG": os.fspath(tmp_path / "ruff.toml"),
+        "PYRIGHT_PYTHON_GLOBAL_NODE": "1",
+        "NODE_OPTIONS": "--require attacker",
+        "NPM_CONFIG_USERCONFIG": os.fspath(tmp_path / "npmrc"),
+        "UV_CONFIG_FILE": os.fspath(tmp_path / "uv.toml"),
+        "UV_INDEX": "https://attacker.invalid/simple",
+        "PIP_INDEX_URL": "https://attacker.invalid/simple",
+        "NUSCENES_ROOT": os.fspath(tmp_path / "private-data"),
+        "UV_CACHE_DIR": os.fspath(cache),
+    }
+    for name, value in hostile.items():
+        monkeypatch.setenv(name, value)
+
+    environment = software._software_environment()
+
+    assert environment["PATH"] == software._SAFE_PATH
+    assert environment["HOME"] == os.devnull
+    assert environment["UV_CACHE_DIR"] == os.fspath(cache.resolve())
+    assert environment["UV_OFFLINE"] == "1"
+    assert environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
+    assert set(environment).isdisjoint(set(hostile) - {"PATH", "HOME", "UV_CACHE_DIR"})
+
+
+def test_runtime_commands_ignore_path_and_use_authenticated_tools(tmp_path: Path) -> None:
+    def fingerprint(path: str) -> software._ExecutableFingerprint:
+        return software._ExecutableFingerprint(
+            path=Path(path),
+            device=1,
+            inode=len(path),
+            byte_length=10,
+            mtime_ns=1,
+            sha256="a" * 64,
+        )
+
+    authority = software._SoftwareToolAuthority(
+        python=fingerprint("/trusted/python"),
+        ruff=fingerprint("/trusted/ruff"),
+        uv=fingerprint("/trusted/uv"),
+        site_packages=Path("/trusted/site-packages"),
+        installed_tools_sha256="b" * 64,
+    )
+    ruff = software._runtime_command(
+        software.M5_RUFF_LINT_COMMAND,
+        source_root=tmp_path,
+        authority=authority,
+    )
+    pytest_command = software._runtime_command(
+        software.M5_PYTEST_RELEASE_AUTHORITY_COMMAND,
+        source_root=tmp_path,
+        authority=authority,
+    )
+    build = software._runtime_command(
+        software.M5_DISTRIBUTION_BUILD_COMMAND,
+        source_root=tmp_path,
+        authority=authority,
+    )
+
+    assert ruff[0] == "/trusted/ruff"
+    assert pytest_command[:4] == ("/trusted/python", "-I", "-S", "-B")
+    assert "pytest" in pytest_command
+    assert build[:4] == ("/trusted/python", "-I", "-S", "-B")
+    assert "build-wheel" in build
+    assert all(
+        "fake-bin" not in part for command in (ruff, pytest_command, build) for part in command
+    )
+
+
+def test_pytest_command_rejects_collect_only_success(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        software.subprocess,
+        "run",
+        lambda command, **_kwargs: subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=b"1735 tests collected in 0.20s\n",
+            stderr=b"",
+        ),
+    )
+    with pytest.raises(software.ReplaySoftwareVerificationError, match="executed passing"):
+        software._run_command(
+            ("/trusted/python", "-m", "pytest"),
+            source_root=tmp_path,
+            environment=software._software_environment(),
+            require_test_execution=True,
+        )
+
+
+def test_trusted_uv_resolution_never_uses_ambient_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    trusted = tmp_path / "trusted-uv"
+    trusted.write_bytes(b"fixed uv")
+    trusted.chmod(0o700)
+    fake = tmp_path / "fake-bin/uv"
+    fake.parent.mkdir()
+    fake.write_bytes(b"hostile uv")
+    fake.chmod(0o700)
+    monkeypatch.setenv("PATH", os.fspath(fake.parent))
+    monkeypatch.setattr(software, "_trusted_uv_candidate_paths", lambda: (trusted,))
+
+    observed: list[tuple[str, ...]] = []
+
+    def run(command: tuple[str, ...], **_kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        observed.append(command)
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=f"uv {software._EXPECTED_UV_VERSION}\n".encode(),
+            stderr=b"",
+        )
+
+    monkeypatch.setattr(software.subprocess, "run", run)
+    authority = software._trusted_uv_authority(software._software_environment())
+    assert authority.path == trusted.resolve()
+    assert observed == [(os.fspath(trusted.resolve()), "--version")]
+    assert all(os.fspath(fake) not in argument for command in observed for argument in command)
+
+
+def test_hermetic_wheel_builder_is_deterministic_and_records_exact_members(
+    tmp_path: Path,
+) -> None:
+    package = tmp_path / "src/fusion_fault_bench"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_bytes(b'__version__ = "0.1.0"\n')
+    (package / "cli.py").write_bytes(b"def main(): return 0\n")
+    (tmp_path / "README.md").write_bytes(b"# Fixture\n")
+    (tmp_path / "LICENSE").write_bytes(b"fixture license\n")
+
+    first_path, first_bytes = software._build_distribution_wheel(tmp_path, "0.1.0")
+    second_path, second_bytes = software._build_distribution_wheel(tmp_path, "0.1.0")
+
+    assert first_path == second_path
+    assert first_bytes == second_bytes
+    with zipfile.ZipFile(first_path) as archive:
+        names = archive.namelist()
+        assert names == sorted(names)
+        assert "fusion_fault_bench/__init__.py" in names
+        assert "fusion_fault_bench-0.1.0.dist-info/licenses/LICENSE" in names
+        assert all(info.date_time == (1980, 1, 1, 0, 0, 0) for info in archive.infolist())
+        record_name = "fusion_fault_bench-0.1.0.dist-info/RECORD"
+        rows = archive.read(record_name).decode("utf-8").splitlines()
+        assert rows[-1] == f"{record_name},,"
+        for row in rows[:-1]:
+            name, digest, size = row.rsplit(",", maxsplit=2)
+            value = archive.read(name)
+            assert digest == f"sha256={software._wheel_record_hash(value)}"
+            assert int(size) == len(value)

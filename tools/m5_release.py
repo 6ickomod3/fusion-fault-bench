@@ -362,37 +362,41 @@ def _run_bounded_child(command: tuple[str, ...], *, pass_fds: tuple[int, ...]) -
     return returncode
 
 
-def run_replay_command(args: argparse.Namespace) -> int:
-    """Run exactly one timed replay attempt; never delete, overwrite, or retry."""
-
-    output_argument, output_absolute = _require_generated_path(
-        args.output_dir,
-        label="replay output",
-    )
-    log_argument, log_absolute = _require_generated_path(
-        args.time_l_output,
-        label="replay timing log",
-    )
-    if output_absolute == log_absolute or output_absolute in log_absolute.parents:
-        raise M5ReleaseDriverError("replay output and timing log paths overlap")
-
-    execution_token = _call_workflow(
-        "authenticate_replay_execution",
-        source_root=args.source_root,
-        run_label=args.run_label,
-        output_dir=args.output_dir,
-        time_l_output=args.time_l_output,
-    )
+def _run_authenticated_replay(
+    *,
+    args: argparse.Namespace,
+    execution_token: object,
+    output_argument: str,
+    output_absolute: Path,
+    log_argument: str,
+    log_absolute: Path,
+) -> int:
     time_executable = getattr(execution_token, "time_executable", None)
     ffb_executable = getattr(execution_token, "ffb_executable", None)
+    ffb_interpreter = getattr(execution_token, "ffb_interpreter", None)
     source_root = getattr(execution_token, "source_root", None)
     success_argument = getattr(execution_token, "success_argument", None)
     time_fingerprint = getattr(execution_token, "time_executable_fingerprint", None)
     ffb_fingerprint = getattr(execution_token, "ffb_executable_fingerprint", None)
+    interpreter_fingerprint = getattr(
+        execution_token,
+        "ffb_interpreter_fingerprint",
+        None,
+    )
+    time_descriptor = getattr(execution_token, "time_executable_descriptor", None)
+    ffb_descriptor = getattr(execution_token, "ffb_executable_descriptor", None)
+    interpreter_descriptor = getattr(
+        execution_token,
+        "ffb_interpreter_descriptor",
+        None,
+    )
+    descriptors = (time_descriptor, interpreter_descriptor, ffb_descriptor)
     if (
         time_executable != _TIME_EXECUTABLE
         or not isinstance(ffb_executable, str)
         or not Path(ffb_executable).is_absolute()
+        or not isinstance(ffb_interpreter, str)
+        or not Path(ffb_interpreter).is_absolute()
         or not isinstance(source_root, Path)
         or source_root != _absolute_lexical(Path("."))
         or output_absolute != source_root / output_argument
@@ -403,9 +407,13 @@ def run_replay_command(args: argparse.Namespace) -> int:
         or success_argument != f"{output_argument}.success.json"
         or not _valid_execution_fingerprint(time_fingerprint)
         or not _valid_execution_fingerprint(ffb_fingerprint)
+        or not _valid_execution_fingerprint(interpreter_fingerprint)
+        or any(type(descriptor) is not int or descriptor < 0 for descriptor in descriptors)
+        or len(set(descriptors)) != len(descriptors)
     ):
         raise M5ReleaseDriverError("M5 replay execution authority is invalid")
 
+    ffb_fd = cast(int, ffb_descriptor)
     output_parent_descriptor = _open_existing_directory(output_absolute.parent)
     try:
         if _entry_exists_at(output_parent_descriptor, output_absolute.name):
@@ -438,11 +446,12 @@ def run_replay_command(args: argparse.Namespace) -> int:
             raise M5ReleaseDriverError("M5 replay timing log reservation is invalid")
 
         command = (
-            time_executable,
+            cast(str, time_executable),
             "-l",
             "-o",
             f"/dev/fd/{log_descriptor}",
-            ffb_executable,
+            ffb_interpreter,
+            f"/dev/fd/{ffb_fd}",
             "replay",
             "run",
             "--output-dir",
@@ -450,8 +459,15 @@ def run_replay_command(args: argparse.Namespace) -> int:
         )
         child_attempted = False
         try:
+            _call_workflow(
+                "verify_replay_launch_authority",
+                token=execution_token,
+            )
             child_attempted = True
-            returncode = _run_bounded_child(command, pass_fds=(log_descriptor,))
+            returncode = _run_bounded_child(
+                command,
+                pass_fds=(log_descriptor, ffb_fd),
+            )
             os.fsync(log_descriptor)
             final = os.fstat(log_descriptor)
             reopened = os.stat(
@@ -504,6 +520,43 @@ def run_replay_command(args: argparse.Namespace) -> int:
         if log_descriptor is not None:
             os.close(log_descriptor)
         os.close(log_parent_descriptor)
+
+
+def run_replay_command(args: argparse.Namespace) -> int:
+    """Run exactly one timed replay attempt; never delete, overwrite, or retry."""
+
+    output_argument, output_absolute = _require_generated_path(
+        args.output_dir,
+        label="replay output",
+    )
+    log_argument, log_absolute = _require_generated_path(
+        args.time_l_output,
+        label="replay timing log",
+    )
+    if output_absolute == log_absolute or output_absolute in log_absolute.parents:
+        raise M5ReleaseDriverError("replay output and timing log paths overlap")
+
+    execution_token = _call_workflow(
+        "authenticate_replay_execution",
+        source_root=args.source_root,
+        run_label=args.run_label,
+        output_dir=args.output_dir,
+        time_l_output=args.time_l_output,
+    )
+    try:
+        return _run_authenticated_replay(
+            args=args,
+            execution_token=execution_token,
+            output_argument=output_argument,
+            output_absolute=output_absolute,
+            log_argument=log_argument,
+            log_absolute=log_absolute,
+        )
+    finally:
+        _call_workflow(
+            "close_replay_execution_authority",
+            token=execution_token,
+        )
 
 
 def prepare_review_command(args: argparse.Namespace) -> object:

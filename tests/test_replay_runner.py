@@ -324,6 +324,57 @@ def test_metadata_guard_is_scoped_and_blocks_payload_open(
     assert payload.read_bytes() == b"private"
 
 
+def test_metadata_guard_rejects_allowlisted_symlink_and_hardlink_aliases(
+    tmp_path: Path,
+) -> None:
+    dataset = tmp_path / "dataset"
+    version = dataset / "v1.0-mini"
+    version.mkdir(parents=True)
+    external = tmp_path / "external.json"
+    external.write_text("[]", encoding="utf-8")
+    scene = version / "scene.json"
+
+    scene.symlink_to(external)
+    with (
+        replay_runner._metadata_read_guard(dataset) as symlink_evidence,
+        pytest.raises(OSError, match="blocked"),
+    ):
+        scene.read_text(encoding="utf-8")
+    assert symlink_evidence.metadata_table_reads == 0
+    assert symlink_evidence.blocked_dataset_reads == 1
+
+    scene.unlink()
+    os.link(external, scene)
+    with (
+        replay_runner._metadata_read_guard(dataset) as hardlink_evidence,
+        pytest.raises(OSError, match="blocked"),
+    ):
+        scene.read_text(encoding="utf-8")
+    assert external.stat().st_nlink == 2
+    assert hardlink_evidence.metadata_table_reads == 0
+    assert hardlink_evidence.blocked_dataset_reads == 1
+
+
+def test_metadata_guard_rejects_an_outside_symlink_into_dataset(
+    tmp_path: Path,
+) -> None:
+    dataset = tmp_path / "dataset"
+    version = dataset / "v1.0-mini"
+    version.mkdir(parents=True)
+    scene = version / "scene.json"
+    scene.write_text("[]", encoding="utf-8")
+    outside_alias = tmp_path / "outside-scene.json"
+    outside_alias.symlink_to(scene)
+
+    with (
+        replay_runner._metadata_read_guard(dataset) as evidence,
+        pytest.raises(OSError, match="blocked"),
+    ):
+        outside_alias.read_text(encoding="utf-8")
+    assert evidence.metadata_table_reads == 0
+    assert evidence.blocked_dataset_reads == 1
+
+
 def test_payload_attempt_is_reported_without_private_exception_context(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

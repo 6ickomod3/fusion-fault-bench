@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 
+from fusion_fault_bench import replay_release_software as software
 from fusion_fault_bench.artifacts import canonical_json_bytes
 from fusion_fault_bench.provenance import CleanSourceSnapshot
 from fusion_fault_bench.replay_release_authority import (
@@ -70,6 +71,37 @@ def _completed(
     return subprocess.CompletedProcess(command, returncode, stdout=stdout, stderr=stderr)
 
 
+def _mock_tool_authority(
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> software._SoftwareToolAuthority:
+    def fingerprint(name: str) -> software._ExecutableFingerprint:
+        return software._ExecutableFingerprint(
+            path=Path(f"/trusted/{name}"),
+            device=1,
+            inode=len(name),
+            byte_length=10,
+            mtime_ns=1,
+            sha256=hashlib.sha256(name.encode()).hexdigest(),
+        )
+
+    authority = software._SoftwareToolAuthority(
+        python=fingerprint("python"),
+        ruff=fingerprint("ruff"),
+        uv=fingerprint("uv"),
+        site_packages=root / ".venv/lib/python3.12/site-packages",
+        installed_tools_sha256="f" * 64,
+    )
+    monkeypatch.setattr(software, "_build_tool_authority", lambda *_args: authority)
+    monkeypatch.setattr(software, "_require_tool_authority_unchanged", lambda _value: None)
+    monkeypatch.setattr(
+        software,
+        "_runtime_command",
+        lambda logical, **_keywords: logical,
+    )
+    return authority
+
+
 def test_verify_software_runs_exact_order_binds_outputs_and_publishes_mode_0600(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -77,6 +109,7 @@ def test_verify_software_runs_exact_order_binds_outputs_and_publishes_mode_0600(
     root = tmp_path.resolve()
     (root / "reports").mkdir()
     clean, implementation = _authorities(root)
+    _mock_tool_authority(root, monkeypatch)
     authority_calls: list[tuple[Path, CleanSourceSnapshot, ImplementationSnapshot]] = []
 
     def authority(**arguments: Any) -> None:
@@ -97,7 +130,7 @@ def test_verify_software_runs_exact_order_binds_outputs_and_publishes_mode_0600(
         observed.append((command, arguments["env"]))
         return _completed(
             command,
-            stdout=f"passed at {root}/work in 1.25s\n".encode(),
+            stdout=f"1 passed at {root}/work in 1.25s\n".encode(),
         )
 
     monkeypatch.setattr(
@@ -130,7 +163,7 @@ def test_verify_software_runs_exact_order_binds_outputs_and_publishes_mode_0600(
         for row in verification.checks
     )
     expected_normalized = normalize_command_output(
-        f"passed at {root}/work in 1.25s\n".encode(),
+        f"1 passed at {root}/work in 1.25s\n".encode(),
         b"",
         runtime_paths=(root,),
     )
@@ -150,6 +183,7 @@ def test_verify_software_fails_immediately_and_does_not_publish(
     root = tmp_path.resolve()
     (root / "reports").mkdir()
     clean, implementation = _authorities(root)
+    _mock_tool_authority(root, monkeypatch)
     calls: list[tuple[str, ...]] = []
     monkeypatch.setattr(
         "fusion_fault_bench.replay_release_software._require_source_authority",
@@ -192,6 +226,7 @@ def test_verify_software_refuses_overwrite_before_starting_checks(
     target.parent.mkdir(parents=True)
     target.write_bytes(b"existing\n")
     clean, implementation = _authorities(root)
+    _mock_tool_authority(root, monkeypatch)
     monkeypatch.setattr(
         "fusion_fault_bench.replay_release_software._require_source_authority",
         lambda **_arguments: None,
@@ -221,6 +256,7 @@ def test_postflight_source_drift_prevents_publication(
     root = tmp_path.resolve()
     (root / "reports").mkdir()
     clean, implementation = _authorities(root)
+    _mock_tool_authority(root, monkeypatch)
     authority_calls = 0
 
     def authority(**_arguments: Any) -> None:
@@ -235,7 +271,7 @@ def test_postflight_source_drift_prevents_publication(
     )
     monkeypatch.setattr(
         "fusion_fault_bench.replay_release_software.subprocess.run",
-        lambda command, **_arguments: _completed(command),
+        lambda command, **_arguments: _completed(command, stdout=b"1 passed\n"),
     )
 
     with pytest.raises(ReplaySoftwareVerificationError, match="changed"):
@@ -279,12 +315,31 @@ def test_built_wheel_smoke_installs_exact_wheel_offline_and_cleans_owned_temp(
     wheel = root / "dist/fusion_fault_bench-0.1.0-py3-none-any.whl"
     wheel.write_bytes(b"exact-wheel")
     calls: list[tuple[tuple[str, ...], dict[str, str]]] = []
+    uv_authority = software._ExecutableFingerprint(
+        path=Path("/trusted/uv"),
+        device=1,
+        inode=1,
+        byte_length=10,
+        mtime_ns=1,
+        sha256="e" * 64,
+    )
+    monkeypatch.setattr(software, "_trusted_uv_authority", lambda _environment: uv_authority)
+    monkeypatch.setattr(
+        software,
+        "_require_locked_tool_install",
+        lambda _root: (root / ".venv/lib/python3.12/site-packages", "f" * 64),
+    )
+    monkeypatch.setattr(software, "_fingerprint_executable", lambda *_args, **_kwargs: uv_authority)
 
     def run(
         command: tuple[str, ...],
         **arguments: Any,
     ) -> subprocess.CompletedProcess[bytes]:
         calls.append((command, arguments["env"]))
+        if len(calls) == 2:
+            installed_ffb = Path(command[4]).with_name("ffb")
+            installed_ffb.parent.mkdir(parents=True, exist_ok=True)
+            installed_ffb.write_bytes(b"#!/trusted/python\n")
         return _completed(command, stdout=b"smoke-ok\n")
 
     monkeypatch.setattr(
@@ -300,9 +355,9 @@ def test_built_wheel_smoke_installs_exact_wheel_offline_and_cleans_owned_temp(
 
     assert len(calls) == 8
     install = calls[1][0]
-    assert install[:4] == ("uv", "pip", "install", "--python")
+    assert install[:4] == ("/trusted/uv", "pip", "install", "--python")
     assert "--offline" in install
-    assert install[-1] == "dist/fusion_fault_bench-0.1.0-py3-none-any.whl"
+    assert Path(install[-1]) == wheel
     assert all(call_environment["UV_OFFLINE"] == "1" for _command, call_environment in calls)
     assert all("NUSCENES_ROOT" not in call_environment for _command, call_environment in calls)
     assert b"wheel_sha256=" in output
@@ -319,6 +374,21 @@ def test_built_wheel_smoke_failure_still_cleans_owned_temp(
     (root / ".python-version").write_text("3.12.13\n", encoding="ascii")
     (root / "dist/fusion_fault_bench-0.1.0-py3-none-any.whl").write_bytes(b"wheel")
     calls = 0
+    uv_authority = software._ExecutableFingerprint(
+        path=Path("/trusted/uv"),
+        device=1,
+        inode=1,
+        byte_length=10,
+        mtime_ns=1,
+        sha256="e" * 64,
+    )
+    monkeypatch.setattr(software, "_trusted_uv_authority", lambda _environment: uv_authority)
+    monkeypatch.setattr(
+        software,
+        "_require_locked_tool_install",
+        lambda _root: (root / ".venv/lib/python3.12/site-packages", "f" * 64),
+    )
+    monkeypatch.setattr(software, "_fingerprint_executable", lambda *_args, **_kwargs: uv_authority)
 
     def run(
         command: tuple[str, ...],

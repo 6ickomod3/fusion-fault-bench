@@ -317,3 +317,62 @@ def test_publication_rejects_package_outside_frozen_path(
 
     with pytest.raises(ReplayReleasePackageValidationError, match="frozen tracked"):
         validate_publication(tmp_path / "external-release", tmp_path)
+
+
+def test_publication_reader_uses_descriptor_relative_no_follow_chain(tmp_path: Path) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    target = docs / "result.md"
+    target.write_bytes(b"reviewed value\n")
+    assert release_package._read_publication_file(tmp_path, "docs/result.md") == b"reviewed value\n"
+
+    target.unlink()
+    outside = tmp_path / "outside.md"
+    outside.write_bytes(b"outside\n")
+    target.symlink_to(outside)
+    with pytest.raises(ReplayReleasePackageValidationError, match="missing or unsafe"):
+        release_package._read_publication_file(tmp_path, "docs/result.md")
+
+    target.unlink()
+    target.hardlink_to(outside)
+    with pytest.raises(ReplayReleasePackageValidationError, match="bounded regular"):
+        release_package._read_publication_file(tmp_path, "docs/result.md")
+
+    target.unlink()
+    release_package.os.mkfifo(target, 0o600)
+    with pytest.raises(ReplayReleasePackageValidationError, match="bounded regular"):
+        release_package._read_publication_file(tmp_path, "docs/result.md")
+
+    target.unlink()
+    docs.rmdir()
+    redirected = tmp_path / "redirected"
+    redirected.mkdir()
+    (redirected / "result.md").write_bytes(b"redirected\n")
+    docs.symlink_to(redirected, target_is_directory=True)
+    with pytest.raises(ReplayReleasePackageValidationError, match="missing or unsafe"):
+        release_package._read_publication_file(tmp_path, "docs/result.md")
+
+
+def test_publication_reader_detects_path_swap_during_descriptor_read(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    target = docs / "result.md"
+    target.write_bytes(b"first value\n")
+    displaced = docs / "displaced.md"
+    real_read = release_package.os.read
+    swapped = False
+
+    def swap_then_read(descriptor: int, size: int) -> bytes:
+        nonlocal swapped
+        if not swapped:
+            swapped = True
+            target.rename(displaced)
+            target.write_bytes(b"other value\n")
+        return real_read(descriptor, size)
+
+    monkeypatch.setattr(release_package.os, "read", swap_then_read)
+    with pytest.raises(ReplayReleasePackageValidationError, match="changed while reading"):
+        release_package._read_publication_file(tmp_path, "docs/result.md")

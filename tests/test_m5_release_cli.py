@@ -61,8 +61,13 @@ def _execution_workflow(
     token = SimpleNamespace(
         time_executable="/usr/bin/time",
         ffb_executable="/locked/environment/bin/ffb",
+        ffb_interpreter="/locked/environment/bin/python3.12",
         time_executable_fingerprint=fingerprint,
         ffb_executable_fingerprint=fingerprint,
+        ffb_interpreter_fingerprint=fingerprint,
+        time_executable_descriptor=101,
+        ffb_interpreter_descriptor=102,
+        ffb_executable_descriptor=103,
     )
 
     def authenticate_replay_execution(**arguments: object) -> object:
@@ -76,6 +81,10 @@ def _execution_workflow(
         token.time_l_argument = str(arguments["time_l_output"])
         token.success_argument = f"{output_argument}.success.json"
         return token
+
+    def verify_replay_launch_authority(**arguments: object) -> None:
+        events.append("verify-launch")
+        observed["verify-launch"] = arguments
 
     def verify_replay_execution_unchanged(**arguments: object) -> object:
         events.append("verify")
@@ -96,12 +105,18 @@ def _execution_workflow(
         events.append("verify-receipt")
         observed["verify-receipt"] = arguments
 
+    def close_replay_execution_authority(**arguments: object) -> None:
+        events.append("close")
+        observed["close"] = arguments
+
     return (
         SimpleNamespace(
             authenticate_replay_execution=authenticate_replay_execution,
+            verify_replay_launch_authority=verify_replay_launch_authority,
             verify_replay_execution_unchanged=verify_replay_execution_unchanged,
             build_replay_execution_success_receipt=(build_replay_execution_success_receipt),
             verify_replay_execution_success_receipt=(verify_replay_execution_success_receipt),
+            close_replay_execution_authority=close_replay_execution_authority,
         ),
         token,
     )
@@ -176,19 +191,24 @@ def test_run_replay_authenticates_reserves_and_postflights_exact_command(
     }
     assert events == [
         "authenticate",
+        "verify-launch",
         "child",
         "verify",
         "build-receipt",
         "verify-receipt",
+        "close",
     ]
     assert observed["authenticate"] == authority_arguments
+    assert observed["verify-launch"] == {"token": token}
     assert observed["verify"] == {"token": token, **authority_arguments}
+    assert observed["pass_fds"][1:] == (103,)
     assert observed["command"] == (
         "/usr/bin/time",
         "-l",
         "-o",
         f"/dev/fd/{observed['pass_fds'][0]}",
-        "/locked/environment/bin/ffb",
+        "/locked/environment/bin/python3.12",
+        "/dev/fd/103",
         "replay",
         "run",
         "--output-dir",
@@ -202,6 +222,7 @@ def test_run_replay_authenticates_reserves_and_postflights_exact_command(
     assert stat.S_IMODE(receipt_path.stat().st_mode) == 0o600
     assert observed["build-receipt"] == {"token": token}
     assert observed["verify-receipt"] == {"token": token}
+    assert observed["close"] == {"token": token}
 
 
 def test_run_replay_rejects_execution_authority_from_another_working_tree(
@@ -238,7 +259,7 @@ def test_run_replay_rejects_execution_authority_from_another_working_tree(
         )
         == 2
     )
-    assert events == ["authenticate"]
+    assert events == ["authenticate", "close"]
     assert not log.exists()
 
 
@@ -275,7 +296,7 @@ def test_run_replay_propagates_failure_once_and_preserves_log(
         == 7
     )
     assert calls == 1
-    assert events == ["authenticate", "child", "verify"]
+    assert events == ["authenticate", "verify-launch", "child", "verify", "close"]
     assert log.read_bytes() == b"failed attempt resource block\n"
 
 
@@ -338,7 +359,7 @@ def test_run_replay_postflight_failure_preserves_attempt_log(
         )
         == 2
     )
-    assert events == ["authenticate", "child", "verify"]
+    assert events == ["authenticate", "verify-launch", "child", "verify", "close"]
     assert log.read_bytes() == b"postflight-failed attempt resource block\n"
 
 
@@ -370,7 +391,7 @@ def test_run_replay_refuses_existing_log_without_launching(
         )
         == 2
     )
-    assert events == ["authenticate"]
+    assert events == ["authenticate", "close"]
     assert (generated / "primary.time-l.txt").read_bytes() == b"keep\n"
     assert capsys.readouterr().err == "error: run-replay failed closed\n"
 

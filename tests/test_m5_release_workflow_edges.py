@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -142,13 +143,22 @@ def test_execution_authority_rejects_missing_or_foreign_ffb(
         lambda: SimpleNamespace(os_name="Darwin"),
     )
     monkeypatch.setattr(workflow.shutil, "which", lambda _name: discovered)
-    monkeypatch.setattr(
-        workflow,
-        "_authenticated_executable",
-        lambda _path, **_kwargs: (
+
+    def open_foreign_executable(
+        _path: Path,
+        **_kwargs: object,
+    ) -> tuple[str, object, int, bytes]:
+        return (
             str(tmp_path.parent / "foreign-ffb"),
             SimpleNamespace(),
-        ),
+            os.open(expected, os.O_RDONLY),
+            b"foreign ffb",
+        )
+
+    monkeypatch.setattr(
+        workflow,
+        "_open_authenticated_executable",
+        open_foreign_executable,
     )
     for name in workflow._THREAD_ENVIRONMENT_KEYS:
         monkeypatch.setenv(name, "1")

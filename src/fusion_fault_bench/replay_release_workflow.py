@@ -8,7 +8,9 @@ import re
 import shutil
 import stat
 import subprocess
-from dataclasses import dataclass
+from collections.abc import Mapping
+from contextlib import suppress
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from fusion_fault_bench.artifacts import canonical_json_bytes
@@ -101,8 +103,13 @@ class ReplayExecutionAuthority:
     environment: RuntimeEnvironment
     ffb_executable: str
     ffb_executable_fingerprint: ReplayExecutableFingerprint
+    ffb_executable_descriptor: int = field(compare=False, repr=False)
+    ffb_interpreter: str
+    ffb_interpreter_fingerprint: ReplayExecutableFingerprint
+    ffb_interpreter_descriptor: int = field(compare=False, repr=False)
     time_executable: str
     time_executable_fingerprint: ReplayExecutableFingerprint
+    time_executable_descriptor: int = field(compare=False, repr=False)
 
 
 def _git_text(source_root: Path, *arguments: str) -> str:
@@ -439,25 +446,11 @@ def _read_stable_regular_file(
             os.close(parent_descriptor)
 
 
-def _authenticated_executable(
-    path: Path,
-    *,
-    label: str,
-) -> tuple[str, ReplayExecutableFingerprint]:
-    absolute = Path(os.path.abspath(os.fspath(path)))
-    try:
-        value, metadata = _read_stable_regular_file(
-            absolute,
-            byte_cap=_EXECUTABLE_BYTE_CAP,
-            label=f"{label} executable",
-            require_private=False,
-        )
-        resolved = absolute.resolve(strict=True)
-    except (OSError, ReplayReleaseWorkflowError) as error:
-        raise ReplayReleaseWorkflowError(f"M5 {label} executable is unavailable") from error
-    if resolved != absolute or metadata.st_mode & 0o111 == 0 or not os.access(absolute, os.X_OK):
-        raise ReplayReleaseWorkflowError(f"M5 {label} executable is not a safe regular file")
-    fingerprint = ReplayExecutableFingerprint(
+def _fingerprint_from_bytes(
+    value: bytes,
+    metadata: os.stat_result,
+) -> ReplayExecutableFingerprint:
+    return ReplayExecutableFingerprint(
         device=metadata.st_dev,
         inode=metadata.st_ino,
         mode=metadata.st_mode,
@@ -469,7 +462,128 @@ def _authenticated_executable(
         changed_time_ns=metadata.st_ctime_ns,
         sha256=hashlib.sha256(value).hexdigest(),
     )
-    return os.fspath(absolute), fingerprint
+
+
+def _pread_bounded(descriptor: int, *, byte_cap: int) -> bytes:
+    chunks: list[bytes] = []
+    offset = 0
+    while offset <= byte_cap:
+        chunk = os.pread(descriptor, min(1024 * 1024, byte_cap + 1 - offset), offset)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        offset += len(chunk)
+    return b"".join(chunks)
+
+
+def _open_authenticated_executable(
+    path: Path,
+    *,
+    label: str,
+) -> tuple[str, ReplayExecutableFingerprint, int, bytes]:
+    absolute = Path(os.path.abspath(os.fspath(path)))
+    parent_descriptor: int | None = None
+    descriptor: int | None = None
+    try:
+        if absolute.resolve(strict=True) != absolute:
+            raise OSError
+        parent_descriptor = _open_existing_directory(absolute.parent)
+        descriptor = os.open(
+            absolute.name,
+            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+            dir_fd=parent_descriptor,
+        )
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or before.st_size <= 0
+            or before.st_size > _EXECUTABLE_BYTE_CAP
+            or before.st_mode & 0o111 == 0
+        ):
+            raise OSError
+        body = _pread_bounded(descriptor, byte_cap=_EXECUTABLE_BYTE_CAP)
+        after = os.fstat(descriptor)
+        reopened = os.stat(absolute.name, dir_fd=parent_descriptor, follow_symlinks=False)
+        if (
+            len(body) != before.st_size
+            or len(body) > _EXECUTABLE_BYTE_CAP
+            or _stable_identity(before) != _stable_identity(after)
+            or _stable_identity(before) != _stable_identity(reopened)
+        ):
+            raise OSError
+        fingerprint = _fingerprint_from_bytes(body, before)
+        result = (os.fspath(absolute), fingerprint, descriptor, body)
+        descriptor = None
+        return result
+    except (OSError, ReplayReleaseWorkflowError) as error:
+        raise ReplayReleaseWorkflowError(f"M5 {label} executable is unavailable") from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if parent_descriptor is not None:
+            os.close(parent_descriptor)
+
+
+def _ffb_interpreter_path(ffb_body: bytes, *, source_root: Path) -> Path:
+    first_line, separator, _remainder = ffb_body.partition(b"\n")
+    expected = source_root / ".venv/bin/python3"
+    try:
+        interpreter = first_line.removeprefix(b"#!").decode("ascii")
+    except UnicodeDecodeError as error:
+        raise ReplayReleaseWorkflowError("M5 ffb shebang interpreter is invalid") from error
+    if separator != b"\n" or not first_line.startswith(b"#!") or interpreter != os.fspath(expected):
+        raise ReplayReleaseWorkflowError(
+            "M5 ffb shebang does not name the locked environment interpreter"
+        )
+    try:
+        resolved = expected.resolve(strict=True)
+    except OSError as error:
+        raise ReplayReleaseWorkflowError("M5 ffb shebang interpreter is unavailable") from error
+    if not resolved.is_absolute():
+        raise ReplayReleaseWorkflowError("M5 ffb shebang interpreter is invalid")
+    return resolved
+
+
+def _verify_descriptor_fingerprint(
+    descriptor: int,
+    expected: ReplayExecutableFingerprint,
+    *,
+    label: str,
+) -> None:
+    try:
+        before = os.fstat(descriptor)
+        body = _pread_bounded(descriptor, byte_cap=_EXECUTABLE_BYTE_CAP)
+        after = os.fstat(descriptor)
+    except OSError as error:
+        raise ReplayReleaseWorkflowError(
+            f"M5 launched {label} descriptor is unavailable"
+        ) from error
+    if (
+        len(body) != before.st_size
+        or _stable_identity(before) != _stable_identity(after)
+        or _fingerprint_from_bytes(body, before) != expected
+    ):
+        raise ReplayReleaseWorkflowError(f"M5 launched {label} changed during replay")
+
+
+def close_replay_execution_authority(*, token: ReplayExecutionAuthority) -> None:
+    """Close the three authenticated launch descriptors exactly once."""
+
+    close_error: OSError | None = None
+    for descriptor in (
+        token.ffb_executable_descriptor,
+        token.ffb_interpreter_descriptor,
+        token.time_executable_descriptor,
+    ):
+        try:
+            os.close(descriptor)
+        except OSError as error:
+            close_error = error
+    if close_error is not None:
+        raise ReplayReleaseWorkflowError(
+            "M5 replay launch authority was already closed or invalid"
+        ) from close_error
 
 
 def _authenticated_input_directory(
@@ -604,15 +718,106 @@ def _environment_record(environment: RuntimeEnvironment) -> object:
     }
 
 
+def _metadata_record(value: os.stat_result) -> dict[str, int]:
+    return {
+        "device": value.st_dev,
+        "inode": value.st_ino,
+        "mode": value.st_mode,
+        "link_count": value.st_nlink,
+        "owner_uid": value.st_uid,
+        "owner_gid": value.st_gid,
+        "byte_length": value.st_size,
+        "modified_time_ns": value.st_mtime_ns,
+        "changed_time_ns": value.st_ctime_ns,
+    }
+
+
+def _artifact_tree_snapshot(path: Path) -> dict[str, object]:
+    from fusion_fault_bench.contracts.replay_artifact_v1 import REPLAY_ARTIFACT_PATHS
+
+    descriptor: int | None = None
+    try:
+        descriptor = _open_existing_directory(path)
+        root = os.fstat(descriptor)
+        if not stat.S_ISDIR(root.st_mode):
+            raise OSError
+        names = os.listdir(descriptor)
+        if set(names) != set(REPLAY_ARTIFACT_PATHS) or len(names) != len(REPLAY_ARTIFACT_PATHS):
+            raise OSError
+        members: dict[str, object] = {}
+        for name in sorted(names):
+            metadata = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            if (
+                not stat.S_ISREG(metadata.st_mode)
+                or metadata.st_nlink != 1
+                or stat.S_IMODE(metadata.st_mode) != 0o600
+            ):
+                raise OSError
+            members[name] = _metadata_record(metadata)
+        return {"root": _metadata_record(root), "members": members}
+    except OSError as error:
+        raise ReplayReleaseWorkflowError(
+            "M5 completed replay artifact tree is unavailable or unsafe"
+        ) from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _attempt_evidence(
+    token: ReplayExecutionAuthority,
+    *,
+    run_label: str,
+) -> dict[str, object]:
+    from fusion_fault_bench.replay_artifacts import load_replay_curated_artifact
+
+    output, timing, _success = _attempt_arguments(token.scientific_git_revision, run_label)
+    output_path = token.source_root / output
+    timing_path = token.source_root / timing
+    before = _artifact_tree_snapshot(output_path)
+    try:
+        loaded = load_replay_curated_artifact(output_path)
+    except (OSError, TypeError, ValueError) as error:
+        raise ReplayReleaseWorkflowError("M5 completed replay artifact is invalid") from error
+    after = _artifact_tree_snapshot(output_path)
+    if (
+        before != after
+        or loaded.path != output_path
+        or loaded.run.git_revision != token.scientific_git_revision
+        or loaded.run.lockfile_sha256 != token.lockfile_sha256
+        or loaded.run.package_version != token.package_version
+    ):
+        raise ReplayReleaseWorkflowError(
+            "M5 completed replay artifact changed or has the wrong run authority"
+        )
+    timing_body, timing_metadata = _read_stable_regular_file(
+        timing_path,
+        byte_cap=_TIMING_LOG_BYTE_CAP,
+        label=f"{run_label} timing log",
+        require_private=True,
+    )
+    return {
+        "artifact_sha256": loaded.artifact_sha256,
+        "run_sha256": loaded.run_sha256,
+        "run_id": loaded.run.run_id,
+        "artifact_tree": before,
+        "artifact_tree_sha256": hashlib.sha256(canonical_json_bytes(before)).hexdigest(),
+        "timing_log_fingerprint": _fingerprint_record(
+            _fingerprint_from_bytes(timing_body, timing_metadata)
+        ),
+    }
+
+
 def _success_receipt_bytes(
     token: ReplayExecutionAuthority,
     *,
     run_label: str,
+    attempt_evidence: Mapping[str, object],
 ) -> bytes:
     output, timing, _success = _attempt_arguments(token.scientific_git_revision, run_label)
     return canonical_json_bytes(
         {
-            "schema": "ffb.m5-replay-execution-success/v1",
+            "schema": "ffb.m5-replay-execution-success/v2",
             "run_label": run_label,
             "scientific_git_revision": token.scientific_git_revision,
             "output_argument": output,
@@ -629,8 +834,11 @@ def _success_receipt_bytes(
             "environment": _environment_record(token.environment),
             "ffb_executable": token.ffb_executable,
             "ffb_executable_fingerprint": _fingerprint_record(token.ffb_executable_fingerprint),
+            "ffb_interpreter": token.ffb_interpreter,
+            "ffb_interpreter_fingerprint": _fingerprint_record(token.ffb_interpreter_fingerprint),
             "time_executable": token.time_executable,
             "time_executable_fingerprint": _fingerprint_record(token.time_executable_fingerprint),
+            "attempt_evidence": attempt_evidence,
         }
     )
 
@@ -670,9 +878,14 @@ def _require_attempt_lifecycle(
     phase: str,
 ) -> None:
     entries = _attempt_entries(token.source_root, token.scientific_git_revision)
-    current = _attempt_arguments(token.scientific_git_revision, token.run_label)
+    current = tuple(
+        Path(path).name
+        for path in _attempt_arguments(token.scientific_git_revision, token.run_label)
+    )
     prior = (
-        _attempt_arguments(token.scientific_git_revision, "primary")
+        tuple(
+            Path(path).name for path in _attempt_arguments(token.scientific_git_revision, "primary")
+        )
         if token.run_label == "repeat"
         else None
     )
@@ -716,9 +929,14 @@ def _require_attempt_lifecycle(
             byte_cap=_SUCCESS_RECEIPT_BYTE_CAP,
             label=f"{label} success receipt",
         )
-        if receipt_bytes != _success_receipt_bytes(token, run_label=label):
+        evidence = _attempt_evidence(token, run_label=label)
+        if receipt_bytes != _success_receipt_bytes(
+            token,
+            run_label=label,
+            attempt_evidence=evidence,
+        ):
             raise ReplayReleaseWorkflowError(
-                "M5 replay success receipt does not match the current execution authority"
+                "M5 replay success receipt does not match the completed attempt"
             )
     if phase in {"successful", "completed"}:
         _require_output_entry(entries, name=Path(current[0]).name)
@@ -775,35 +993,59 @@ def _execution_authority(
     discovered_ffb = shutil.which("ffb")
     if discovered_ffb is None:
         raise ReplayReleaseWorkflowError("M5 locked ffb executable is unavailable")
-    ffb_executable, ffb_fingerprint = _authenticated_executable(Path(discovered_ffb), label="ffb")
-    if Path(ffb_executable) != expected_ffb.resolve(strict=True):
-        raise ReplayReleaseWorkflowError("M5 ffb executable is outside the locked environment")
-    time_executable, time_fingerprint = _authenticated_executable(
-        Path("/usr/bin/time"), label="Darwin time"
-    )
-    token = ReplayExecutionAuthority(
-        source_root=clean.source_root,
-        run_label=run_label,
-        output_argument=output_argument,
-        time_l_argument=time_argument,
-        success_argument=f"{output_argument}.success.json",
-        dataset_root_identity=dataset_identity,
-        uv_cache_root_identity=cache_identity,
-        scientific_git_revision=clean.git_revision,
-        lockfile_sha256=clean.lockfile_sha256,
-        package_version=clean.package_version,
-        implementation_snapshot_sha256=implementation.sha256,
-        implementation_attestation_sha256=hashlib.sha256(attestation).hexdigest(),
-        software_verification_argument=software_argument,
-        software_verification_sha256=software_sha256,
-        upstream_ref=_require_upstream_sync(clean.source_root, clean.git_revision),
-        environment=environment,
-        ffb_executable=ffb_executable,
-        ffb_executable_fingerprint=ffb_fingerprint,
-        time_executable=time_executable,
-        time_executable_fingerprint=time_fingerprint,
-    )
-    _require_attempt_lifecycle(token, phase=lifecycle_phase)
+    descriptors: list[int] = []
+    try:
+        ffb_executable, ffb_fingerprint, ffb_descriptor, ffb_body = _open_authenticated_executable(
+            Path(discovered_ffb), label="ffb"
+        )
+        descriptors.append(ffb_descriptor)
+        if Path(ffb_executable) != expected_ffb:
+            raise ReplayReleaseWorkflowError("M5 ffb executable is outside the locked environment")
+        interpreter_path = _ffb_interpreter_path(ffb_body, source_root=clean.source_root)
+        (
+            ffb_interpreter,
+            interpreter_fingerprint,
+            interpreter_descriptor,
+            _interpreter_body,
+        ) = _open_authenticated_executable(interpreter_path, label="ffb interpreter")
+        descriptors.append(interpreter_descriptor)
+        time_executable, time_fingerprint, time_descriptor, _time_body = (
+            _open_authenticated_executable(Path("/usr/bin/time"), label="Darwin time")
+        )
+        descriptors.append(time_descriptor)
+        token = ReplayExecutionAuthority(
+            source_root=clean.source_root,
+            run_label=run_label,
+            output_argument=output_argument,
+            time_l_argument=time_argument,
+            success_argument=f"{output_argument}.success.json",
+            dataset_root_identity=dataset_identity,
+            uv_cache_root_identity=cache_identity,
+            scientific_git_revision=clean.git_revision,
+            lockfile_sha256=clean.lockfile_sha256,
+            package_version=clean.package_version,
+            implementation_snapshot_sha256=implementation.sha256,
+            implementation_attestation_sha256=hashlib.sha256(attestation).hexdigest(),
+            software_verification_argument=software_argument,
+            software_verification_sha256=software_sha256,
+            upstream_ref=_require_upstream_sync(clean.source_root, clean.git_revision),
+            environment=environment,
+            ffb_executable=ffb_executable,
+            ffb_executable_fingerprint=ffb_fingerprint,
+            ffb_executable_descriptor=ffb_descriptor,
+            ffb_interpreter=ffb_interpreter,
+            ffb_interpreter_fingerprint=interpreter_fingerprint,
+            ffb_interpreter_descriptor=interpreter_descriptor,
+            time_executable=time_executable,
+            time_executable_fingerprint=time_fingerprint,
+            time_executable_descriptor=time_descriptor,
+        )
+        _require_attempt_lifecycle(token, phase=lifecycle_phase)
+    except BaseException:
+        for descriptor in descriptors:
+            with suppress(OSError):
+                os.close(descriptor)
+        raise
     return token
 
 
@@ -824,6 +1066,52 @@ def authenticate_replay_execution(
     )
 
 
+def verify_replay_launch_authority(*, token: ReplayExecutionAuthority) -> None:
+    """Bind every launch path to its still-open authenticated descriptor."""
+
+    bindings = (
+        (
+            token.ffb_executable,
+            token.ffb_executable_descriptor,
+            token.ffb_executable_fingerprint,
+            "ffb executable",
+        ),
+        (
+            token.ffb_interpreter,
+            token.ffb_interpreter_descriptor,
+            token.ffb_interpreter_fingerprint,
+            "ffb interpreter",
+        ),
+        (
+            token.time_executable,
+            token.time_executable_descriptor,
+            token.time_executable_fingerprint,
+            "Darwin time executable",
+        ),
+    )
+    current_ffb_body: bytes | None = None
+    for path, descriptor, fingerprint, label in bindings:
+        _verify_descriptor_fingerprint(descriptor, fingerprint, label=label)
+        current_path, current_fingerprint, current_descriptor, body = (
+            _open_authenticated_executable(Path(path), label=label)
+        )
+        try:
+            if current_path != path or current_fingerprint != fingerprint:
+                raise ReplayReleaseWorkflowError(
+                    f"M5 {label} path no longer names its authenticated executable"
+                )
+            if label == "ffb executable":
+                current_ffb_body = body
+        finally:
+            os.close(current_descriptor)
+    if (
+        current_ffb_body is None
+        or os.fspath(_ffb_interpreter_path(current_ffb_body, source_root=token.source_root))
+        != token.ffb_interpreter
+    ):
+        raise ReplayReleaseWorkflowError("M5 ffb shebang interpreter binding changed")
+
+
 def verify_replay_execution_unchanged(
     *,
     token: ReplayExecutionAuthority,
@@ -834,6 +1122,7 @@ def verify_replay_execution_unchanged(
 ) -> None:
     """Require the exact same source/review/runtime authority after a replay."""
 
+    verify_replay_launch_authority(token=token)
     observed = _execution_authority(
         source_root=source_root,
         run_label=run_label,
@@ -841,8 +1130,11 @@ def verify_replay_execution_unchanged(
         time_l_output=time_l_output,
         lifecycle_phase="postflight",
     )
-    if observed != token:
-        raise ReplayReleaseWorkflowError("M5 replay execution authority changed during the run")
+    try:
+        if observed != token:
+            raise ReplayReleaseWorkflowError("M5 replay execution authority changed during the run")
+    finally:
+        close_replay_execution_authority(token=observed)
 
 
 def build_replay_execution_success_receipt(
@@ -852,9 +1144,14 @@ def build_replay_execution_success_receipt(
     """Build the exclusive receipt only after a complete successful r1 attempt."""
 
     _require_attempt_lifecycle(token, phase="successful")
+    evidence = _attempt_evidence(token, run_label=token.run_label)
     return ReplayExecutionSuccessReceipt(
         path=Path(token.success_argument),
-        value=_success_receipt_bytes(token, run_label=token.run_label),
+        value=_success_receipt_bytes(
+            token,
+            run_label=token.run_label,
+            attempt_evidence=evidence,
+        ),
     )
 
 
@@ -922,7 +1219,7 @@ def _authenticate_completed_replays(
     *,
     source_root: Path,
     revision: str,
-) -> ReplayExecutionAuthority:
+) -> None:
     repeat, repeat_time, _receipt = _attempt_arguments(revision, "repeat")
     token = _execution_authority(
         source_root=source_root,
@@ -931,11 +1228,13 @@ def _authenticate_completed_replays(
         time_l_output=Path(repeat_time),
         lifecycle_phase="completed",
     )
-    if token.scientific_git_revision != revision:
-        raise ReplayReleaseWorkflowError(
-            "M5 completed replay lifecycle changed scientific revision"
-        )
-    return token
+    try:
+        if token.scientific_git_revision != revision:
+            raise ReplayReleaseWorkflowError(
+                "M5 completed replay lifecycle changed scientific revision"
+            )
+    finally:
+        close_replay_execution_authority(token=token)
 
 
 def prepare_review_candidate(
@@ -1224,6 +1523,7 @@ __all__ = [
     "authenticate_replay_execution",
     "build_replay_execution_success_receipt",
     "build_reviewed_release",
+    "close_replay_execution_authority",
     "load_validated_review_candidate",
     "prepare_review_candidate",
     "validate_publication",
@@ -1231,5 +1531,6 @@ __all__ = [
     "validate_review_candidate",
     "verify_replay_execution_success_receipt",
     "verify_replay_execution_unchanged",
+    "verify_replay_launch_authority",
     "verify_software",
 ]

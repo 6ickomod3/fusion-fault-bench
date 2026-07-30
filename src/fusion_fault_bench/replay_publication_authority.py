@@ -28,6 +28,14 @@ _RESULTS_REVIEW_PUBLIC_PATHS = (
 )
 _MAX_PENDING_MEMBER_BYTES = 64 * 1024 * 1024
 _MAX_PENDING_TOTAL_BYTES = 512 * 1024 * 1024
+_SAFE_PENDING_FILE_MODES = frozenset({0o600, 0o644})
+_EXPECTED_MODIFIED_PATHS = frozenset(path.encode("utf-8") for path in M5_PUBLICATION_DOCUMENT_PATHS)
+_EXPECTED_ADDED_PATHS = frozenset(
+    {
+        *(f"{M5_RELEASE_DESTINATION_PATH}/{path}".encode() for path in M5_RELEASE_PACKAGE_PATHS),
+        *(path.encode("utf-8") for path in _RESULTS_REVIEW_PUBLIC_PATHS),
+    }
+)
 
 
 class ReplayPublicationAuthorityError(ValueError):
@@ -104,11 +112,15 @@ def _pending_content_digest(source_root: Path, paths: frozenset[bytes]) -> bytes
             before_path = os.lstat(target)
             descriptor = os.open(
                 target,
-                os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+                os.O_RDONLY
+                | getattr(os, "O_NONBLOCK", 0)
+                | getattr(os, "O_NOFOLLOW", 0)
+                | getattr(os, "O_CLOEXEC", 0),
             )
             before = os.fstat(descriptor)
             if (
                 not stat.S_ISREG(before.st_mode)
+                or stat.S_IMODE(before.st_mode) not in _SAFE_PENDING_FILE_MODES
                 or before.st_nlink != 1
                 or before.st_size <= 0
                 or before.st_size > _MAX_PENDING_MEMBER_BYTES
@@ -152,6 +164,7 @@ def _pending_content_digest(source_root: Path, paths: frozenset[bytes]) -> bytes
             _fail("pending publication content exceeds its total byte cap")
         digest.update(len(encoded_relative).to_bytes(8, "big"))
         digest.update(encoded_relative)
+        digest.update(stat.S_IMODE(before.st_mode).to_bytes(4, "big"))
         digest.update(len(value).to_bytes(8, "big"))
         digest.update(hashlib.sha256(value).digest())
     return digest.digest()
@@ -162,7 +175,7 @@ def authenticate_pending_publication(
     *,
     scientific_git_revision: str,
 ) -> PendingPublicationState:
-    """Authenticate exactly the unstaged package, review pair, and eight document projections."""
+    """Authenticate the exact unstaged package, review pair, and nine projections."""
 
     root = Path(os.path.abspath(os.fspath(source_root)))
     try:
@@ -182,20 +195,15 @@ def authenticate_pending_publication(
         _fail("pending publication index differs from HEAD")
     if any(record and not record.startswith(b"H ") for record in flags.split(b"\x00")):
         _fail("pending publication uses unsupported Git index flags")
-    expected_modified = frozenset(path.encode("utf-8") for path in M5_PUBLICATION_DOCUMENT_PATHS)
     observed_modified = frozenset(record for record in worktree_diff.split(b"\x00") if record)
-    if observed_modified != expected_modified:
-        _fail("pending publication tracked changes differ from the eight closeout documents")
-    expected_untracked = {
-        f"{M5_RELEASE_DESTINATION_PATH}/{path}".encode() for path in M5_RELEASE_PACKAGE_PATHS
-    }
-    expected_untracked.update(path.encode("utf-8") for path in _RESULTS_REVIEW_PUBLIC_PATHS)
+    if observed_modified != _EXPECTED_MODIFIED_PATHS:
+        _fail("pending publication tracked changes differ from the nine closeout documents")
     observed_untracked = frozenset(record for record in untracked.split(b"\x00") if record)
-    if observed_untracked != frozenset(expected_untracked):
+    if observed_untracked != _EXPECTED_ADDED_PATHS:
         _fail("pending publication untracked paths differ from the exact package and review pair")
     content_digest = _pending_content_digest(
         root,
-        expected_modified | frozenset(expected_untracked),
+        _EXPECTED_MODIFIED_PATHS | _EXPECTED_ADDED_PATHS,
     )
     return PendingPublicationState(
         source_root=root,
@@ -215,16 +223,104 @@ def verify_pending_publication_unchanged(token: PendingPublicationState) -> None
         _fail("pending publication changed during validation")
 
 
+def _tree_entries(source_root: Path, revision: str) -> dict[bytes, tuple[bytes, bytes, bytes]]:
+    raw = _git_bytes(source_root, "ls-tree", "-rz", "--full-tree", revision)
+    entries: dict[bytes, tuple[bytes, bytes, bytes]] = {}
+    for record in (item for item in raw.split(b"\x00") if item):
+        try:
+            metadata, relative = record.split(b"\t", 1)
+            mode, kind, object_id = metadata.split(b" ", 2)
+        except ValueError:
+            _fail("publication Git tree has an invalid entry")
+        if relative in entries:
+            _fail("publication Git tree repeats a path")
+        entries[relative] = (mode, kind, object_id)
+    return entries
+
+
+def _clean_delta(source_root: Path, revision: str) -> dict[bytes, bytes]:
+    raw = _git_bytes(
+        source_root,
+        "diff",
+        "--name-status",
+        "-z",
+        "--no-renames",
+        revision,
+        "HEAD",
+        "--",
+    )
+    fields = tuple(field for field in raw.split(b"\x00") if field)
+    if len(fields) % 2:
+        _fail("clean publication Git delta is malformed")
+    observed: dict[bytes, bytes] = {}
+    for index in range(0, len(fields), 2):
+        status_value, relative = fields[index : index + 2]
+        if status_value not in {b"A", b"M"} or relative in observed:
+            _fail("clean publication Git delta has an unsupported status")
+        observed[relative] = status_value
+    return observed
+
+
 def require_scientific_revision_ancestor(source_root: Path, revision: str) -> None:
-    """Require a clean release revision to descend from the packaged scientific revision."""
+    """Require the exact clean release-tree delta from the scientific revision."""
+
+    root = Path(os.path.abspath(os.fspath(source_root)))
+    try:
+        if root.is_symlink() or not root.is_dir() or root.resolve(strict=True) != root:
+            _fail("clean publication source root is unavailable or redirected")
+    except OSError:
+        _fail("clean publication source root is unavailable or redirected")
+    if len(revision) != 40 or any(character not in "0123456789abcdef" for character in revision):
+        _fail("clean publication has an invalid scientific revision")
+
+    state = _git_state(root)
+    head, unmerged, flags, worktree_diff, staged_diff, untracked = state
+    if len(head.strip()) != 40 or any(
+        character not in b"0123456789abcdef" for character in head.strip()
+    ):
+        _fail("clean publication HEAD is invalid")
+    if unmerged or worktree_diff or staged_diff or untracked:
+        _fail("clean publication repository status is not empty")
+    if any(record and not record.startswith(b"H ") for record in flags.split(b"\x00")):
+        _fail("clean publication uses unsupported Git index flags")
 
     result = subprocess.run(
-        ("git", "-C", os.fspath(source_root), "merge-base", "--is-ancestor", revision, "HEAD"),
+        ("git", "-C", os.fspath(root), "merge-base", "--is-ancestor", revision, "HEAD"),
         check=False,
         capture_output=True,
     )
     if result.returncode != 0:
         _fail("packaged scientific revision is not an ancestor of current HEAD")
+
+    expected_delta = {
+        **{relative: b"M" for relative in _EXPECTED_MODIFIED_PATHS},
+        **{relative: b"A" for relative in _EXPECTED_ADDED_PATHS},
+    }
+    if _clean_delta(root, revision) != expected_delta:
+        _fail("clean publication differs from the exact reviewed release-tree delta")
+
+    scientific_tree = _tree_entries(root, revision)
+    release_tree = _tree_entries(root, "HEAD")
+    expected_release_tree = dict(scientific_tree)
+    for relative in _EXPECTED_MODIFIED_PATHS:
+        before = scientific_tree.get(relative)
+        after = release_tree.get(relative)
+        if (
+            before is None
+            or after is None
+            or before[:2] != (b"100644", b"blob")
+            or after[:2] != (b"100644", b"blob")
+            or before[2] == after[2]
+        ):
+            _fail("clean publication has an invalid modified document tree entry")
+        expected_release_tree[relative] = after
+    for relative in _EXPECTED_ADDED_PATHS:
+        after = release_tree.get(relative)
+        if relative in scientific_tree or after is None or after[:2] != (b"100644", b"blob"):
+            _fail("clean publication has an invalid added release tree entry")
+        expected_release_tree[relative] = after
+    if release_tree != expected_release_tree:
+        _fail("clean publication final Git tree differs beyond the reviewed release delta")
 
 
 def validate_current_implementation_review(

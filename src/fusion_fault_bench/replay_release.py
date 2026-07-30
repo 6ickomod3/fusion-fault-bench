@@ -104,7 +104,7 @@ _SAFE_PLACEHOLDER_RELATIVE_PATH_PATTERN = re.compile(
 )
 _FROZEN_METHODOLOGY_SHA256 = {
     "evidence/release-pipeline-plan.md": (
-        "0a645323d346668707442eb2e9cd76bac221f8a0c9ff48c4baad5bf078ce946d"
+        "60d133576ea196048c6f972387411078afa18268d91f4470e13cb853c91f3e7d"
     ),
     "evidence/release-pipeline-plan-review.md": (
         "3a881c41de758d98a65e96a627499ad5cf1b4c4c5bf9a1d7fcece507d3e4c6af"

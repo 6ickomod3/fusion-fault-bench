@@ -962,19 +962,31 @@ After the package is built, each of `README.md`, `docs/results.md`,
 `docs/project-plan.md`, `docs/dataset-preparation.md`, and
 `docs/m5-technical-walkthrough.md` must equal its blob at the scientific
 revision with exactly one frozen placeholder replaced by the same deterministic
-reviewed projection. That projection contains only the release-package
-SHA-256, public-claim-projection SHA-256, fixed-order H5 result/role rows, the
-public release path, and explicit no-new-claim text. Any other byte change,
-additional selector, quantitative statement, private path, secret, raw
-dataset filename, or generated-local path fails validation.
+reviewed projection. `docs/dashboard.html` is the ninth closeout document: its
+one frozen main-region marker pair is replaced by a deterministic HTML
+projection from the same reviewed package values, so the final dashboard cannot
+retain contradictory pre-outcome, not-released, next, or pending status text.
+The projections contain only the release-package SHA-256,
+public-claim-projection SHA-256, fixed-order H5 result/role rows, the public
+release path, fixed release-state wording, and explicit claim-boundary text.
+Any other byte change, additional selector, quantitative statement, private
+path, secret, raw dataset filename, or generated-local path fails validation.
+Every public document and review copy is read through one retained,
+descriptor-relative directory chain with no-follow opens, bounded regular-file
+checks, and before/after descriptor and directory-entry identity checks; a
+pathname or parent-directory swap fails closed.
 
 `validate-publication` accepts exactly two Git states. The pre-stage pending
 state has `HEAD` at the scientific revision, no unmerged entry, staged change,
-or special index flag, exactly those eight modified documents, and exactly the
+or special index flag, exactly those nine modified documents, and exactly the
 41 release-package files plus the two public results-review files untracked.
-All 51 pending file contents are stably fingerprinted before validation and
-must remain byte-identical afterward. The clean state must descend from the
-packaged scientific revision. In both states the packaged implementation
+All 52 pending file contents and safe non-executable `0600`/`0644` modes are
+stably fingerprinted before validation and must remain byte-identical
+afterward. The clean state must
+descend from the packaged scientific revision and have exactly the same nine
+modified blobs and 43 added blobs, all regular mode `100644`, with an otherwise
+identical final Git tree and empty worktree, index, unmerged, special-flag, and
+untracked status. In both states the packaged implementation
 review bytes must equal the current tracked report and attestation and validate
 against the current implementation snapshot; the package is semantically
 validated before and after the document/review checks with one unchanged
@@ -1017,7 +1029,7 @@ tracked M5 package. Dependency installation is not part of the offline proof.
 
 Immediately before staging, authenticate the exact pending state described
 above, run the release and publication validators, and record the one package
-digest. Then stage and commit exactly the eight projections, 41 package files,
+digest. Then stage and commit exactly the nine projections, 41 package files,
 and two public results-review files. Immediately before pushing, require the
 clean descendant state and rerun the same validators against the same package
 digest. At both boundaries:
@@ -1060,7 +1072,7 @@ M5 release acceptance requires all of the following:
     has no unresolved P0 or P1 blocker;
 11. the strict 14-file machine artifact and complete sidecar package validate
     offline without the dataset;
-12. all eight closeout documents equal their deterministic reviewed projection,
+12. all nine closeout documents equal their deterministic reviewed projection,
     and methodology, limitations, reproducibility, results, claim ledger,
     technical walkthrough, and figures agree;
 13. the full software, build, wheel, privacy, license, size, and no-overwrite

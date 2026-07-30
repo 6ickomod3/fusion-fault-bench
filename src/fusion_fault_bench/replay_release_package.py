@@ -84,7 +84,7 @@ from fusion_fault_bench.replay_release_validation import (
 _FROZEN_METHODOLOGY_SHA256: Mapping[str, str] = MappingProxyType(
     {
         "evidence/release-pipeline-plan.md": (
-            "0a645323d346668707442eb2e9cd76bac221f8a0c9ff48c4baad5bf078ce946d"
+            "60d133576ea196048c6f972387411078afa18268d91f4470e13cb853c91f3e7d"
         ),
         "evidence/release-pipeline-plan-review.md": (
             "3a881c41de758d98a65e96a627499ad5cf1b4c4c5bf9a1d7fcece507d3e4c6af"
@@ -925,29 +925,110 @@ def validate_release_package(path: Path) -> ValidatedReplayReleasePackage:
         ) from error
 
 
+def _stable_descriptor_identity(left: os.stat_result, right: os.stat_result) -> bool:
+    fields = ("st_dev", "st_ino", "st_mode", "st_nlink")
+    return all(getattr(left, field) == getattr(right, field) for field in fields)
+
+
+def _stable_publication_file(left: os.stat_result, right: os.stat_result) -> bool:
+    fields = (
+        "st_dev",
+        "st_ino",
+        "st_mode",
+        "st_nlink",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns",
+    )
+    return all(getattr(left, field) == getattr(right, field) for field in fields)
+
+
 def _read_publication_file(source_root: Path, relative: str) -> bytes:
-    root = source_root.resolve(strict=True)
-    target = root.joinpath(*relative.split("/"))
+    """Read a bounded member through one stable descriptor-relative no-follow chain."""
+
+    root = Path(os.path.abspath(os.fspath(source_root)))
+    relative_parts = tuple(relative.split("/"))
+    if not relative_parts or any(part in {"", ".", ".."} for part in relative_parts):
+        _fail("publication member has an invalid relative path")
     try:
-        before = os.lstat(target)
+        if root.resolve(strict=True) != root:
+            _fail("publication source root is redirected")
+        nofollow = os.O_NOFOLLOW
+        directory = os.O_DIRECTORY
+    except (AttributeError, OSError) as error:
+        raise ReplayReleasePackageValidationError(
+            "publication source root cannot provide no-follow reads"
+        ) from error
+
+    directory_flags = os.O_RDONLY | nofollow | directory | getattr(os, "O_CLOEXEC", 0)
+    file_flags = os.O_RDONLY | nofollow | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0)
+    descriptors: list[int] = []
+    edges: list[tuple[int, str, int, os.stat_result]] = []
+    file_descriptor: int | None = None
+    try:
+        anchor = os.open(os.path.sep, directory_flags)
+        descriptors.append(anchor)
+        parent = anchor
+        for component in (*root.parts[1:], *relative_parts[:-1]):
+            child = os.open(component, directory_flags, dir_fd=parent)
+            descriptors.append(child)
+            observed = os.fstat(child)
+            named = os.stat(component, dir_fd=parent, follow_symlinks=False)
+            if not stat.S_ISDIR(observed.st_mode) or not _stable_descriptor_identity(
+                observed, named
+            ):
+                _fail(f"publication member parent is unavailable or unsafe: {relative}")
+            edges.append((parent, component, child, observed))
+            parent = child
+
+        final_name = relative_parts[-1]
+        file_descriptor = os.open(final_name, file_flags, dir_fd=parent)
+        before = os.fstat(file_descriptor)
+        named_before = os.stat(final_name, dir_fd=parent, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or not 0 < before.st_size <= _MAX_PUBLICATION_MEMBER_BYTES
+            or not _stable_publication_file(before, named_before)
+        ):
+            _fail(f"publication member is not a bounded regular file: {relative}")
+
+        chunks: list[bytes] = []
+        remaining = before.st_size
+        while remaining:
+            chunk = os.read(file_descriptor, min(remaining, 1024 * 1024))
+            if not chunk:
+                _fail(f"publication member changed while reading: {relative}")
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        if os.read(file_descriptor, 1):
+            _fail(f"publication member changed while reading: {relative}")
+        after = os.fstat(file_descriptor)
+        named_after = os.stat(final_name, dir_fd=parent, follow_symlinks=False)
+        if not _stable_publication_file(before, after) or not _stable_publication_file(
+            before, named_after
+        ):
+            _fail(f"publication member changed while reading: {relative}")
+
+        for edge_parent, component, child, observed in reversed(edges):
+            descriptor_after = os.fstat(child)
+            named_after = os.stat(component, dir_fd=edge_parent, follow_symlinks=False)
+            if not _stable_descriptor_identity(
+                observed, descriptor_after
+            ) or not _stable_descriptor_identity(observed, named_after):
+                _fail(f"publication member path changed while reading: {relative}")
+        return b"".join(chunks)
+    except ReplayReleasePackageValidationError:
+        raise
     except OSError as error:
         raise ReplayReleasePackageValidationError(
-            f"publication member is missing: {relative}"
+            f"publication member is missing or unsafe: {relative}"
         ) from error
-    if (
-        not stat.S_ISREG(before.st_mode)
-        or before.st_nlink != 1
-        or not 0 < before.st_size <= _MAX_PUBLICATION_MEMBER_BYTES
-    ):
-        _fail(f"publication member is not a bounded regular file: {relative}")
-    value = target.read_bytes()
-    after = os.lstat(target)
-    stable = ("st_dev", "st_ino", "st_mode", "st_nlink", "st_size", "st_mtime_ns")
-    if len(value) != before.st_size or any(
-        getattr(before, field) != getattr(after, field) for field in stable
-    ):
-        _fail(f"publication member changed while reading: {relative}")
-    return value
+    finally:
+        if file_descriptor is not None:
+            os.close(file_descriptor)
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
 
 
 def validate_publication(release: Path, source_root: Path) -> str:

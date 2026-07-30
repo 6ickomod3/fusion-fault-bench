@@ -202,37 +202,58 @@ def test_dashboard_preserves_claim_safe_release_status() -> None:
     parser, source = _parse_dashboard()
     text = _normalized_text(parser.text_parts)
 
-    required_statements = (
-        "M1–M4 released.",  # noqa: RUF001
-        "M5 runner and release tooling implemented; pre-outcome; not released.",
-        "Local Mini profile checked, but not M5 release evidence.",
-        "Release tooling is implemented; whole-revision implementation review is next.",
-        "No authoritative M5 execution or scientific outcome is asserted here.",
-        "A local Mini profile was checked; that check is not authoritative replay evidence.",
-        "The runner and release tooling are implemented, but M5 is not released.",
-        "Whole-revision implementation review remains next.",
-        "M2 is implementation and local profile validation. M5 is pre-outcome.",
-    )
-    for statement in required_statements:
-        assert statement in text
+    if "Fusion Fault Bench reviewed evidence" in text:
+        required_statements = (
+            "M1–M5 have reviewed release evidence.",  # noqa: RUF001
+            "M5 is published from the immutable package.",
+            "Reviewed preregistered M5 outcomes",
+            "The immutable package, independent reviews, deterministic document projection, "
+            "and offline validation are the authority for this closeout.",
+        )
+        stale_status_statements = (
+            "pre-outcome",
+            "not released",
+            "No M5 outcome",
+            "Whole-revision implementation review remains next.",
+            "M5's next work",
+            ">Pending<",
+        )
+        for statement in required_statements:
+            assert statement in text
+        for statement in stale_status_statements:
+            assert statement not in text
+    else:
+        required_statements = (
+            "M1–M4 released.",  # noqa: RUF001
+            "M5 runner and release tooling implemented; pre-outcome; not released.",
+            "Local Mini profile checked, but not M5 release evidence.",
+            "Release tooling is implemented; whole-revision implementation review is next.",
+            "No authoritative M5 execution or scientific outcome is asserted here.",
+            "A local Mini profile was checked; that check is not authoritative replay evidence.",
+            "The runner and release tooling are implemented, but M5 is not released.",
+            "Whole-revision implementation review remains next.",
+            "M2 is implementation and local profile validation. M5 is pre-outcome.",
+        )
+        for statement in required_statements:
+            assert statement in text
 
-    forbidden_outcome_claims = (
-        "M5 results show",
-        "M5 achieved",
-        "M5 release is available",
-        "M5 scientific evidence proves",
-    )
-    for statement in forbidden_outcome_claims:
-        assert statement not in text
+        forbidden_outcome_claims = (
+            "M5 results show",
+            "M5 achieved",
+            "M5 release is available",
+            "M5 scientific evidence proves",
+        )
+        for statement in forbidden_outcome_claims:
+            assert statement not in text
 
-    stale_status_statements = (
-        "Release tooling is next.",
-        "Release-candidate and final-package tooling remain next.",
-        "next implementation target is release tooling",
-        "Implement release-candidate and final-package tooling",
-    )
-    for statement in stale_status_statements:
-        assert statement not in text
+        stale_status_statements = (
+            "Release tooling is next.",
+            "Release-candidate and final-package tooling remain next.",
+            "next implementation target is release tooling",
+            "Implement release-candidate and final-package tooling",
+        )
+        for statement in stale_status_statements:
+            assert statement not in text
 
     forbidden_private_path_fragments = (
         "/Users/",

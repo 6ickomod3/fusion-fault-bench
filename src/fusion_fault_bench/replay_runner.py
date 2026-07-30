@@ -498,7 +498,7 @@ def _is_raw_payload_candidate(path: Path, *, dataset_root: Path) -> bool:
 
 @contextmanager
 def _metadata_read_guard(dataset_root: Path) -> Generator[_MetadataReadEvidence]:
-    """Permit only fixed metadata-table opens below the resolved dataset root."""
+    """Serve only fixed metadata tables through stable no-follow descriptors."""
 
     version_root = dataset_root / "v1.0-mini"
     allowed = {_lexical_absolute(version_root / f"{table}.json") for table in _NUSCENES_TABLES}
@@ -507,6 +507,46 @@ def _metadata_read_guard(dataset_root: Path) -> Generator[_MetadataReadEvidence]
     original_builtin_open = builtins.open
     original_io_open = io.open
     original_os_open = os.open
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    file_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_NONBLOCK", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+
+    def stable_identity(value: os.stat_result) -> tuple[int, ...]:
+        return (
+            value.st_dev,
+            value.st_ino,
+            value.st_mode,
+            value.st_nlink,
+            value.st_uid,
+            value.st_gid,
+            value.st_size,
+            value.st_mtime_ns,
+            value.st_ctime_ns,
+        )
+
+    try:
+        root_fd = original_os_open(root, directory_flags)
+        root_metadata = os.fstat(root_fd)
+        root_reopened = os.stat(root, follow_symlinks=False)
+        if not stat.S_ISDIR(root_metadata.st_mode) or (
+            root_metadata.st_dev,
+            root_metadata.st_ino,
+        ) != (root_reopened.st_dev, root_reopened.st_ino):
+            raise OSError
+    except OSError:
+        raise OSError("dataset metadata root is unsafe") from None
+
+    version_fd: int | None = None
+    metadata_authority: dict[Path, tuple[int, os.stat_result]] = {}
 
     def directory_descriptor_path(descriptor: int) -> Path:
         try:
@@ -520,11 +560,11 @@ def _metadata_read_guard(dataset_root: Path) -> Generator[_MetadataReadEvidence]
         except (OSError, TypeError, ValueError):
             raise OSError("directory descriptor path unavailable") from None
 
-    def candidate_path(
+    def candidate_paths(
         raw_path: _OpenPath,
         *,
         directory_descriptor: int | None = None,
-    ) -> Path | None:
+    ) -> tuple[Path, Path] | None:
         if isinstance(raw_path, int):
             return None
         try:
@@ -538,29 +578,105 @@ def _metadata_read_guard(dataset_root: Path) -> Generator[_MetadataReadEvidence]
                 else directory_descriptor_path(directory_descriptor)
             )
             candidate = base / candidate
+        lexical = _lexical_absolute(candidate)
         try:
-            return candidate.resolve(strict=False)
+            resolved = candidate.resolve(strict=False)
         except (OSError, RuntimeError):
-            return _lexical_absolute(candidate)
+            resolved = lexical
+        return lexical, resolved
+
+    def ensure_version_descriptor() -> int:
+        nonlocal version_fd
+        if version_fd is not None:
+            return version_fd
+        descriptor: int | None = None
+        try:
+            descriptor = original_os_open("v1.0-mini", directory_flags, dir_fd=root_fd)
+            observed = os.fstat(descriptor)
+            reopened = os.stat("v1.0-mini", dir_fd=root_fd, follow_symlinks=False)
+            if not stat.S_ISDIR(observed.st_mode) or (observed.st_dev, observed.st_ino) != (
+                reopened.st_dev,
+                reopened.st_ino,
+            ):
+                raise OSError
+        except OSError:
+            if descriptor is not None:
+                os.close(descriptor)
+            raise OSError("dataset metadata directory is unsafe") from None
+        version_fd = descriptor
+        return descriptor
+
+    def bind_metadata(candidate: Path) -> tuple[int, os.stat_result]:
+        bound = metadata_authority.get(candidate)
+        if bound is not None:
+            return bound
+        parent_fd = ensure_version_descriptor()
+        descriptor: int | None = None
+        try:
+            descriptor = original_os_open(candidate.name, file_flags, dir_fd=parent_fd)
+            observed = os.fstat(descriptor)
+            reopened = os.stat(candidate.name, dir_fd=parent_fd, follow_symlinks=False)
+            if (
+                not stat.S_ISREG(observed.st_mode)
+                or observed.st_nlink != 1
+                or observed.st_size <= 0
+                or stable_identity(observed) != stable_identity(reopened)
+            ):
+                raise OSError
+        except OSError:
+            if descriptor is not None:
+                os.close(descriptor)
+            raise OSError("dataset metadata member is unsafe") from None
+        bound = (descriptor, observed)
+        metadata_authority[candidate] = bound
+        return bound
+
+    def open_bound_metadata(candidate: Path) -> int:
+        _authority_fd, authority_metadata = bind_metadata(candidate)
+        parent_fd = ensure_version_descriptor()
+        descriptor: int | None = None
+        try:
+            descriptor = original_os_open(candidate.name, file_flags, dir_fd=parent_fd)
+            observed = os.fstat(descriptor)
+            if stable_identity(observed) != stable_identity(authority_metadata):
+                raise OSError
+            return descriptor
+        except OSError:
+            if descriptor is not None:
+                os.close(descriptor)
+            raise OSError("dataset metadata member changed") from None
 
     def authorize(
         raw_path: _OpenPath,
         *,
         read_only: bool,
         directory_descriptor: int | None = None,
-    ) -> None:
-        candidate = candidate_path(
+    ) -> int | None:
+        candidates = candidate_paths(
             raw_path,
             directory_descriptor=directory_descriptor,
         )
-        if candidate is None or not _is_equal_or_descendant(candidate, root):
-            return
-        if candidate not in allowed or not read_only:
+        if candidates is None:
+            return None
+        lexical, resolved = candidates
+        scoped = _is_equal_or_descendant(lexical, root) or _is_equal_or_descendant(resolved, root)
+        if not scoped:
+            return None
+        if lexical not in allowed or not read_only:
             evidence.blocked_dataset_reads += 1
-            if read_only and _is_raw_payload_candidate(candidate, dataset_root=root):
+            if read_only and (
+                _is_raw_payload_candidate(lexical, dataset_root=root)
+                or _is_raw_payload_candidate(resolved, dataset_root=root)
+            ):
                 evidence.raw_sensor_payload_reads += 1
             raise OSError("dataset payload open blocked")
+        try:
+            descriptor = open_bound_metadata(lexical)
+        except OSError:
+            evidence.blocked_dataset_reads += 1
+            raise OSError("dataset metadata open blocked") from None
         evidence.metadata_table_reads += 1
+        return descriptor
 
     def guarded_builtin_open(
         file: _OpenPath,
@@ -572,20 +688,38 @@ def _metadata_read_guard(dataset_root: Path) -> Generator[_MetadataReadEvidence]
         closefd: bool = True,
         opener: Any | None = None,
     ) -> Any:
-        authorize(
+        descriptor = authorize(
             file,
             read_only="r" in mode and not any(flag in mode for flag in ("+", "w", "a", "x")),
         )
-        return original_builtin_open(
-            file,
-            mode,
-            buffering,
-            encoding,
-            errors,
-            newline,
-            closefd,
-            opener,
-        )
+        if descriptor is None:
+            return original_builtin_open(
+                file,
+                mode,
+                buffering,
+                encoding,
+                errors,
+                newline,
+                closefd,
+                opener,
+            )
+        if opener is not None or not closefd:
+            os.close(descriptor)
+            raise OSError("dataset metadata open options are unsafe")
+        try:
+            return original_builtin_open(
+                descriptor,
+                mode,
+                buffering,
+                encoding,
+                errors,
+                newline,
+                True,
+            )
+        except BaseException:
+            with suppress(OSError):
+                os.close(descriptor)
+            raise
 
     def guarded_io_open(
         file: _OpenPath,
@@ -597,20 +731,38 @@ def _metadata_read_guard(dataset_root: Path) -> Generator[_MetadataReadEvidence]
         closefd: bool = True,
         opener: Any | None = None,
     ) -> Any:
-        authorize(
+        descriptor = authorize(
             file,
             read_only="r" in mode and not any(flag in mode for flag in ("+", "w", "a", "x")),
         )
-        return original_io_open(
-            file,
-            mode,
-            buffering,
-            encoding,
-            errors,
-            newline,
-            closefd,
-            opener,
-        )
+        if descriptor is None:
+            return original_io_open(
+                file,
+                mode,
+                buffering,
+                encoding,
+                errors,
+                newline,
+                closefd,
+                opener,
+            )
+        if opener is not None or not closefd:
+            os.close(descriptor)
+            raise OSError("dataset metadata open options are unsafe")
+        try:
+            return original_io_open(
+                descriptor,
+                mode,
+                buffering,
+                encoding,
+                errors,
+                newline,
+                True,
+            )
+        except BaseException:
+            with suppress(OSError):
+                os.close(descriptor)
+            raise
 
     def guarded_os_open(
         path: _OsOpenPath,
@@ -627,22 +779,68 @@ def _metadata_read_guard(dataset_root: Path) -> Generator[_MetadataReadEvidence]
             | os.O_APPEND
             | getattr(os, "O_EXCL", 0)
         )
-        authorize(
+        descriptor = authorize(
             path,
             read_only=flags & write_flags == 0,
             directory_descriptor=dir_fd,
         )
+        if descriptor is not None:
+            return descriptor
         return original_os_open(path, flags, mode, dir_fd=dir_fd)
 
     builtins.open = guarded_builtin_open  # type: ignore[assignment]
     io.open = guarded_io_open  # type: ignore[assignment]
     os.open = guarded_os_open  # type: ignore[assignment]
+    validation_failed = False
     try:
         yield evidence
     finally:
         os.open = original_os_open  # type: ignore[assignment]
         io.open = original_io_open  # type: ignore[assignment]
         builtins.open = original_builtin_open  # type: ignore[assignment]
+        try:
+            if version_fd is not None:
+                version_observed = os.fstat(version_fd)
+                version_reopened = os.stat(
+                    "v1.0-mini",
+                    dir_fd=root_fd,
+                    follow_symlinks=False,
+                )
+                if not stat.S_ISDIR(version_observed.st_mode) or (
+                    version_observed.st_dev,
+                    version_observed.st_ino,
+                ) != (version_reopened.st_dev, version_reopened.st_ino):
+                    validation_failed = True
+            for candidate, (descriptor, before) in metadata_authority.items():
+                after = os.fstat(descriptor)
+                if version_fd is None:
+                    validation_failed = True
+                    continue
+                reopened = os.stat(candidate.name, dir_fd=version_fd, follow_symlinks=False)
+                if stable_identity(before) != stable_identity(after) or stable_identity(
+                    before
+                ) != stable_identity(reopened):
+                    validation_failed = True
+            root_after = os.fstat(root_fd)
+            root_reopened = os.stat(root, follow_symlinks=False)
+            if (root_metadata.st_dev, root_metadata.st_ino) != (
+                root_after.st_dev,
+                root_after.st_ino,
+            ) or (root_metadata.st_dev, root_metadata.st_ino) != (
+                root_reopened.st_dev,
+                root_reopened.st_ino,
+            ):
+                validation_failed = True
+        except OSError:
+            validation_failed = True
+        finally:
+            for descriptor, _metadata in metadata_authority.values():
+                os.close(descriptor)
+            if version_fd is not None:
+                os.close(version_fd)
+            os.close(root_fd)
+        if validation_failed:
+            raise OSError("dataset metadata authority changed") from None
 
 
 def _load_population(dataset_root: Path) -> ReplayPopulation:
