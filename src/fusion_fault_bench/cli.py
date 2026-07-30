@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any, Never
+from typing import Any, Never, cast
 
 from pydantic import ValidationError
 
@@ -70,6 +71,9 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     ReplaySourceMemberCommitmentV1,
     ReplayValidationV1,
 )
+from fusion_fault_bench.contracts.replay_release_v1 import (
+    replay_release_contract_json_schemas,
+)
 from fusion_fault_bench.contracts.replay_v1 import ReplayExperimentIdentityV1
 from fusion_fault_bench.contracts.result_v1alpha1 import (
     AggregateMetricRecordV1Alpha1,
@@ -100,6 +104,15 @@ from fusion_fault_bench.replay_runner import (
 from fusion_fault_bench.runner import run_analytic_experiment
 
 SchemaBuilder = Callable[[], dict[str, Any]]
+
+
+def _constant_schema_builder(schema: dict[str, Any]) -> SchemaBuilder:
+    def build() -> dict[str, Any]:
+        return schema
+
+    return build
+
+
 SCHEMA_BUILDERS: dict[str, SchemaBuilder] = {
     "aggregate": lambda: AggregateMetricRecordV1Alpha1.model_json_schema(by_alias=True),
     "analytic-validation": lambda: AnalyticValidationV1Alpha1.model_json_schema(by_alias=True),
@@ -150,6 +163,10 @@ SCHEMA_BUILDERS: dict[str, SchemaBuilder] = {
         by_alias=True
     ),
     "replay-profile-summary": lambda: ReplayProfileSummaryV1.model_json_schema(by_alias=True),
+    **{
+        name: _constant_schema_builder(schema)
+        for name, schema in replay_release_contract_json_schemas().items()
+    },
     "replay-release-index": lambda: ReplayReleaseIndexV1.model_json_schema(by_alias=True),
     "replay-repeat-verification": lambda: ReplayRepeatVerificationV1.model_json_schema(
         by_alias=True
@@ -446,6 +463,19 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Strictly validate a complete curated M5 artifact.",
     )
     replay_bundle_validate.add_argument("path", type=Path, metavar="DEST")
+    replay_release = replay_commands.add_parser(
+        "release",
+        help="Inspect a complete aggregate-only M5 release package.",
+    )
+    replay_release_commands = replay_release.add_subparsers(
+        dest="replay_release_command",
+        required=True,
+    )
+    replay_release_validate = replay_release_commands.add_parser(
+        "validate",
+        help="Strictly validate the complete 41-file M5 release package.",
+    )
+    replay_release_validate.add_argument("path", type=Path, metavar="RELEASE")
     return parser
 
 
@@ -600,6 +630,17 @@ def _run(args: argparse.Namespace) -> int:
                 "valid ffb.replay-local-source/v1 "
                 f"artifact_sha256={artifact.artifact_sha256} "
                 f"run_sha256={artifact.run_sha256}"
+            )
+            return 0
+        if args.replay_command == "release":
+            workflow = importlib.import_module("fusion_fault_bench.replay_release_workflow")
+            validator = cast(
+                Callable[..., str],
+                workflow.validate_release_package,
+            )
+            release_package_sha256 = validator(path=args.path)
+            print(
+                f"valid ffb.m5-release-package/v1 release_package_sha256={release_package_sha256}"
             )
             return 0
         artifact = load_replay_curated_artifact(args.path)

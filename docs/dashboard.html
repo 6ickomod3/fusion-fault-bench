@@ -1,0 +1,1685 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07111f">
+  <meta
+    name="description"
+    content="An offline research dashboard for Fusion Fault Bench, covering architecture, released evidence, M5 pre-outcome progress, and claim boundaries."
+  >
+  <title>Fusion Fault Bench — Research Dashboard</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-deep: #040a12;
+      --surface: #0d1a2a;
+      --surface-raised: #12243a;
+      --surface-soft: #102033;
+      --line: #29425c;
+      --line-strong: #3b5d7b;
+      --text: #f4f7fb;
+      --muted: #aec0d2;
+      --subtle: #849bb1;
+      --teal: #5ce0c1;
+      --teal-soft: #173c3c;
+      --blue: #83aaff;
+      --blue-soft: #172c52;
+      --amber: #ffd071;
+      --amber-soft: #46391d;
+      --coral: #ff8a80;
+      --coral-soft: #492829;
+      --white-glow: rgba(244, 247, 251, 0.08);
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 10px;
+      --content: 1240px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg-deep);
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 82% 8%, rgba(76, 128, 187, 0.2), transparent 28rem),
+        radial-gradient(circle at 10% 28%, rgba(42, 157, 143, 0.12), transparent 30rem),
+        linear-gradient(180deg, var(--bg) 0%, #081524 46%, var(--bg-deep) 100%);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.6;
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image:
+        linear-gradient(rgba(130, 170, 210, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(130, 170, 210, 0.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+      content: "";
+      mask-image: linear-gradient(to bottom, black, transparent 82%);
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.2em;
+    }
+
+    a:hover {
+      color: #b5c9ff;
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid var(--amber);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 100;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: #06111d;
+      background: var(--amber);
+      font-weight: 800;
+      transform: translateY(-160%);
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    .shell {
+      width: min(calc(100% - 40px), var(--content));
+      margin-inline: auto;
+    }
+
+    .masthead {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(89, 124, 156, 0.35);
+      background: rgba(5, 13, 23, 0.9);
+      backdrop-filter: blur(18px);
+    }
+
+    .masthead-inner {
+      display: flex;
+      min-height: 72px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--text);
+      font-weight: 850;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(92, 224, 193, 0.55);
+      border-radius: 50%;
+      place-items: center;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      box-shadow: 0 0 28px rgba(92, 224, 193, 0.12);
+    }
+
+    .site-nav ul {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .site-nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .site-nav a:hover {
+      color: var(--text);
+      background: var(--white-glow);
+    }
+
+    main {
+      overflow: hidden;
+    }
+
+    section {
+      padding-block: 92px;
+      scroll-margin-top: 88px;
+    }
+
+    .hero {
+      padding-top: 96px;
+      padding-bottom: 74px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(330px, 0.72fr);
+      gap: 56px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--teal);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin-top: 0;
+      line-height: 1.12;
+      text-wrap: balance;
+    }
+
+    h1 {
+      max-width: 820px;
+      margin-bottom: 28px;
+      font-size: clamp(2.8rem, 6vw, 5.8rem);
+      letter-spacing: -0.065em;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      font-size: clamp(2rem, 4vw, 3.25rem);
+      letter-spacing: -0.045em;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      font-size: 1.18rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-question {
+      max-width: 800px;
+      margin: 0 0 26px;
+      padding-left: 22px;
+      border-left: 3px solid var(--teal);
+      color: #dce8f3;
+      font-size: clamp(1.18rem, 2.2vw, 1.6rem);
+      font-weight: 620;
+      line-height: 1.45;
+    }
+
+    .hero-copy {
+      max-width: 790px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .badge-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 32px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .badge-list li {
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #c8d6e4;
+      background: rgba(13, 26, 42, 0.74);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 750;
+      letter-spacing: 0.02em;
+    }
+
+    .status-card {
+      position: relative;
+      overflow: hidden;
+      padding: 28px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(145deg, rgba(31, 64, 89, 0.92), rgba(12, 27, 44, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .status-card::after {
+      position: absolute;
+      right: -54px;
+      bottom: -62px;
+      width: 190px;
+      height: 190px;
+      border: 1px solid rgba(92, 224, 193, 0.2);
+      border-radius: 50%;
+      content: "";
+      box-shadow:
+        0 0 0 28px rgba(92, 224, 193, 0.04),
+        0 0 0 56px rgba(92, 224, 193, 0.025);
+    }
+
+    .status-label,
+    .card-kicker {
+      margin: 0 0 10px;
+      color: var(--subtle);
+      font-family: var(--mono);
+      font-size: 0.71rem;
+      font-weight: 800;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .status-card h2 {
+      margin-bottom: 14px;
+      font-size: 1.65rem;
+      letter-spacing: -0.03em;
+    }
+
+    .status-declaration {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 20px;
+      color: #d4e1ec;
+    }
+
+    .status-declaration strong {
+      color: var(--teal);
+    }
+
+    .status-meta {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .status-meta div {
+      padding: 12px;
+      border: 1px solid rgba(117, 154, 187, 0.25);
+      border-radius: 10px;
+      background: rgba(4, 13, 23, 0.32);
+    }
+
+    .status-meta dt {
+      color: var(--subtle);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+    }
+
+    .status-meta dd {
+      margin: 3px 0 0;
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(300px, 0.65fr);
+      gap: 64px;
+      align-items: end;
+      margin-bottom: 40px;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .architecture {
+      border-block: 1px solid rgba(64, 96, 124, 0.34);
+      background: rgba(5, 14, 24, 0.38);
+    }
+
+    .source-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .source-strip article {
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(18, 36, 58, 0.66);
+    }
+
+    .source-strip h3 {
+      margin-bottom: 5px;
+      color: var(--blue);
+      font-size: 0.95rem;
+    }
+
+    .source-strip p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      counter-reset: stage;
+      list-style: none;
+    }
+
+    .pipeline li {
+      position: relative;
+      min-height: 216px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, var(--surface-raised), var(--surface));
+      counter-increment: stage;
+    }
+
+    .pipeline li::before {
+      display: block;
+      margin-bottom: 22px;
+      color: var(--teal);
+      content: "0" counter(stage);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+    }
+
+    .pipeline li:not(:last-child)::after {
+      position: absolute;
+      top: 48px;
+      right: -18px;
+      z-index: 2;
+      display: grid;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      color: var(--teal);
+      background: var(--bg);
+      content: "→";
+      font-weight: 900;
+      place-items: center;
+    }
+
+    .pipeline p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .contrast-band {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 20px;
+      align-items: center;
+      margin-top: 18px;
+      padding: 18px 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(4, 12, 21, 0.62);
+    }
+
+    .contrast-band p {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 0.83rem;
+      font-weight: 750;
+    }
+
+    .contrast-band .helps {
+      color: var(--teal);
+      text-align: right;
+    }
+
+    .contrast-band .harms {
+      color: var(--coral);
+    }
+
+    .contrast-equation {
+      padding: 7px 13px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      color: var(--text);
+      background: var(--surface-raised);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    .safeguards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 32px;
+    }
+
+    .safeguard {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(13, 26, 42, 0.7);
+    }
+
+    .safeguard-index {
+      display: block;
+      margin-bottom: 14px;
+      color: var(--blue);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      font-weight: 800;
+    }
+
+    .safeguard p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .milestones {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin: 42px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .milestone {
+      position: relative;
+      min-height: 408px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, rgba(18, 36, 58, 0.9), rgba(8, 20, 34, 0.94));
+    }
+
+    .milestone::before {
+      position: absolute;
+      top: -7px;
+      left: 24px;
+      width: 58px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--teal);
+      content: "";
+      box-shadow: 0 0 18px rgba(92, 224, 193, 0.25);
+    }
+
+    .milestone.pending::before {
+      background: var(--amber);
+      box-shadow: 0 0 18px rgba(255, 208, 113, 0.2);
+    }
+
+    .milestone-code {
+      display: block;
+      margin-bottom: 18px;
+      color: var(--subtle);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+    }
+
+    .state {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 18px;
+      padding: 5px 9px;
+      border: 1px solid rgba(92, 224, 193, 0.36);
+      border-radius: 999px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .state::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    .state.pending {
+      border-color: rgba(255, 208, 113, 0.38);
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .milestone p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .metric-list {
+      margin: 18px 0 0;
+      padding: 16px 0 0;
+      border-top: 1px solid var(--line);
+      list-style: none;
+    }
+
+    .metric-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding-block: 5px;
+      color: var(--subtle);
+      font-size: 0.76rem;
+    }
+
+    .metric-list strong {
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      text-align: right;
+    }
+
+    .milestone a {
+      display: inline-block;
+      margin-top: 16px;
+      font-size: 0.84rem;
+      font-weight: 750;
+    }
+
+    .evidence-note {
+      margin-top: 24px;
+      padding: 19px 22px;
+      border-left: 3px solid var(--blue);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      color: var(--muted);
+      background: var(--blue-soft);
+    }
+
+    .evidence-note strong {
+      color: var(--text);
+    }
+
+    .m5 {
+      border-block: 1px solid rgba(64, 96, 124, 0.34);
+      background:
+        radial-gradient(circle at 10% 20%, rgba(255, 208, 113, 0.07), transparent 24rem),
+        rgba(5, 14, 24, 0.52);
+    }
+
+    .preoutcome-banner {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 28px;
+      padding: 20px 22px;
+      border: 1px solid rgba(255, 208, 113, 0.44);
+      border-radius: var(--radius-md);
+      background: rgba(70, 57, 29, 0.48);
+    }
+
+    .preoutcome-banner strong {
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .preoutcome-banner p {
+      margin: 0;
+      color: #e6dbc2;
+    }
+
+    .panel-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .panel-card {
+      padding: 28px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(145deg, rgba(20, 43, 67, 0.96), rgba(9, 22, 37, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .panel-id {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 6px 9px;
+      border-radius: 7px;
+      color: var(--blue);
+      background: var(--blue-soft);
+      font-family: var(--mono);
+      font-size: 0.73rem;
+      font-weight: 850;
+    }
+
+    .panel-card > p {
+      color: var(--muted);
+    }
+
+    .panel-facts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin: 22px 0;
+    }
+
+    .panel-facts div {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: rgba(3, 11, 19, 0.35);
+    }
+
+    .panel-facts strong {
+      display: block;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 1.22rem;
+    }
+
+    .panel-facts span {
+      color: var(--subtle);
+      font-size: 0.72rem;
+    }
+
+    .compact-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 20px;
+      margin: 0;
+      padding: 0;
+      color: #ccdae7;
+      font-size: 0.84rem;
+      list-style-position: inside;
+    }
+
+    .shared-foundation {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(8, 21, 35, 0.72);
+    }
+
+    .shared-foundation strong {
+      margin-right: 8px;
+      color: var(--text);
+    }
+
+    .shared-foundation span {
+      padding: 4px 8px;
+      border-radius: 6px;
+      color: var(--muted);
+      background: var(--surface-raised);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    .release-lane {
+      margin-top: 54px;
+    }
+
+    .release-lane > p {
+      max-width: 780px;
+      color: var(--muted);
+    }
+
+    .release-flow {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 9px;
+      margin: 26px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .release-flow li {
+      min-height: 132px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: rgba(13, 27, 44, 0.84);
+    }
+
+    .release-flow .flow-status {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--teal);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .release-flow .next .flow-status {
+      color: var(--amber);
+    }
+
+    .release-flow .pending .flow-status {
+      color: var(--subtle);
+    }
+
+    .release-flow strong {
+      display: block;
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .boundaries-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 38px;
+    }
+
+    .boundary-card {
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+    }
+
+    .boundary-card.supports {
+      border-top: 4px solid var(--teal);
+    }
+
+    .boundary-card.excludes {
+      border-top: 4px solid var(--coral);
+    }
+
+    .boundary-card ul {
+      margin: 20px 0 0;
+      padding-left: 1.25rem;
+      color: var(--muted);
+    }
+
+    .boundary-card li + li {
+      margin-top: 10px;
+    }
+
+    .boundary-card li::marker {
+      color: var(--teal);
+    }
+
+    .boundary-card.excludes li::marker {
+      color: var(--coral);
+    }
+
+    .next-steps {
+      padding-top: 52px;
+    }
+
+    .next-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.66fr) minmax(0, 1.34fr);
+      gap: 60px;
+      align-items: start;
+    }
+
+    .next-grid > div > p {
+      color: var(--muted);
+    }
+
+    .steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: next-step;
+    }
+
+    .steps li {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 16px;
+      align-items: start;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+      counter-increment: next-step;
+    }
+
+    .steps li::before {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      color: var(--amber);
+      background: var(--surface);
+      content: counter(next-step);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 850;
+      place-items: center;
+    }
+
+    .steps strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .steps p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .step-state {
+      margin-top: 5px;
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.67rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .source-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 28px;
+    }
+
+    .source-links a {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: var(--surface);
+      font-size: 0.78rem;
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .source-links a:hover {
+      color: var(--text);
+      border-color: var(--line-strong);
+    }
+
+    footer {
+      margin-top: 70px;
+      padding-block: 38px;
+      border-top: 1px solid var(--line);
+      color: var(--subtle);
+      background: rgba(3, 9, 16, 0.72);
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .footer-inner p {
+      margin: 0;
+      font-size: 0.82rem;
+    }
+
+    .footer-inner a {
+      font-weight: 750;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1080px) {
+      .site-nav a {
+        padding-inline: 7px;
+        font-size: 0.78rem;
+      }
+
+      .pipeline,
+      .milestones {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .pipeline li:not(:last-child)::after {
+        display: none;
+      }
+
+      .milestone {
+        min-height: 0;
+      }
+
+      .safeguards {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .release-flow {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (max-width: 820px) {
+      .masthead-inner {
+        min-height: 64px;
+      }
+
+      .site-nav {
+        display: none;
+      }
+
+      .hero-grid,
+      .section-heading,
+      .next-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      .status-card {
+        max-width: 620px;
+      }
+
+      .source-strip,
+      .panel-split,
+      .boundaries-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .release-flow {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      section {
+        padding-block: 72px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .shell {
+        width: min(calc(100% - 26px), var(--content));
+      }
+
+      .hero {
+        padding-top: 70px;
+      }
+
+      h1 {
+        font-size: clamp(2.5rem, 14vw, 4rem);
+      }
+
+      .pipeline,
+      .milestones,
+      .safeguards,
+      .release-flow {
+        grid-template-columns: 1fr;
+      }
+
+      .contrast-band {
+        grid-template-columns: 1fr;
+        text-align: left;
+      }
+
+      .contrast-band .helps {
+        text-align: left;
+      }
+
+      .contrast-equation {
+        width: fit-content;
+        white-space: normal;
+      }
+
+      .panel-card,
+      .boundary-card,
+      .status-card {
+        padding: 22px;
+      }
+
+      .panel-facts {
+        grid-template-columns: 1fr;
+      }
+
+      .compact-list {
+        grid-template-columns: 1fr;
+      }
+
+      .preoutcome-banner {
+        grid-template-columns: 1fr;
+      }
+
+      .steps li {
+        grid-template-columns: 40px 1fr;
+      }
+
+      .step-state {
+        grid-column: 2;
+      }
+
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media print {
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        color: #14202c;
+        background: white;
+      }
+
+      body::before,
+      .masthead {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 24px;
+      }
+
+      .status-card,
+      .pipeline li,
+      .milestone,
+      .panel-card,
+      .boundary-card,
+      .safeguard {
+        color: #14202c;
+        background: white;
+        box-shadow: none;
+      }
+
+      section {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to dashboard content</a>
+
+  <header class="masthead">
+    <div class="shell masthead-inner">
+      <a class="brand" href="#overview" aria-label="Fusion Fault Bench dashboard home">
+        <span class="brand-mark" aria-hidden="true">FFB</span>
+        <span>Fusion Fault Bench</span>
+      </a>
+      <nav class="site-nav" aria-label="Dashboard sections">
+        <ul>
+          <li><a href="#overview">Overview</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+          <li><a href="#evidence">Evidence</a></li>
+          <li><a href="#m5">M5</a></li>
+          <li><a href="#boundaries">Boundaries</a></li>
+          <li><a href="#next">Next</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero" id="overview" aria-labelledby="overview-title">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">Deterministic estimator-output evaluation</p>
+          <h1 id="overview-title">Find the point where fusion stops helping.</h1>
+          <blockquote class="hero-question">
+            When does camera–LiDAR fusion become worse than trusting the modality
+            declared healthy in a controlled single-sensor fault?
+          </blockquote>
+          <p class="hero-copy">
+            Fusion Fault Bench isolates that question with paired counterfactual sequences,
+            explicit reported covariance, controlled fault injection, complete-sequence
+            inference, and strict content-addressed evidence. It evaluates matched known-object
+            BEV centers—not a detector, planner, or safety system.
+          </p>
+          <ul class="badge-list" aria-label="Benchmark properties">
+            <li>CPU only</li>
+            <li>Known object IDs</li>
+            <li>Paired randomness</li>
+            <li>Versioned contracts</li>
+            <li>Aggregate-only public replay</li>
+          </ul>
+        </div>
+
+        <aside class="status-card" aria-labelledby="portfolio-status-title">
+          <p class="status-label">Portfolio status</p>
+          <h2 id="portfolio-status-title">Released evidence, then a guarded frontier.</h2>
+          <p class="status-declaration">
+            <strong>M1–M4 released.</strong> M5 runner and release tooling implemented; pre-outcome;
+            not released. Local Mini profile checked, but not M5 release evidence. Release tooling
+            is implemented; whole-revision implementation review is next.
+          </p>
+          <dl class="status-meta">
+            <div>
+              <dt>Released milestones</dt>
+              <dd>4</dd>
+            </div>
+            <div>
+              <dt>Current frontier</dt>
+              <dd>M5 replay</dd>
+            </div>
+            <div>
+              <dt>Runtime class</dt>
+              <dd>CPU</dd>
+            </div>
+            <div>
+              <dt>M5 result status</dt>
+              <dd>Pre-outcome</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+    </section>
+
+    <section class="architecture" id="architecture" aria-labelledby="architecture-title">
+      <div class="shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">System architecture</p>
+            <h2 id="architecture-title">A narrow question, made auditable end to end.</h2>
+          </div>
+          <p>
+            Every run begins with immutable scientific intent and ends with validated evidence.
+            Runtime provenance is recorded separately, so local paths and timestamps never alter
+            the experiment identity.
+          </p>
+        </div>
+
+        <div class="source-strip" aria-label="Latent scene sources">
+          <article>
+            <h3>Analytic Gaussian</h3>
+            <p>Known expected loss and population crossover references.</p>
+          </article>
+          <article>
+            <h3>Seeded procedural</h3>
+            <p>Constant-velocity temporal scenes with controlled support.</p>
+          </article>
+          <article>
+            <h3>nuScenes-mini metadata</h3>
+            <p>Recorded latent geometry, pose, calibration, and timing; no raw payload reads.</p>
+          </article>
+        </div>
+
+        <ol class="pipeline" aria-label="Benchmark data flow">
+          <li>
+            <h3>Freeze intent</h3>
+            <p>Validate the manifest, profile, seeds, severity grid, methods, and estimands.</p>
+          </li>
+          <li>
+            <h3>Form outputs</h3>
+            <p>Generate camera and LiDAR estimates with separate actual error and covariance.</p>
+          </li>
+          <li>
+            <h3>Inject faults</h3>
+            <p>Apply bias, uncertainty, calibration, timing, or availability changes.</p>
+          </li>
+          <li>
+            <h3>Compare methods</h3>
+            <p>Evaluate unimodal estimates, fixed fusion, health fallback, and diagnostics.</p>
+          </li>
+          <li>
+            <h3>Publish evidence</h3>
+            <p>Aggregate by sequence, bootstrap, validate, hash, and publish without overwrite.</p>
+          </li>
+        </ol>
+
+        <div class="contrast-band" aria-label="Signed contrast interpretation">
+          <p class="helps">Negative: fixed fusion helps</p>
+          <span class="contrast-equation">fixed-fusion loss − healthy-modality loss</span>
+          <p class="harms">Positive: fixed fusion harms</p>
+        </div>
+
+        <div class="safeguards" aria-label="Scientific safeguards">
+          <article class="safeguard">
+            <span class="safeguard-index">SAFEGUARD 01</span>
+            <h3>Error is not confidence</h3>
+            <p>Actual estimator error remains separate from the uncertainty it reports.</p>
+          </article>
+          <article class="safeguard">
+            <span class="safeguard-index">SAFEGUARD 02</span>
+            <h3>Pairs stay paired</h3>
+            <p>Clean and faulted conditions reuse latent scenes and base random draws.</p>
+          </article>
+          <article class="safeguard">
+            <span class="safeguard-index">SAFEGUARD 03</span>
+            <h3>Support is frozen</h3>
+            <p>Eligibility is decided before noise or faults and reused across methods.</p>
+          </article>
+          <article class="safeguard">
+            <span class="safeguard-index">SAFEGUARD 04</span>
+            <h3>Sequences infer</h3>
+            <p>Complete sequences—not isolated frames—are the clustered inference unit.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="evidence" aria-labelledby="evidence-title">
+      <div class="shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Evidence ledger</p>
+            <h2 id="evidence-title">Four releases. One deliberately unresolved milestone.</h2>
+          </div>
+          <p>
+            “Released” means the claim traces to frozen intent, a named run, validated records,
+            software revision, and reproduction instructions. Validation evidence and scientific
+            outcomes remain explicitly distinct.
+          </p>
+        </div>
+
+        <ol class="milestones" aria-label="Benchmark evidence milestones">
+          <li class="milestone">
+            <span class="milestone-code">M1 · ANALYTIC</span>
+            <span class="state">Released evidence</span>
+            <h3>Controlled crossover</h3>
+            <p>
+              Gaussian estimator-output stress tests established signed crossover behavior for
+              camera bias and covariance underreporting. The correctly reported-noise control
+              remained undetermined rather than being forced into a claim.
+            </p>
+            <ul class="metric-list">
+              <li><span>Paired sequences</span><strong>200</strong></li>
+              <li><span>Bootstrap replicates</span><strong>2,000</strong></li>
+              <li><span>Scope</span><strong>Estimator output</strong></li>
+            </ul>
+            <a href="../reports/releases/m1-analytic-v0.1.0/README.md">Open M1 release</a>
+          </li>
+
+          <li class="milestone">
+            <span class="milestone-code">M2 · GEOMETRY</span>
+            <span class="state">Released validation</span>
+            <h3>Frame-aware geometry</h3>
+            <p>
+              Named SE(3), projection, box, ROI, and covariance implementations passed frozen
+              synthetic gates. A local Mini profile check established structural compatibility;
+              it is validation evidence, not a fault-performance result.
+            </p>
+            <ul class="metric-list">
+              <li><span>Key-frame references</span><strong>808</strong></li>
+              <li><span>Raw payload benchmark</span><strong>No</strong></li>
+              <li><span>Fault outcome</span><strong>Not reported</strong></li>
+            </ul>
+            <a href="../reports/releases/m2-geometry-v0.1.0/README.md">Open M2 release</a>
+          </li>
+
+          <li class="milestone">
+            <span class="milestone-code">M3 · PROCEDURAL</span>
+            <span class="state">Released evidence</span>
+            <h3>Temporal fault matrix</h3>
+            <p>
+              Seeded temporal scenes covered bias, noise reporting, calibration, timing,
+              dropout, and common-mode controls. Conditional loss remains undefined when a
+              method emits no output; it is never zero-imputed.
+            </p>
+            <ul class="metric-list">
+              <li><span>Aggregate rows</span><strong>429</strong></li>
+              <li><span>Crossover rows</span><strong>10</strong></li>
+              <li><span>Repeat comparisons</span><strong>48 / 48</strong></li>
+            </ul>
+            <a href="../reports/releases/m3-procedural-v0.1.0/README.md">Open M3 release</a>
+          </li>
+
+          <li class="milestone">
+            <span class="milestone-code">M4 · HEALTH</span>
+            <span class="state">Released evidence</span>
+            <h3>Observable fallback</h3>
+            <p>
+              A frozen causal rule used pre-update NIS and direct telemetry. It helped selected
+              bias and timing cases, restored dropout coverage, and also recorded a negative
+              underreported-noise counterexample instead of claiming universal benefit.
+            </p>
+            <ul class="metric-list">
+              <li><span>Test conditions</span><strong>47</strong></li>
+              <li><span>Noise counterexample</span><strong>−0.579 m²</strong></li>
+              <li><span>Fit/eval repeats</span><strong>16 / 16</strong></li>
+            </ul>
+            <a href="../reports/releases/m4-health-v0.1.0.md">Open M4 release</a>
+          </li>
+
+          <li class="milestone pending">
+            <span class="milestone-code">M5 · REPLAY</span>
+            <span class="state pending">Pre-outcome · not released</span>
+            <h3>Recorded latent grounding</h3>
+            <p>
+              The metadata-only runner, aggregate curation path, and release tooling are implemented
+              for ten fixed scenes. No authoritative M5 execution or scientific outcome is asserted
+              here. Whole-revision implementation review remains next.
+            </p>
+            <ul class="metric-list">
+              <li><span>Fixed scenes</span><strong>10</strong></li>
+              <li><span>Experiment groups</span><strong>22</strong></li>
+              <li><span>Published outcome</span><strong>None</strong></li>
+            </ul>
+            <a href="m5-replay-plan.md">Open frozen M5 plan</a>
+          </li>
+        </ol>
+
+        <p class="evidence-note">
+          <strong>Interpretation guard:</strong> M1, M3, and M4 are controlled
+          estimator-output results. M2 is implementation and local profile validation. M5 is
+          pre-outcome. None is a production-safety threshold or a natural sensor-fault estimate.
+        </p>
+      </div>
+    </section>
+
+    <section class="m5" id="m5" aria-labelledby="m5-title">
+      <div class="shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Current frontier</p>
+            <h2 id="m5-title">M5 transports mechanisms, not claims.</h2>
+          </div>
+          <p>
+            M5 keeps the estimator-output abstraction and asks whether the frozen M3 mechanisms
+            and M4 policy behave consistently when latent geometry, motion, pose, calibration,
+            and natural sensor timing come from the fixed Mini scene population.
+          </p>
+        </div>
+
+        <div class="preoutcome-banner" role="note" aria-label="M5 pre-outcome warning">
+          <strong>No M5 outcome</strong>
+          <p>
+            The runner and release tooling are implemented, but M5 is not released. A local Mini
+            profile was checked; that check is not authoritative replay evidence. This page reports
+            design and readiness only, never replay descriptors, fault outcomes, crossover results,
+            health transfer results, or resource results.
+          </p>
+        </div>
+
+        <div class="panel-split">
+          <article class="panel-card">
+            <span class="panel-id">M5-A · PERSISTENT REPLAY</span>
+            <h3>Replay the complete M3 matrix</h3>
+            <p>
+              Change the latent population while retaining the preregistered fault semantics,
+              severity grids, methods, signed estimands, and crossover discipline.
+            </p>
+            <div class="panel-facts" aria-label="M5-A plan facts">
+              <div><strong>8</strong><span>experiment groups</span></div>
+              <div><strong>10</strong><span>fixed scenes</span></div>
+              <div><strong>0</strong><span>selected families</span></div>
+            </div>
+            <ul class="compact-list">
+              <li>LiDAR position bias</li>
+              <li>Correctly reported noise</li>
+              <li>Underreported noise</li>
+              <li>Camera translation</li>
+              <li>Camera yaw</li>
+              <li>Timestamp offset</li>
+              <li>Camera dropout</li>
+              <li>Common-mode bias</li>
+            </ul>
+          </article>
+
+          <article class="panel-card">
+            <span class="panel-id">M5-B · APPLY-ONLY HEALTH</span>
+            <h3>Apply the released M4 fit unchanged</h3>
+            <p>
+              The clean calibration, thresholds, decision rules, latch, and policy mapping remain
+              frozen. There is no replay-domain fitting, renormalization, or outcome-driven tuning.
+            </p>
+            <div class="panel-facts" aria-label="M5-B plan facts">
+              <div><strong>14</strong><span>experiment groups</span></div>
+              <div><strong>1</strong><span>authenticated fit</span></div>
+              <div><strong>0</strong><span>replay refits</span></div>
+            </div>
+            <ul class="compact-list">
+              <li>Camera and LiDAR bias</li>
+              <li>Reported-noise controls</li>
+              <li>Underreported-noise cases</li>
+              <li>Camera and LiDAR timing</li>
+              <li>Camera and LiDAR dropout</li>
+              <li>Camera calibration faults</li>
+              <li>Common-mode control</li>
+              <li>Clean control</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="shared-foundation" aria-label="Shared M5 foundations">
+          <strong>Shared foundation</strong>
+          <span>ten fixed scenes</span>
+          <span>one draw set per scene</span>
+          <span>2,000 bootstrap replicates</span>
+          <span>metadata tables only</span>
+          <span>aggregate-only public boundary</span>
+          <span>CPU-only execution</span>
+        </div>
+
+        <div class="release-lane">
+          <p class="eyebrow">Release lane</p>
+          <h3>Release tooling exists; publication authority does not.</h3>
+          <p>
+            The preregistered release workflow deliberately separates scientific execution,
+            immutable review, and final publication. Release tooling is implemented;
+            whole-revision implementation review is the next gate—not an outcome claim.
+          </p>
+          <ol class="release-flow" aria-label="M5 release pipeline status">
+            <li>
+              <span class="flow-status">Implemented</span>
+              <strong>Metadata-only runner</strong>
+            </li>
+            <li>
+              <span class="flow-status">Implemented</span>
+              <strong>Local aggregate source</strong>
+            </li>
+            <li>
+              <span class="flow-status">Implemented</span>
+              <strong>Exact repeat verifier</strong>
+            </li>
+            <li>
+              <span class="flow-status">Implemented</span>
+              <strong>Release-candidate and final-package tooling</strong>
+            </li>
+            <li class="next">
+              <span class="flow-status">Next</span>
+              <strong>Whole-revision implementation review</strong>
+            </li>
+            <li class="pending">
+              <span class="flow-status">Pending</span>
+              <strong>Authoritative primary/repeat and immutable review candidate</strong>
+            </li>
+            <li class="pending">
+              <span class="flow-status">Pending</span>
+              <strong>Independent results review</strong>
+            </li>
+            <li class="pending">
+              <span class="flow-status">Pending</span>
+              <strong>Final release package</strong>
+            </li>
+            <li class="pending">
+              <span class="flow-status">Pending</span>
+              <strong>Validation, CI, and tag</strong>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="boundaries" aria-labelledby="boundaries-title">
+      <div class="shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Claim boundary</p>
+            <h2 id="boundaries-title">Precise evidence is useful evidence.</h2>
+          </div>
+          <p>
+            The benchmark is intentionally narrow. It is designed to make one fusion-layer
+            question interpretable, not to stand in for an autonomous-driving safety case.
+          </p>
+        </div>
+
+        <div class="boundaries-grid">
+          <article class="boundary-card supports">
+            <h3>What the benchmark can support</h3>
+            <ul>
+              <li>Controlled estimator-output comparisons under explicit proxy faults.</li>
+              <li>Signed fusion-versus-healthy loss and preregistered crossover analysis.</li>
+              <li>Causal observable health-policy behavior and clean/fault tradeoffs.</li>
+              <li>Reproducibility claims bound to frozen intent, code, and aggregate artifacts.</li>
+              <li>M5 design-level grounding in recorded geometry, pose, calibration, and timing.</li>
+            </ul>
+          </article>
+
+          <article class="boundary-card excludes">
+            <h3>What it does not claim</h3>
+            <ul>
+              <li>Raw camera or point-cloud realism, detector quality, or learned perception.</li>
+              <li>Naturally occurring fault rates or real sensor-noise distributions.</li>
+              <li>Unknown-object association, set prediction, or false-detection performance.</li>
+              <li>Planning, collision, closed-loop policy, certification, or production safety.</li>
+              <li>That a local profile check is M5 execution evidence or an M5 result.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="next-steps" id="next" aria-labelledby="next-title">
+      <div class="shell next-grid">
+        <div>
+          <p class="eyebrow">Next actions</p>
+          <h2 id="next-title">Complete the evidence path before reading the answer.</h2>
+          <p>
+            M5’s next work is procedural by design: independently review the completed publication
+            mechanism, then run the authoritative primary and repeat executions, then review the
+            immutable result.
+          </p>
+          <div class="source-links" aria-label="Primary documentation">
+            <a href="benchmark-contract-v0.1.md">Benchmark contract</a>
+            <a href="project-plan.md">Project plan</a>
+            <a href="m5-replay-plan.md">M5 replay plan</a>
+            <a href="m5-technical-walkthrough.md">M5 walkthrough</a>
+            <a href="m5-release-pipeline-plan.md">Release pipeline plan</a>
+            <a href="../tools/m5_release.py">M5 release tool</a>
+            <a href="../README.md">Repository README</a>
+          </div>
+          <p class="evidence-note">
+            Sharing note: this dashboard is offline, but its documentation and evidence links are
+            repository-relative. Share it with the repository tree so those links continue to work.
+          </p>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <div>
+              <strong>Release-candidate and final-package tooling</strong>
+              <p>Encodes the frozen file allowlists, digests, figures, claims, and rollback rules.</p>
+            </div>
+            <span class="step-state">Implemented</span>
+          </li>
+          <li>
+            <div>
+              <strong>Complete whole-revision implementation review</strong>
+              <p>Bind runner, release builder, validators, privacy boundary, and failure behavior.</p>
+            </div>
+            <span class="step-state">Next</span>
+          </li>
+          <li>
+            <div>
+              <strong>Run authoritative primary and repeat executions</strong>
+              <p>Use the same clean revision and require exact scientific-member agreement.</p>
+            </div>
+            <span class="step-state">Pending</span>
+          </li>
+          <li>
+            <div>
+              <strong>Review the immutable candidate and its claims</strong>
+              <p>Inspect the fixed aggregate projection without changing outcome selection.</p>
+            </div>
+            <span class="step-state">Pending</span>
+          </li>
+          <li>
+            <div>
+              <strong>Build, validate, commit, CI-check, and tag the release</strong>
+              <p>Only the complete package may advance M5 from pre-outcome to released.</p>
+            </div>
+            <span class="step-state">Pending</span>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <p>
+        Fusion Fault Bench v0.1 · deterministic camera–LiDAR estimator-output evaluation.
+      </p>
+      <p><a href="#overview">Back to overview</a></p>
+    </div>
+  </footer>
+</body>
+</html>

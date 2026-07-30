@@ -63,6 +63,7 @@ from fusion_fault_bench.replay_persistent_inference import (
 )
 from fusion_fault_bench.replay_plan import LoadedReplayPlan, load_replay_plan
 from fusion_fault_bench.replay_resources import (
+    M5_PUBLIC_REPLAY_COMMAND,
     replay_environment_sha256,
     replay_logical_command_sha256,
 )
@@ -506,6 +507,7 @@ def test_curation_builds_exact_claim_roles_sensitivity_and_stable_ids() -> None:
         health_metrics=tuple(reversed(_health_metrics())),
     )
 
+    assert tuple(first.run.command) == M5_PUBLIC_REPLAY_COMMAND
     assert len(first.persistent_aggregates) == 464
     assert len(first.health_aggregates) == 14_988
     not_applicable = tuple(row for row in first.health_aggregates if row.status == "not-applicable")

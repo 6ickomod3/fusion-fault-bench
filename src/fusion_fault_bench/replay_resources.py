@@ -66,9 +66,18 @@ type ReplayInternalMeasurementScope = Literal[
 _INTERNAL_SCOPE: ReplayInternalMeasurementScope = (
     "metadata-through-canonical-scientific-members-before-publication"
 )
+M5_PUBLIC_REPLAY_COMMAND = (
+    "ffb",
+    "replay",
+    "run",
+    "--output-dir",
+    "<local-output>",
+)
 
 
 def _normalized_replay_command(command: tuple[str, ...]) -> tuple[str, ...]:
+    if command == M5_PUBLIC_REPLAY_COMMAND:
+        return M5_PUBLIC_REPLAY_COMMAND
     if (
         type(command) is not tuple
         or len(command) != 5
@@ -89,7 +98,7 @@ def _normalized_replay_command(command: tuple[str, ...]) -> tuple[str, ...]:
         )
     ):
         raise ValueError("M5 replay output argument is not a safe canonical local path")
-    return ("ffb", "replay", "run", "--output-dir", "<local-output>")
+    return M5_PUBLIC_REPLAY_COMMAND
 
 
 class ReplayResourceEvidenceError(ValueError):

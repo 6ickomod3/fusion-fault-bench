@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install pinned uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
@@ -49,6 +51,33 @@ jobs:
           uv run --locked python tools/m4_release.py validate-release \
             reports/releases/m4-health-v0.1.0
 
+      - name: Reject deletion of an established M5 release
+        env:
+          M5_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          M5_RELEASE_INDEX: reports/releases/m5-nuscenes-replay-v0.1.0/release-sidecar-index.json
+        run: |
+          if git cat-file -e "${M5_BASE_SHA}:${M5_RELEASE_INDEX}" 2>/dev/null && [ ! -f "${M5_RELEASE_INDEX}" ]; then
+            echo "::error::The established M5 release index may not be deleted."
+            exit 1
+          fi
+
+      # Pre-release revisions do not yet track this tree; once any member is present,
+      # aggregate-only validators are mandatory and run offline without the dataset.
+      - name: Validate curated M5 release offline when tracked
+        if: ${{ hashFiles('reports/releases/m5-nuscenes-replay-v0.1.0/**') != '' }}
+        run: |
+          env -u NUSCENES_ROOT UV_OFFLINE=1 \
+            uv run --frozen --no-sync python tools/m5_release.py validate-release \
+            reports/releases/m5-nuscenes-replay-v0.1.0
+
+      - name: Validate M5 publication offline when tracked
+        if: ${{ hashFiles('reports/releases/m5-nuscenes-replay-v0.1.0/**') != '' }}
+        run: |
+          env -u NUSCENES_ROOT UV_OFFLINE=1 \
+            uv run --frozen --no-sync python tools/m5_release.py validate-publication \
+            --release reports/releases/m5-nuscenes-replay-v0.1.0 \
+            --source-root .
+
       - name: Run measured two-execution M3 smoke matrix
         run: |
           uv run --locked python tools/m3_release.py execute \
@@ -80,5 +109,15 @@ jobs:
           /tmp/ffb-wheel-smoke/bin/ffb schema show replay-validation > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb schema show replay-execution-resource-evidence \
             > /dev/null
+          /tmp/ffb-wheel-smoke/bin/ffb schema show replay-release-sidecar-index \
+            > /dev/null
+          /tmp/ffb-wheel-smoke/bin/ffb replay release --help > /dev/null
           /tmp/ffb-wheel-smoke/bin/ffb manifest validate \
             examples/manifests/analytic-bias-v1alpha1.json
+
+      - name: Validate tracked M5 release with installed wheel offline
+        if: ${{ hashFiles('reports/releases/m5-nuscenes-replay-v0.1.0/**') != '' }}
+        run: |
+          env -u NUSCENES_ROOT UV_OFFLINE=1 \
+            /tmp/ffb-wheel-smoke/bin/ffb replay release validate \
+            reports/releases/m5-nuscenes-replay-v0.1.0

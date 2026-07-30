@@ -27,7 +27,6 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     REPLAY_CURATED_ARTIFACT_CONTRACT,
     ReplayClusterSensitivityV1,
     ReplayDescriptorAggregateV1,
-    ReplayFigureRecordV1,
     ReplayHealthAggregateV1,
     ReplayPersistentAggregateV1,
     ReplayPersistentCrossoverV1,
@@ -40,6 +39,7 @@ from fusion_fault_bench.contracts.replay_health_v1 import (
     ReplayHealthResultV1,
     ReplayHealthSequenceEventV1,
 )
+from fusion_fault_bench.contracts.replay_release_v1 import ReplayFigureSourceBindingV1
 from fusion_fault_bench.contracts.replay_v1 import (
     M5_HEALTH_PANEL_ID,
     M5_PERSISTENT_PANEL_ID,
@@ -79,6 +79,7 @@ from fusion_fault_bench.replay_persistent_inference import (
     evaluate_replay_persistent_crossovers,
 )
 from fusion_fault_bench.replay_plan import LoadedReplayPlan
+from fusion_fault_bench.replay_resources import M5_PUBLIC_REPLAY_COMMAND
 
 type PanelAggregate = ReplayPersistentAggregateV1 | ReplayHealthAggregateV1
 type InferenceRole = Literal[
@@ -1688,6 +1689,7 @@ def _curate_replay_population_evidence(
             ),
         )
     )
+    public_run = run.model_copy(update={"command": M5_PUBLIC_REPLAY_COMMAND})
     return ReplayCuratedAggregateEvidence(
         profile_summary=profile_summary,
         descriptor_aggregates=descriptors,
@@ -1699,7 +1701,7 @@ def _curate_replay_population_evidence(
         ),
         health_aggregates=ordered_health,
         cluster_sensitivity=ordered_sensitivity,
-        run=run,
+        run=public_run,
     )
 
 
@@ -1777,7 +1779,7 @@ def assemble_replay_curated_write_request(
     *,
     validation: ReplayValidationV1,
     repeat_verification: ReplayRepeatVerificationV1,
-    figures: Sequence[ReplayFigureRecordV1],
+    figures: Sequence[ReplayFigureSourceBindingV1],
     source_commitments: Sequence[ReplaySourceMemberCommitmentV1],
 ) -> ReplayCuratedArtifactWriteRequest:
     """Attach independently evidenced release gates without inventing their hashes."""

@@ -1780,7 +1780,7 @@ def _descriptor_contracts(
     *,
     run_id: str,
 ) -> tuple[ReplayDescriptorAggregateV1, ...]:
-    return tuple(
+    records = tuple(
         ReplayDescriptorAggregateV1(
             schema="ffb.replay-descriptor-aggregate/v1",
             run_id=run_id,
@@ -1797,6 +1797,17 @@ def _descriptor_contracts(
             tracked_aggregate_terms=M5_TRACKED_AGGREGATE_TERMS,
         )
         for row in benchmark.descriptor_aggregates
+    )
+    return tuple(
+        sorted(
+            records,
+            key=lambda record: (
+                record.population,
+                record.descriptor_id,
+                record.statistic,
+                record.category_label or "",
+            ),
+        )
     )
 
 
