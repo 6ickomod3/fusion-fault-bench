@@ -86,6 +86,32 @@ def test_frozen_methodology_digests_match_exact_tracked_authorities() -> None:
         assert hashlib.sha256(source.read_bytes()).hexdigest() == expected
 
 
+def test_release_module_frozen_methodology_digests_match_exact_tracked_authorities() -> None:
+    # The replay_release copy of _FROZEN_METHODOLOGY_SHA256 grants the role-aware
+    # privacy-scan bypass, so it is security-critical and must be bound directly to
+    # the tracked doc bytes (not only indirectly via the scan test), and it must
+    # stay byte-identical to the package-module copy that authors release bytes.
+    from fusion_fault_bench import replay_release
+
+    source_by_candidate_path = {
+        "evidence/release-pipeline-plan.md": ROOT / "docs/m5-release-pipeline-plan.md",
+        "evidence/release-pipeline-plan-review.md": (
+            ROOT / "docs/reviews/m5-release-pipeline-plan-review.md"
+        ),
+        "evidence/resource-scope-amendment.md": (ROOT / "docs/m5-resource-scope-amendment.md"),
+    }
+
+    assert set(replay_release._FROZEN_METHODOLOGY_SHA256) == set(source_by_candidate_path)
+    for candidate_path, source in source_by_candidate_path.items():
+        expected = replay_release._FROZEN_METHODOLOGY_SHA256[candidate_path]
+        assert len(expected) == 64
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == expected
+
+    assert dict(replay_release._FROZEN_METHODOLOGY_SHA256) == dict(
+        release_package._FROZEN_METHODOLOGY_SHA256
+    )
+
+
 def test_package_software_authority_requires_exact_command_for_each_check() -> None:
     software = _software_verification()
     release_package._require_software_verification_authority(software)
