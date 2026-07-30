@@ -90,6 +90,7 @@ from fusion_fault_bench.health_runner import (
 from fusion_fault_bench.procedural_artifacts import load_procedural_artifact
 from fusion_fault_bench.procedural_runner import run_procedural_matrix
 from fusion_fault_bench.replay_artifacts import load_replay_curated_artifact
+from fusion_fault_bench.replay_release import validate_release as validate_m5_release
 from fusion_fault_bench.replay_runner import (
     curate_replay_verified_repeat,
     load_replay_local_artifact,
@@ -446,6 +447,19 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Strictly validate a complete curated M5 artifact.",
     )
     replay_bundle_validate.add_argument("path", type=Path, metavar="DEST")
+    replay_release = replay_commands.add_parser(
+        "release",
+        help="Inspect the complete public M5 release package.",
+    )
+    replay_release_commands = replay_release.add_subparsers(
+        dest="replay_release_command",
+        required=True,
+    )
+    replay_release_validate = replay_release_commands.add_parser(
+        "validate",
+        help="Strictly validate the self-contained public M5 release package.",
+    )
+    replay_release_validate.add_argument("path", type=Path, metavar="DEST")
     return parser
 
 
@@ -600,6 +614,15 @@ def _run(args: argparse.Namespace) -> int:
                 "valid ffb.replay-local-source/v1 "
                 f"artifact_sha256={artifact.artifact_sha256} "
                 f"run_sha256={artifact.run_sha256}"
+            )
+            return 0
+        if args.replay_command == "release":
+            try:
+                release = validate_m5_release(args.path)
+            except Exception:
+                raise _CliArgumentError("M5 release validation failed closed") from None
+            print(
+                f"valid ffb.m5-release-package/v1 release_package_sha256={release.package_sha256}"
             )
             return 0
         artifact = load_replay_curated_artifact(args.path)

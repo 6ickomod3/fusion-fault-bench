@@ -51,6 +51,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     M5_PERSISTENT_HYPOTHESIS_COORDINATE_SET_SHA256,
     M5_PERSISTENT_HYPOTHESIS_COORDINATES,
     M5_RELEASE_VALIDATION_CHECK_IDS,
+    M5_REPLAY_FIGURE_DEFINITIONS,
     M5_REPLAY_IDENTITY_SET_SHA256,
     M5_REPLAY_RELEASE_ID,
     M5_SCIENTIFIC_SOURCE_ROLES,
@@ -79,7 +80,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     ReplayClusterSensitivityV1,
     ReplayDescriptorAggregateV1,
     ReplayExecutionResourceEvidenceV1,
-    ReplayFigureRecordV1,
+    ReplayFigureSourceBindingV1,
     ReplayHealthAggregateV1,
     ReplayPayloadFileEntryV1,
     ReplayPersistentAggregateV1,
@@ -90,7 +91,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     ReplaySourceMemberCommitmentV1,
     ReplaySuccessV1,
     ReplayValidationV1,
-    replay_resource_evidence_sha256,
+    replay_descriptor_source_id,
 )
 from fusion_fault_bench.contracts.replay_v1 import (
     M5_HEALTH_FIT_SHA256,
@@ -164,6 +165,19 @@ _PERSISTENT_IDENTITIES = tuple(
 _HEALTH_IDENTITIES = tuple(
     identity for identity in _EXPECTED_IDENTITIES if identity.panel_id == M5_HEALTH_PANEL_ID
 )
+_FIGURE_SOURCE_KINDS = {
+    "m5-persistent-panel-summary": frozenset({"persistent-aggregate"}),
+    "m5-crossovers": frozenset({"persistent-crossover"}),
+    "m5-health-transfer": frozenset({"health-aggregate"}),
+    "m5-descriptor-comparison": frozenset({"descriptor-aggregate"}),
+    "m5-cluster-sensitivity": frozenset(
+        {
+            "persistent-aggregate",
+            "health-aggregate",
+            "cluster-sensitivity",
+        }
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,7 +192,7 @@ class ReplayCuratedArtifactWriteRequest:
     cluster_sensitivity: Sequence[ReplayClusterSensitivityV1]
     validation: ReplayValidationV1
     repeat_verification: ReplayRepeatVerificationV1
-    figures: Sequence[ReplayFigureRecordV1]
+    figures: Sequence[ReplayFigureSourceBindingV1]
     source_commitments: Sequence[ReplaySourceMemberCommitmentV1]
     run: RunRecordV1Alpha1
 
@@ -197,7 +211,7 @@ class LoadedReplayCuratedArtifact:
     cluster_sensitivity: tuple[ReplayClusterSensitivityV1, ...]
     validation: ReplayValidationV1
     repeat_verification: ReplayRepeatVerificationV1
-    figures: tuple[ReplayFigureRecordV1, ...]
+    figures: tuple[ReplayFigureSourceBindingV1, ...]
     source_commitments: tuple[ReplaySourceMemberCommitmentV1, ...]
     release_index: ReplayReleaseIndexV1
     run: RunRecordV1Alpha1
@@ -281,7 +295,7 @@ def _ordered_records(
     tuple[ReplayPersistentCrossoverV1, ...],
     tuple[ReplayHealthAggregateV1, ...],
     tuple[ReplayClusterSensitivityV1, ...],
-    tuple[ReplayFigureRecordV1, ...],
+    tuple[ReplayFigureSourceBindingV1, ...],
     tuple[ReplaySourceMemberCommitmentV1, ...],
 ]:
     try:
@@ -346,14 +360,15 @@ def _ordered_records(
                 ),
             )
         )
+        figure_rank = {
+            definition[0]: index for index, definition in enumerate(M5_REPLAY_FIGURE_DEFINITIONS)
+        }
         figures = tuple(
             sorted(
                 request.figures,
                 key=lambda record: (
-                    _IDENTITY_RANK[_identity_digest(record)],
-                    record.source_result_id,
-                    record.figure_kind,
-                    record.figure_id,
+                    figure_rank[record.figure_id],
+                    record.mark_ordinal,
                 ),
             )
         )
@@ -776,7 +791,7 @@ def _validate_record_links(
     sensitivity: Sequence[ReplayClusterSensitivityV1],
     validation: ReplayValidationV1,
     repeat: ReplayRepeatVerificationV1,
-    figures: Sequence[ReplayFigureRecordV1],
+    figures: Sequence[ReplayFigureSourceBindingV1],
     commitments: Sequence[ReplaySourceMemberCommitmentV1],
 ) -> None:
     globally_bound: tuple[Any, ...] = (
@@ -809,8 +824,6 @@ def _validate_record_links(
     )
     if actual_crossover_keys != _expected_crossover_keys():
         raise ArtifactValidationError("persistent crossover coordinate coverage is incomplete")
-    if _first_identity_order(figures) != _EXPECTED_IDENTITIES:
-        raise ArtifactValidationError("figure-record identity coverage is incomplete")
     persistent_selectors = {record.condition_selector for record in persistent}
     health_selectors = {record.condition_selector for record in health}
     if (
@@ -892,29 +905,84 @@ def _validate_record_links(
         label="cluster-sensitivity identifiers",
     )
     _require_unique(
-        [record.figure_id for record in figures],
-        label="figure identifiers",
+        [(record.figure_id, record.mark_ordinal) for record in figures],
+        label="figure mark coordinates",
     )
+    expected_figure_definitions = tuple(M5_REPLAY_FIGURE_DEFINITIONS)
+    actual_figure_definitions: list[tuple[str, str, str]] = []
+    figure_render_bindings: dict[str, set[tuple[str, str, int]]] = {}
+    figure_ordinals: dict[str, list[int]] = {}
+    for record in figures:
+        if record.source_kind not in _FIGURE_SOURCE_KINDS[record.figure_id]:
+            raise ArtifactValidationError(
+                "figure record source kind is invalid for the public figure"
+            )
+        figure_ordinals.setdefault(record.figure_id, []).append(record.mark_ordinal)
+        figure_render_bindings.setdefault(record.figure_id, set()).add(
+            (
+                record.figure_spec_sha256,
+                record.rendered_svg_sha256,
+                record.rendered_svg_byte_length,
+            )
+        )
+        definition = (
+            record.figure_id,
+            record.figure_kind,
+            record.rendered_svg_path,
+        )
+        if not actual_figure_definitions or actual_figure_definitions[-1] != definition:
+            actual_figure_definitions.append(definition)
+    if tuple(actual_figure_definitions) != expected_figure_definitions:
+        raise ArtifactValidationError(
+            "figure records do not cover the exact frozen public figure set"
+        )
+    if any(ordinals != list(range(len(ordinals))) for ordinals in figure_ordinals.values()):
+        raise ArtifactValidationError("figure mark ordinals are not contiguous from zero")
+    if any(len(bindings) != 1 for bindings in figure_render_bindings.values()):
+        raise ArtifactValidationError(
+            "figure records disagree on their spec or rendered SVG commitment"
+        )
     commitment_roles = tuple(record.relative_role for record in commitments)
     if commitment_roles != M5_SCIENTIFIC_SOURCE_ROLES:
         raise ArtifactValidationError(
             "replay source commitment roles do not match the frozen canonical set"
         )
 
-    sources: dict[str, list[tuple[ReplayExperimentIdentityV1 | None, str]]] = {}
+    sources: dict[
+        tuple[str, str],
+        list[tuple[ReplayExperimentIdentityV1 | None, str]],
+    ] = {}
     for record in descriptors:
-        sources.setdefault(record.descriptor_id, []).append((None, sha256_digest(record)))
+        sources.setdefault(
+            ("descriptor-aggregate", replay_descriptor_source_id(record)),
+            [],
+        ).append((None, sha256_digest(record)))
+    global_source_ids = {replay_descriptor_source_id(record) for record in descriptors}
     for record in (*persistent, *health):
-        if record.result_id in sources:
+        source_kind = (
+            "persistent-aggregate"
+            if isinstance(record, ReplayPersistentAggregateV1)
+            else "health-aggregate"
+        )
+        source_key = (source_kind, record.result_id)
+        if record.result_id in global_source_ids or source_key in sources:
             raise ArtifactValidationError("replay source-result identifiers are not global")
-        sources[record.result_id] = [(record.identity, sha256_digest(record))]
+        sources[source_key] = [(record.identity, sha256_digest(record))]
+        global_source_ids.add(record.result_id)
     for record in crossovers:
-        if record.crossover_id in sources:
+        source_key = ("persistent-crossover", record.crossover_id)
+        if record.crossover_id in global_source_ids or source_key in sources:
             raise ArtifactValidationError("replay source-result identifiers are not global")
-        sources[record.crossover_id] = [(record.identity, sha256_digest(record))]
+        sources[source_key] = [(record.identity, sha256_digest(record))]
+        global_source_ids.add(record.crossover_id)
 
     for record in sensitivity:
-        candidates = sources.get(record.source_result_id, [])
+        aggregate_kind = (
+            "persistent-aggregate"
+            if record.identity.panel_id == M5_PERSISTENT_PANEL_ID
+            else "health-aggregate"
+        )
+        candidates = sources.get((aggregate_kind, record.source_result_id), [])
         if (
             len(candidates) != 1
             or candidates[0][0] is None
@@ -922,27 +990,37 @@ def _validate_record_links(
             or candidates[0][1] != record.source_record_sha256
         ):
             raise ArtifactValidationError("cluster sensitivity has an invalid source binding")
-        if record.sensitivity_id in sources:
+        source_key = ("cluster-sensitivity", record.sensitivity_id)
+        if record.sensitivity_id in global_source_ids or source_key in sources:
             raise ArtifactValidationError("replay source-result identifiers are not global")
-        sources[record.sensitivity_id] = [(record.identity, sha256_digest(record))]
+        sources[source_key] = [(record.identity, sha256_digest(record))]
+        global_source_ids.add(record.sensitivity_id)
 
+    figure_identity_digests: set[str] = set()
     for record in figures:
-        candidates = sources.get(record.source_result_id, [])
+        candidates = sources.get((record.source_kind, record.source_id), [])
         matches = tuple(
             source
             for source in candidates
-            if source[1] == record.source_record_sha256
-            and (source[0] is None or source[0] == record.identity)
+            if source[1] == record.source_record_sha256 and source[0] == record.identity
         )
         if len(matches) != 1:
             raise ArtifactValidationError("figure record has an invalid aggregate binding")
         source = matches[0]
-        if source[0] is not None and source[0] != record.identity:
-            raise ArtifactValidationError("figure identity disagrees with its aggregate")
-        if source[0] is None and record.figure_kind != "descriptor-comparison":
-            raise ArtifactValidationError(
-                "only descriptor-comparison figures may bind descriptor aggregates"
-            )
+        if source[0] is None:
+            if record.replay_identity_sha256 is not None:
+                raise ArtifactValidationError(
+                    "descriptor figure source carries a synthetic replay identity"
+                )
+        else:
+            source_identity_sha256 = replay_experiment_identity_sha256(source[0])
+            if record.replay_identity_sha256 != source_identity_sha256:
+                raise ArtifactValidationError("figure identity disagrees with its aggregate source")
+            figure_identity_digests.add(source_identity_sha256)
+    if figure_identity_digests != set(_IDENTITY_RANK):
+        raise ArtifactValidationError(
+            "figure-record non-descriptor identity coverage is incomplete"
+        )
 
     _validate_sensitivity_coverage(
         profile_summary=profile_summary,
@@ -1001,13 +1079,6 @@ def _validate_record_links(
         raise ArtifactValidationError(
             "external resource evidence is not bound to repeat and runtime provenance"
         )
-    resource_check = next(
-        check for check in validation.checks if check.check_id == "cpu-and-memory-caps"
-    )
-    if resource_check.evidence_sha256 != replay_resource_evidence_sha256(resources):
-        raise ArtifactValidationError(
-            "CPU-and-memory validation does not bind canonical resource evidence"
-        )
 
 
 def validate_replay_curated_bundle(
@@ -1021,7 +1092,7 @@ def validate_replay_curated_bundle(
     cluster_sensitivity: Sequence[ReplayClusterSensitivityV1],
     validation: ReplayValidationV1,
     repeat_verification: ReplayRepeatVerificationV1,
-    figures: Sequence[ReplayFigureRecordV1],
+    figures: Sequence[ReplayFigureSourceBindingV1],
     source_commitments: Sequence[ReplaySourceMemberCommitmentV1],
     run: RunRecordV1Alpha1,
     artifact_sha256: str | None = None,
@@ -1496,7 +1567,7 @@ def _load_replay_curated_artifact(path: Path) -> LoadedReplayCuratedArtifact:
         root,
         REPLAY_FIGURE_RECORDS_FILE,
         expected_stat=snapshot.entries[REPLAY_FIGURE_RECORDS_FILE],
-        validate=ReplayFigureRecordV1.model_validate_json,
+        validate=ReplayFigureSourceBindingV1.model_validate_json,
     )
     commitments = _load_ndjson(
         root,

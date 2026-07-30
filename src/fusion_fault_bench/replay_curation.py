@@ -27,7 +27,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     REPLAY_CURATED_ARTIFACT_CONTRACT,
     ReplayClusterSensitivityV1,
     ReplayDescriptorAggregateV1,
-    ReplayFigureRecordV1,
+    ReplayFigureSourceBindingV1,
     ReplayHealthAggregateV1,
     ReplayPersistentAggregateV1,
     ReplayPersistentCrossoverV1,
@@ -1777,7 +1777,7 @@ def assemble_replay_curated_write_request(
     *,
     validation: ReplayValidationV1,
     repeat_verification: ReplayRepeatVerificationV1,
-    figures: Sequence[ReplayFigureRecordV1],
+    figures: Sequence[ReplayFigureSourceBindingV1],
     source_commitments: Sequence[ReplaySourceMemberCommitmentV1],
 ) -> ReplayCuratedArtifactWriteRequest:
     """Attach independently evidenced release gates without inventing their hashes."""

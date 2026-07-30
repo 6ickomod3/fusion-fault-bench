@@ -22,6 +22,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     M5_HEALTH_HYPOTHESIS_COORDINATES,
     M5_PERSISTENT_HYPOTHESIS_COORDINATES,
     M5_RELEASE_VALIDATION_CHECK_IDS,
+    M5_REPLAY_FIGURE_DEFINITIONS,
     M5_REPLAY_IDENTITY_SET_SHA256,
     M5_REPLAY_RELEASE_ID,
     M5_SCIENTIFIC_SOURCE_ROLES,
@@ -37,7 +38,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     ReplayClusterSensitivityV1,
     ReplayDescriptorAggregateV1,
     ReplayExecutionResourceEvidenceV1,
-    ReplayFigureRecordV1,
+    ReplayFigureSourceBindingV1,
     ReplayHealthAggregateV1,
     ReplayPersistentAggregateV1,
     ReplayPersistentCrossoverV1,
@@ -46,7 +47,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     ReplaySourceMemberCommitmentV1,
     ReplayValidationCheckV1,
     ReplayValidationV1,
-    replay_resource_evidence_sha256,
+    replay_descriptor_source_id,
 )
 from fusion_fault_bench.contracts.replay_v1 import (
     M5_HEALTH_FIT_SHA256,
@@ -585,19 +586,63 @@ def _sensitivity(
     )
 
 
-def _figure(
-    identity_index: int,
+type _FigureSource = (
+    ReplayDescriptorAggregateV1
+    | ReplayPersistentAggregateV1
+    | ReplayPersistentCrossoverV1
+    | ReplayHealthAggregateV1
+    | ReplayClusterSensitivityV1
+)
+
+
+def _figure_binding(
     run_id: str,
-    source: ReplayPersistentAggregateV1 | ReplayHealthAggregateV1,
-) -> ReplayFigureRecordV1:
-    return ReplayFigureRecordV1(
-        schema="ffb.replay-figure-record/v1",
-        **_identity(identity_index, run_id),
-        figure_id=f"figure-{identity_index:02d}",
-        figure_kind="panel-summary",
-        source_result_id=source.result_id,
+    *,
+    figure_index: int,
+    mark_ordinal: int,
+    source: _FigureSource,
+) -> ReplayFigureSourceBindingV1:
+    figure_id, figure_kind, svg_path = M5_REPLAY_FIGURE_DEFINITIONS[figure_index]
+    if isinstance(source, ReplayDescriptorAggregateV1):
+        source_kind = "descriptor-aggregate"
+        source_id = replay_descriptor_source_id(source)
+        identity = None
+        identity_sha256 = None
+    elif isinstance(source, ReplayPersistentAggregateV1):
+        source_kind = "persistent-aggregate"
+        source_id = source.result_id
+        identity = source.identity
+        identity_sha256 = source.replay_identity_sha256
+    elif isinstance(source, ReplayPersistentCrossoverV1):
+        source_kind = "persistent-crossover"
+        source_id = source.crossover_id
+        identity = source.identity
+        identity_sha256 = source.replay_identity_sha256
+    elif isinstance(source, ReplayHealthAggregateV1):
+        source_kind = "health-aggregate"
+        source_id = source.result_id
+        identity = source.identity
+        identity_sha256 = source.replay_identity_sha256
+    else:
+        source_kind = "cluster-sensitivity"
+        source_id = source.sensitivity_id
+        identity = source.identity
+        identity_sha256 = source.replay_identity_sha256
+    return ReplayFigureSourceBindingV1(
+        schema="ffb.replay-figure-source-binding/v1",
+        **_global(run_id),
+        figure_id=figure_id,
+        figure_kind=figure_kind,
+        mark_ordinal=mark_ordinal,
+        source_kind=source_kind,  # type: ignore[arg-type]
+        source_id=source_id,
         source_record_sha256=sha256_digest(source),
-        figure_spec_sha256=_digest(f"figure-spec-{identity_index}"),
+        identity=identity,
+        replay_identity_sha256=identity_sha256,
+        figure_spec_sha256=_digest(f"figure-spec-{figure_id}"),
+        rendered_svg_path=svg_path,
+        rendered_svg_sha256=_digest(f"rendered-svg-{figure_id}"),
+        rendered_svg_byte_length=1000 + figure_index,
         tracked_aggregate_terms=M5_TRACKED_AGGREGATE_TERMS,
     )
 
@@ -661,6 +706,93 @@ def _request() -> ReplayCuratedArtifactWriteRequest:
         if source.inference_role in {"primary-directional", "nonpositive-control"}:
             sensitivity_by_result[source.result_id] = source
     sensitivity_sources = tuple(sensitivity_by_result.values())
+    descriptors = (_descriptor(run.run_id),)
+    crossovers = tuple(
+        _crossover(
+            index,
+            run.run_id,
+            identity_index=identity_index,
+            direction=direction,
+            severity_unit=unit,
+            tested_maximum=tested_maximum,
+        )
+        for index, (identity_index, direction, unit, tested_maximum) in enumerate(
+            (
+                (0, "negative", "m", 4.0),
+                (0, "positive", "m", 4.0),
+                (1, "increase", "std-scale", 4.0),
+                (2, "increase", "std-scale", 4.0),
+                (3, "negative", "m", 4.0),
+                (3, "positive", "m", 4.0),
+                (4, "negative", "rad", 0.08),
+                (4, "positive", "rad", 0.08),
+                (5, "negative", "s", 0.8),
+                (5, "positive", "s", 0.8),
+            )
+        )
+    )
+    sensitivity = tuple(
+        _sensitivity(
+            _IDENTITY_INDEX[(source.identity.panel_id, source.identity.experiment_id)],
+            run.run_id,
+            source,
+            source_ordinal=source_ordinal,
+            ordinal=ordinal,
+            cluster_kind=cluster_kind,
+            cluster_id=cluster_id,
+        )
+        for source_ordinal, source in enumerate(sensitivity_sources)
+        for ordinal, (cluster_kind, cluster_id) in enumerate(
+            (
+                *(("leave-one-scene-out", f"scene-ordinal:{index:02d}") for index in range(10)),
+                *(("leave-one-log-group-out", f"log-group:{index:02d}") for index in range(4)),
+            )
+        )
+    )
+    figures = (
+        *(
+            _figure_binding(
+                run.run_id,
+                figure_index=0,
+                mark_ordinal=mark_ordinal,
+                source=source,
+            )
+            for mark_ordinal, source in enumerate(identity_sources[:8])
+        ),
+        *(
+            _figure_binding(
+                run.run_id,
+                figure_index=1,
+                mark_ordinal=mark_ordinal,
+                source=source,
+            )
+            for mark_ordinal, source in enumerate(crossovers)
+        ),
+        *(
+            _figure_binding(
+                run.run_id,
+                figure_index=2,
+                mark_ordinal=mark_ordinal,
+                source=source,
+            )
+            for mark_ordinal, source in enumerate(identity_sources[8:])
+        ),
+        _figure_binding(
+            run.run_id,
+            figure_index=3,
+            mark_ordinal=0,
+            source=descriptors[0],
+        ),
+        *(
+            _figure_binding(
+                run.run_id,
+                figure_index=4,
+                mark_ordinal=mark_ordinal,
+                source=source,
+            )
+            for mark_ordinal, source in enumerate((*sensitivity_sources, *sensitivity))
+        ),
+    )
     commitments = _commitments(run.run_id)
     commitment_bytes = canonical_replay_ndjson_bytes(commitments)
     repeat = ReplayRepeatVerificationV1(
@@ -688,11 +820,7 @@ def _request() -> ReplayCuratedArtifactWriteRequest:
             ReplayValidationCheckV1(
                 check_id=check_id,
                 passed=True,
-                evidence_sha256=(
-                    replay_resource_evidence_sha256(profile.resource_evidence)
-                    if check_id == "cpu-and-memory-caps"
-                    else _digest(check_id)
-                ),
+                evidence_sha256=_digest(check_id),
             )
             for check_id in M5_RELEASE_VALIDATION_CHECK_IDS
         ),
@@ -703,56 +831,14 @@ def _request() -> ReplayCuratedArtifactWriteRequest:
     )
     return ReplayCuratedArtifactWriteRequest(
         profile_summary=profile,
-        descriptor_aggregates=(_descriptor(run.run_id),),
+        descriptor_aggregates=descriptors,
         persistent_aggregates=persistent,
-        persistent_crossovers=tuple(
-            _crossover(
-                index,
-                run.run_id,
-                identity_index=identity_index,
-                direction=direction,
-                severity_unit=unit,
-                tested_maximum=tested_maximum,
-            )
-            for index, (identity_index, direction, unit, tested_maximum) in enumerate(
-                (
-                    (0, "negative", "m", 4.0),
-                    (0, "positive", "m", 4.0),
-                    (1, "increase", "std-scale", 4.0),
-                    (2, "increase", "std-scale", 4.0),
-                    (3, "negative", "m", 4.0),
-                    (3, "positive", "m", 4.0),
-                    (4, "negative", "rad", 0.08),
-                    (4, "positive", "rad", 0.08),
-                    (5, "negative", "s", 0.8),
-                    (5, "positive", "s", 0.8),
-                )
-            )
-        ),
+        persistent_crossovers=crossovers,
         health_aggregates=health,
-        cluster_sensitivity=tuple(
-            _sensitivity(
-                _IDENTITY_INDEX[(source.identity.panel_id, source.identity.experiment_id)],
-                run.run_id,
-                source,
-                source_ordinal=source_ordinal,
-                ordinal=ordinal,
-                cluster_kind=cluster_kind,
-                cluster_id=cluster_id,
-            )
-            for source_ordinal, source in enumerate(sensitivity_sources)
-            for ordinal, (cluster_kind, cluster_id) in enumerate(
-                (
-                    *(("leave-one-scene-out", f"scene-ordinal:{index:02d}") for index in range(10)),
-                    *(("leave-one-log-group-out", f"log-group:{index:02d}") for index in range(4)),
-                )
-            )
-        ),
+        cluster_sensitivity=sensitivity,
         validation=validation,
         repeat_verification=repeat,
-        figures=tuple(
-            _figure(index, run.run_id, source) for index, source in enumerate(identity_sources)
-        ),
+        figures=figures,
         source_commitments=commitments,
         run=run,
     )
@@ -827,7 +913,10 @@ def test_round_trip_is_aggregate_only_and_fully_bound(tmp_path: Path) -> None:
     assert len(loaded.persistent_aggregates) == 464
     assert len(loaded.health_aggregates) == 14_988
     assert len(loaded.cluster_sensitivity) == 26 * 14
-    assert len(loaded.figures) == 22
+    assert len(loaded.figures) == 423
+    assert tuple(dict.fromkeys(record.figure_id for record in loaded.figures)) == tuple(
+        definition[0] for definition in M5_REPLAY_FIGURE_DEFINITIONS
+    )
     assert hashlib.sha256(loaded.intent_bytes).hexdigest() == M5_REPLAY_INTENT_BYTE_SHA256
     assert loaded.run.artifact_sha256 == loaded.artifact_sha256
     assert loaded.release_index.run_id == loaded.run.run_id
@@ -1137,9 +1226,19 @@ def test_persistence_label_is_derived_from_complete_cluster_evidence(
         else row
         for row in request.cluster_sensitivity
     )
+    figure_source_sha256 = {
+        ("persistent-aggregate", primary.result_id): source_sha256,
+        **{
+            ("cluster-sensitivity", row.sensitivity_id): sha256_digest(row)
+            for row in sensitivity
+            if row.source_result_id == primary.result_id
+        },
+    }
     figures = tuple(
-        row.model_copy(update={"source_record_sha256": source_sha256})
-        if row.source_result_id == primary.result_id
+        row.model_copy(
+            update={"source_record_sha256": figure_source_sha256[(row.source_kind, row.source_id)]}
+        )
+        if (row.source_kind, row.source_id) in figure_source_sha256
         else row
         for row in request.figures
     )
@@ -1168,6 +1267,20 @@ def test_persistence_label_is_derived_from_complete_cluster_evidence(
 
     mislabeled = primary.model_copy(update={"persistence_label": "directionally-consistent"})
     mislabeled_sha256 = sha256_digest(mislabeled)
+    mislabeled_sensitivity = tuple(
+        row.model_copy(update={"source_record_sha256": mislabeled_sha256})
+        if row.source_result_id == primary.result_id
+        else row
+        for row in valid.cluster_sensitivity
+    )
+    mislabeled_figure_source_sha256 = {
+        ("persistent-aggregate", primary.result_id): mislabeled_sha256,
+        **{
+            ("cluster-sensitivity", row.sensitivity_id): sha256_digest(row)
+            for row in mislabeled_sensitivity
+            if row.source_result_id == primary.result_id
+        },
+    }
     invalid = replace(
         valid,
         persistent_aggregates=(
@@ -1175,15 +1288,16 @@ def test_persistence_label_is_derived_from_complete_cluster_evidence(
             mislabeled,
             *valid.persistent_aggregates[original_index + 1 :],
         ),
-        cluster_sensitivity=tuple(
-            row.model_copy(update={"source_record_sha256": mislabeled_sha256})
-            if row.source_result_id == primary.result_id
-            else row
-            for row in valid.cluster_sensitivity
-        ),
+        cluster_sensitivity=mislabeled_sensitivity,
         figures=tuple(
-            row.model_copy(update={"source_record_sha256": mislabeled_sha256})
-            if row.source_result_id == primary.result_id
+            row.model_copy(
+                update={
+                    "source_record_sha256": mislabeled_figure_source_sha256[
+                        (row.source_kind, row.source_id)
+                    ]
+                }
+            )
+            if (row.source_kind, row.source_id) in mislabeled_figure_source_sha256
             else row
             for row in valid.figures
         ),
@@ -1710,8 +1824,23 @@ def test_record_link_authority_rejects_run_figure_repeat_and_validation_tamperin
                 profile_summary=request.profile_summary.model_copy(update={"run_id": "f" * 64}),
             )
         )
-    with pytest.raises(ArtifactValidationError, match="figure-record identity coverage"):
-        _validate_request_links(replace(request, figures=request.figures[:-1]))
+    identity_without_other_figure_sources = replay_experiment_identity_sha256(
+        expected_replay_identities()[7]
+    )
+    with pytest.raises(
+        ArtifactValidationError,
+        match="figure-record non-descriptor identity coverage",
+    ):
+        _validate_request_links(
+            replace(
+                request,
+                figures=tuple(
+                    row
+                    for row in request.figures
+                    if row.replay_identity_sha256 != identity_without_other_figure_sources
+                ),
+            )
+        )
 
     invalid_figure = request.figures[0].model_copy(update={"source_record_sha256": "f" * 64})
     with pytest.raises(ArtifactValidationError, match="invalid aggregate binding"):
@@ -1719,12 +1848,14 @@ def test_record_link_authority_rejects_run_figure_repeat_and_validation_tamperin
 
     descriptor_figure = request.figures[0].model_copy(
         update={
-            "source_result_id": request.descriptor_aggregates[0].descriptor_id,
+            "source_kind": "descriptor-aggregate",
+            "source_id": replay_descriptor_source_id(request.descriptor_aggregates[0]),
             "source_record_sha256": sha256_digest(request.descriptor_aggregates[0]),
-            "figure_kind": "panel-summary",
+            "identity": None,
+            "replay_identity_sha256": None,
         }
     )
-    with pytest.raises(ArtifactValidationError, match="descriptor-comparison"):
+    with pytest.raises(ArtifactValidationError, match="source kind"):
         _validate_request_links(replace(request, figures=(descriptor_figure, *request.figures[1:])))
 
     with pytest.raises(ArtifactValidationError, match="frozen canonical set"):
@@ -1811,13 +1942,109 @@ def test_record_link_authority_rejects_run_figure_repeat_and_validation_tamperin
     invalid_checks[resource_check_index] = invalid_checks[resource_check_index].model_copy(
         update={"evidence_sha256": "f" * 64}
     )
-    with pytest.raises(ArtifactValidationError, match="CPU-and-memory validation"):
+    # The aggregate-only artifact treats validation digests as opaque commitments;
+    # the enclosing M5 release validator re-derives all 17 check-specific authorities.
+    _validate_request_links(
+        replace(
+            request,
+            validation=request.validation.model_copy(update={"checks": tuple(invalid_checks)}),
+        )
+    )
+
+
+def test_figure_bindings_require_exact_set_contiguous_marks_and_shared_render_commitment() -> None:
+    request = _request()
+    ordered = replay_artifacts._ordered_records(request)[5]
+    assert (
+        replay_artifacts._ordered_records(
+            replace(request, figures=tuple(reversed(request.figures)))
+        )[5]
+        == ordered
+    )
+    assert tuple(dict.fromkeys(row.figure_id for row in ordered)) == tuple(
+        definition[0] for definition in M5_REPLAY_FIGURE_DEFINITIONS
+    )
+    for figure_id in (definition[0] for definition in M5_REPLAY_FIGURE_DEFINITIONS):
+        ordinals = [row.mark_ordinal for row in ordered if row.figure_id == figure_id]
+        assert ordinals == list(range(len(ordinals)))
+
+    duplicate_coordinate = request.figures[1].model_copy(
+        update={"mark_ordinal": request.figures[0].mark_ordinal}
+    )
+    with pytest.raises(ArtifactValidationError, match="duplicate logical keys"):
         _validate_request_links(
             replace(
                 request,
-                validation=request.validation.model_copy(update={"checks": tuple(invalid_checks)}),
+                figures=(
+                    request.figures[0],
+                    duplicate_coordinate,
+                    *request.figures[2:],
+                ),
             )
         )
+
+    missing_figure = tuple(
+        row for row in request.figures if row.figure_id != "m5-descriptor-comparison"
+    )
+    with pytest.raises(ArtifactValidationError, match="exact frozen public figure set"):
+        _validate_request_links(replace(request, figures=missing_figure))
+
+    noncontiguous = request.figures[1].model_copy(update={"mark_ordinal": 99_999})
+    with pytest.raises(ArtifactValidationError, match="contiguous from zero"):
+        _validate_request_links(
+            replace(
+                request,
+                figures=(
+                    request.figures[0],
+                    noncontiguous,
+                    *request.figures[2:],
+                ),
+            )
+        )
+
+    inconsistent_svg = request.figures[1].model_copy(
+        update={"rendered_svg_sha256": _digest("different-svg")}
+    )
+    with pytest.raises(ArtifactValidationError, match="rendered SVG commitment"):
+        _validate_request_links(
+            replace(
+                request,
+                figures=(
+                    request.figures[0],
+                    inconsistent_svg,
+                    *request.figures[2:],
+                ),
+            )
+        )
+
+
+def test_descriptor_figure_links_duplicate_raw_ids_by_complete_coordinate() -> None:
+    request = _request()
+    base = request.descriptor_aggregates[0]
+    comparator = base.model_copy(
+        update={
+            "population": "m3-main-test-comparator",
+            "population_count": 200,
+        }
+    )
+    assert comparator.descriptor_id == base.descriptor_id
+    assert replay_descriptor_source_id(comparator) != replay_descriptor_source_id(base)
+    comparator_binding = _figure_binding(
+        request.run.run_id,
+        figure_index=3,
+        mark_ordinal=1,
+        source=comparator,
+    )
+    valid = replace(
+        request,
+        descriptor_aggregates=(base, comparator),
+        figures=(*request.figures, comparator_binding),
+    )
+    _validate_request_links(valid)
+
+    rebound = comparator_binding.model_copy(update={"source_id": replay_descriptor_source_id(base)})
+    with pytest.raises(ArtifactValidationError, match="invalid aggregate binding"):
+        _validate_request_links(replace(valid, figures=(*request.figures, rebound)))
 
 
 def test_commitment_roles_are_the_exact_frozen_order_and_bind_repeat_summary() -> None:

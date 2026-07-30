@@ -152,6 +152,77 @@ type ReplayHypothesisId = Literal[
     "h5-b3",
     "h5-b4",
 ]
+type ReplayFigureId = Literal[
+    "m5-persistent-panel-summary",
+    "m5-crossovers",
+    "m5-health-transfer",
+    "m5-descriptor-comparison",
+    "m5-cluster-sensitivity",
+]
+type ReplayFigureKind = Literal[
+    "panel-summary",
+    "crossover",
+    "health-transfer",
+    "descriptor-comparison",
+    "cluster-sensitivity",
+]
+type ReplayFigureSourceKind = Literal[
+    "descriptor-aggregate",
+    "persistent-aggregate",
+    "persistent-crossover",
+    "health-aggregate",
+    "cluster-sensitivity",
+]
+type ReplayFigureSvgPath = Literal[
+    "figures/m5-persistent-panel-summary.svg",
+    "figures/m5-crossovers.svg",
+    "figures/m5-health-transfer.svg",
+    "figures/m5-descriptor-comparison.svg",
+    "figures/m5-cluster-sensitivity.svg",
+]
+
+M5_REPLAY_FIGURE_DEFINITIONS: tuple[
+    tuple[ReplayFigureId, ReplayFigureKind, ReplayFigureSvgPath],
+    ...,
+] = (
+    (
+        "m5-persistent-panel-summary",
+        "panel-summary",
+        "figures/m5-persistent-panel-summary.svg",
+    ),
+    ("m5-crossovers", "crossover", "figures/m5-crossovers.svg"),
+    ("m5-health-transfer", "health-transfer", "figures/m5-health-transfer.svg"),
+    (
+        "m5-descriptor-comparison",
+        "descriptor-comparison",
+        "figures/m5-descriptor-comparison.svg",
+    ),
+    (
+        "m5-cluster-sensitivity",
+        "cluster-sensitivity",
+        "figures/m5-cluster-sensitivity.svg",
+    ),
+)
+M5_REPLAY_FIGURE_IDS = tuple(definition[0] for definition in M5_REPLAY_FIGURE_DEFINITIONS)
+_M5_REPLAY_FIGURE_DEFINITION_BY_ID = {
+    definition[0]: definition for definition in M5_REPLAY_FIGURE_DEFINITIONS
+}
+_M5_REPLAY_FIGURE_SOURCE_KINDS: dict[
+    ReplayFigureId,
+    frozenset[ReplayFigureSourceKind],
+] = {
+    "m5-persistent-panel-summary": frozenset({"persistent-aggregate"}),
+    "m5-crossovers": frozenset({"persistent-crossover"}),
+    "m5-health-transfer": frozenset({"health-aggregate"}),
+    "m5-descriptor-comparison": frozenset({"descriptor-aggregate"}),
+    "m5-cluster-sensitivity": frozenset(
+        {
+            "persistent-aggregate",
+            "health-aggregate",
+            "cluster-sensitivity",
+        }
+    ),
+}
 ReplayConditionSelector = Annotated[
     str,
     Field(
@@ -652,6 +723,20 @@ class ReplayDescriptorAggregateV1(_ReplayGlobalBinding):
         return self
 
 
+def replay_descriptor_source_id(record: ReplayDescriptorAggregateV1) -> str:
+    """Derive the public ID for one exact descriptor coordinate."""
+
+    return "replay-descriptor-" + sha256_digest(
+        {
+            "schema": "ffb.replay-descriptor-coordinate/v1",
+            "descriptor_id": record.descriptor_id,
+            "population": record.population,
+            "statistic": record.statistic,
+            "category_label": record.category_label,
+        }
+    )
+
+
 class _ReplayPanelAggregate(_ReplayIdentityBinding):
     result_id: Identifier
     condition_id: Identifier
@@ -1118,6 +1203,55 @@ class ReplayFigureRecordV1(_ReplayIdentityBinding):
     @classmethod
     def reject_private_figure_labels(cls, value: str) -> str:
         return _require_public_label(value)
+
+
+class ReplayFigureSourceBindingV1(_ReplayGlobalBinding):
+    """One authenticated source mark in the frozen five-figure M5 release."""
+
+    schema_id: Literal["ffb.replay-figure-source-binding/v1"] = Field(alias="schema")
+    figure_id: ReplayFigureId
+    figure_kind: ReplayFigureKind
+    mark_ordinal: Annotated[int, Field(ge=0, lt=REPLAY_MAX_NDJSON_RECORDS)]
+    source_kind: ReplayFigureSourceKind
+    source_id: Identifier
+    source_record_sha256: Digest
+    identity: ReplayExperimentIdentityV1 | None = None
+    replay_identity_sha256: Digest | None = None
+    figure_spec_sha256: Digest
+    rendered_svg_path: ReplayFigureSvgPath
+    rendered_svg_sha256: Digest
+    rendered_svg_byte_length: Annotated[int, Field(ge=1, le=REPLAY_MAX_MEMBER_BYTES)]
+    tracked_aggregate_terms: Literal["CC-BY-NC-SA-4.0-plus-Motional-Dataset-Terms"]
+
+    @field_validator("source_id")
+    @classmethod
+    def reject_private_source_label(cls, value: str) -> str:
+        return _require_public_label(value)
+
+    @model_validator(mode="after")
+    def require_figure_and_source_shape(self) -> Self:
+        expected_id, expected_kind, expected_path = _M5_REPLAY_FIGURE_DEFINITION_BY_ID[
+            self.figure_id
+        ]
+        if (
+            self.figure_id != expected_id
+            or self.figure_kind != expected_kind
+            or self.rendered_svg_path != expected_path
+        ):
+            raise ValueError("figure binding disagrees with the frozen public figure definition")
+        if self.source_kind not in _M5_REPLAY_FIGURE_SOURCE_KINDS[self.figure_id]:
+            raise ValueError("figure binding source kind is invalid for the public figure")
+
+        descriptor = self.source_kind == "descriptor-aggregate"
+        if descriptor:
+            if self.identity is not None or self.replay_identity_sha256 is not None:
+                raise ValueError("descriptor figure sources cannot carry a synthetic identity")
+        else:
+            if self.identity is None or self.replay_identity_sha256 is None:
+                raise ValueError("non-descriptor figure sources require a replay identity")
+            if self.replay_identity_sha256 != replay_experiment_identity_sha256(self.identity):
+                raise ValueError("figure source replay identity digest is invalid")
+        return self
 
 
 class ReplayPayloadFileEntryV1(ContractModel):

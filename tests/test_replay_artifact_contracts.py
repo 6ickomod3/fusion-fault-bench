@@ -12,6 +12,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     M5_PERSISTENT_AGGREGATE_COORDINATE_SET_SHA256,
     M5_PERSISTENT_HYPOTHESIS_COORDINATE_SET_SHA256,
     M5_RELEASE_VALIDATION_CHECK_IDS,
+    M5_REPLAY_FIGURE_DEFINITIONS,
     M5_REPLAY_IDENTITY_SET,
     M5_REPLAY_IDENTITY_SET_SHA256,
     M5_REPLAY_RELEASE_ID,
@@ -22,6 +23,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     ReplayDescriptorAggregateV1,
     ReplayExecutionResourceEvidenceV1,
     ReplayFigureRecordV1,
+    ReplayFigureSourceBindingV1,
     ReplayHealthAggregateV1,
     ReplayIdentitySetV1,
     ReplayPayloadFileEntryV1,
@@ -34,6 +36,7 @@ from fusion_fault_bench.contracts.replay_artifact_v1 import (
     ReplaySuccessV1,
     ReplayValidationCheckV1,
     ReplayValidationV1,
+    replay_descriptor_source_id,
     replay_identity_set_digest,
     replay_release_index_json_schema,
     replay_resource_evidence_sha256,
@@ -291,6 +294,28 @@ def test_descriptor_status_population_and_privacy_contract() -> None:
     ):
         with pytest.raises(ValidationError):
             _descriptor(**update)
+
+
+def test_descriptor_figure_source_id_discriminates_the_complete_coordinate() -> None:
+    base = _descriptor(descriptor_id="shared-descriptor")
+    variants = (
+        base,
+        _descriptor(
+            descriptor_id="shared-descriptor",
+            population="m3-main-test-comparator",
+            population_count=200,
+        ),
+        _descriptor(descriptor_id="shared-descriptor", statistic="median"),
+        _descriptor(
+            descriptor_id="shared-descriptor",
+            statistic="count",
+            category_label="category-a",
+        ),
+    )
+    source_ids = tuple(replay_descriptor_source_id(record) for record in variants)
+    assert len(set(source_ids)) == len(variants)
+    assert replay_descriptor_source_id(base) == replay_descriptor_source_id(base)
+    assert all(source_id.startswith("replay-descriptor-") for source_id in source_ids)
 
 
 def test_profile_summary_requires_frozen_sources_and_cpu_only_caps() -> None:
@@ -849,6 +874,94 @@ def test_figure_records_bind_public_aggregate_labels() -> None:
     ):
         with pytest.raises(ValidationError):
             ReplayFigureRecordV1.model_validate({**value, field_name: private_value})
+
+
+def test_figure_source_binding_authenticates_exact_public_figure_and_source_shape() -> None:
+    identity = expected_replay_identities()[0]
+    value = {
+        "schema": "ffb.replay-figure-source-binding/v1",
+        **_global(),
+        "figure_id": "m5-persistent-panel-summary",
+        "figure_kind": "panel-summary",
+        "mark_ordinal": 0,
+        "source_kind": "persistent-aggregate",
+        "source_id": "result-00",
+        "source_record_sha256": _digest("source"),
+        "identity": identity,
+        "replay_identity_sha256": replay_experiment_identity_sha256(identity),
+        "figure_spec_sha256": _digest("spec"),
+        "rendered_svg_path": "figures/m5-persistent-panel-summary.svg",
+        "rendered_svg_sha256": _digest("svg"),
+        "rendered_svg_byte_length": 123,
+        "tracked_aggregate_terms": M5_TRACKED_AGGREGATE_TERMS,
+    }
+    binding = ReplayFigureSourceBindingV1.model_validate(value)
+    assert binding.mark_ordinal == 0
+    assert M5_REPLAY_FIGURE_DEFINITIONS == (
+        (
+            "m5-persistent-panel-summary",
+            "panel-summary",
+            "figures/m5-persistent-panel-summary.svg",
+        ),
+        ("m5-crossovers", "crossover", "figures/m5-crossovers.svg"),
+        ("m5-health-transfer", "health-transfer", "figures/m5-health-transfer.svg"),
+        (
+            "m5-descriptor-comparison",
+            "descriptor-comparison",
+            "figures/m5-descriptor-comparison.svg",
+        ),
+        (
+            "m5-cluster-sensitivity",
+            "cluster-sensitivity",
+            "figures/m5-cluster-sensitivity.svg",
+        ),
+    )
+
+    for update in (
+        {"figure_kind": "health-transfer"},
+        {"rendered_svg_path": "figures/m5-health-transfer.svg"},
+        {"source_kind": "descriptor-aggregate"},
+        {"identity": None},
+        {"replay_identity_sha256": None},
+        {"replay_identity_sha256": _digest("wrong-identity")},
+        {"mark_ordinal": -1},
+        {"source_id": "calibrated_sensor_token"},
+        {"rendered_svg_path": "/Users/private/figure.svg"},
+        {"rendered_svg_byte_length": 0},
+    ):
+        with pytest.raises(ValidationError):
+            ReplayFigureSourceBindingV1.model_validate({**value, **update})
+
+
+def test_descriptor_figure_binding_has_no_synthetic_replay_identity() -> None:
+    value = {
+        "schema": "ffb.replay-figure-source-binding/v1",
+        **_global(),
+        "figure_id": "m5-descriptor-comparison",
+        "figure_kind": "descriptor-comparison",
+        "mark_ordinal": 0,
+        "source_kind": "descriptor-aggregate",
+        "source_id": "descriptor-00",
+        "source_record_sha256": _digest("source"),
+        "identity": None,
+        "replay_identity_sha256": None,
+        "figure_spec_sha256": _digest("spec"),
+        "rendered_svg_path": "figures/m5-descriptor-comparison.svg",
+        "rendered_svg_sha256": _digest("svg"),
+        "rendered_svg_byte_length": 123,
+        "tracked_aggregate_terms": M5_TRACKED_AGGREGATE_TERMS,
+    }
+    assert ReplayFigureSourceBindingV1.model_validate(value).identity is None
+    with pytest.raises(ValidationError, match="synthetic identity"):
+        ReplayFigureSourceBindingV1.model_validate(
+            {
+                **value,
+                "identity": expected_replay_identities()[0],
+                "replay_identity_sha256": replay_experiment_identity_sha256(
+                    expected_replay_identities()[0]
+                ),
+            }
+        )
 
 
 def test_validation_is_exact_ordered_conjunction() -> None:

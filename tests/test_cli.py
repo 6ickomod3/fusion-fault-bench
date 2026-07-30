@@ -508,6 +508,37 @@ def test_replay_schemas_are_exposed(capsys) -> None:
         assert schema["type"] == "object"
 
 
+def test_replay_release_cli_validates_without_echoing_paths_or_errors(
+    tmp_path,
+    monkeypatch,
+    capsys,
+) -> None:
+    private_release = tmp_path / "private-m5-release"
+    loaded = SimpleNamespace(package_sha256="a" * 64)
+    monkeypatch.setattr(
+        "fusion_fault_bench.cli.validate_m5_release",
+        lambda path: loaded if path == private_release else None,
+    )
+
+    assert main(["replay", "release", "validate", str(private_release)]) == 0
+    output = capsys.readouterr()
+    assert output.err == ""
+    assert output.out == (f"valid ffb.m5-release-package/v1 release_package_sha256={'a' * 64}\n")
+    assert str(tmp_path) not in output.out
+
+    private_detail = "/Users/private-owner/datasets/nuScenes"
+
+    def fail(_path):
+        raise RuntimeError(private_detail)
+
+    monkeypatch.setattr("fusion_fault_bench.cli.validate_m5_release", fail)
+    assert main(["replay", "release", "validate", private_detail]) == 2
+    failed = capsys.readouterr()
+    assert failed.out == ""
+    assert failed.err == "error: M5 release validation failed closed\n"
+    assert private_detail not in failed.err
+
+
 def test_geometry_cli_never_echoes_rejected_dataset_arguments() -> None:
     secret_path = "/Users/private-owner/datasets/nuScenes"
     base = [
