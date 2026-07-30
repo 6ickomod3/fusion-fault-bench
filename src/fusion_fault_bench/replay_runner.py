@@ -1414,7 +1414,7 @@ def _decode_dataclass_row[RowT](
     payload.pop("schema", None)
     payload.pop("replay_intent_sha256", None)
     try:
-        decoded = adapter.validate_python(payload)
+        decoded = adapter.validate_json(canonical_json_bytes(payload))
     except (TypeError, ValidationError, ValueError) as error:
         raise ArtifactValidationError(f"{label} contains an invalid typed row") from error
     if canonical_json_bytes(_json_mapping(decoded)) != canonical_json_bytes(payload):
@@ -1431,7 +1431,7 @@ def _decode_contract_row[RowT: BaseModel](
     payload = dict(record)
     payload.pop("replay_intent_sha256", None)
     try:
-        decoded = model.model_validate(payload)
+        decoded = model.model_validate_json(canonical_json_bytes(payload))
     except (TypeError, ValidationError, ValueError) as error:
         raise ArtifactValidationError(f"{label} contains an invalid typed row") from error
     if canonical_json_bytes(decoded) != canonical_json_bytes(payload):
