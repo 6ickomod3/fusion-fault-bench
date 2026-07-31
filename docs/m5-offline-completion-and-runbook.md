@@ -45,6 +45,24 @@ intent, estimand, or claim; it is a process/handoff record.
    [`docs/reviews/m5-exploratory-implementation-review.md`](reviews/m5-exploratory-implementation-review.md)
    and [`docs/reviews/m5-exploratory-results-review.md`](reviews/m5-exploratory-results-review.md).
 
+5. **The whole-revision implementation review is attested and committed.**
+   `attest-implementation-review` was run offline; the report and canonical
+   attestation are tracked at
+   [`docs/reviews/m5-release-implementation-review.md`](reviews/m5-release-implementation-review.md)
+   and `docs/reviews/m5-release-implementation-review-attestation.json`
+   (disposition `pass-with-nonblocking-findings`, 0 P0/P1, snapshot over 294
+   files). This is `attest-implementation-review` **already done** — so step 1 of
+   the runbook below is complete; just re-push (local HEAD is 1 commit ahead of
+   `origin`).
+
+6. **`verify-software` is the only offline step that could NOT complete here, and
+   not for a code reason.** Its type-check sub-step runs `pyright`, a Node-based
+   tool whose Python wrapper downloads a Node.js runtime via `nodeenv` on first
+   use in its hermetic env; that download needs network, which this sandbox
+   blocks. The type check itself is clean (direct `pyright` = 0 errors). On a
+   networked machine, in CI, or with `pyright[nodejs]` installed, `verify-software`
+   completes.
+
 ## 2. Why the authoritative release cannot complete in this environment
 
 The frozen pipeline (`m5-release-pipeline-plan.md`) requires live network to
@@ -75,15 +93,15 @@ export UV_CACHE_DIR=<private-tmp>/ffb-m5-uv-cache-$REV && mkdir -m 700 "$UV_CACH
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 \
        MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
 
-# 1. Independent whole-revision implementation review -> attest -> commit + push
-#    (author the report; the tool only canonicalizes the reviewer disposition)
-uv run --frozen --no-sync python tools/m5_release.py attest-implementation-review \
-  --review-report docs/reviews/m5-release-implementation-review.md \
-  --decision reports/generated/m5-release-implementation-review-decision.json \
-  --output docs/reviews/m5-release-implementation-review-attestation.json
-#    commit + push the report + attestation (no implementation-snapshot change)
+# 1. Implementation review + attestation: ALREADY DONE and committed
+#    (docs/reviews/m5-release-implementation-review{.md,-attestation.json}).
+#    Just re-push so origin has them (local is 1 commit ahead):
+git push            # upstream already set; sends the attestation commit
+#    (Re-affirm the review against the exact pushed revision per plan section 2.)
 
-# 2. Software verification (offline-capable; requires step 1's attestation)
+# 2. Software verification (requires step 1's attestation, now committed).
+#    NOTE: pyright downloads a Node runtime on first use -> ensure network or
+#    `pip install pyright[nodejs]`; then:
 uv run --frozen --no-sync python tools/m5_release.py verify-software \
   --output reports/generated/m5-software-verification-$REV.json
 
