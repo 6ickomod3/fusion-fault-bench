@@ -55,13 +55,22 @@ intent, estimand, or claim; it is a process/handoff record.
    the runbook below is complete; just re-push (local HEAD is 1 commit ahead of
    `origin`).
 
-6. **`verify-software` is the only offline step that could NOT complete here, and
-   not for a code reason.** Its type-check sub-step runs `pyright`, a Node-based
-   tool whose Python wrapper downloads a Node.js runtime via `nodeenv` on first
-   use in its hermetic env; that download needs network, which this sandbox
-   blocks. The type check itself is clean (direct `pyright` = 0 errors). On a
-   networked machine, in CI, or with `pyright[nodejs]` installed, `verify-software`
-   completes.
+6. **`verify-software` could NOT complete in the proxy-only sandbox, and not for
+   a code reason.** Its `pyright` sub-step needs a Node runtime; in the harness's
+   hermetic env (`HOME=/dev/null`, `NO_PROXY=*`, `PATH=/usr/bin:/bin`,
+   `UV_OFFLINE=1`) pyright falls to `nodeenv`, which **downloads node over direct
+   egress** — blocked here (only a proxy exists, which the hermetic env strips).
+   Every offline workaround fails cleanly: installing `nodejs-wheel` pollutes the
+   venv and breaks the `verify-software` pytest check's own locked-closure tests
+   (`test_provenance::test_locked_execution_matches_source_environment_and_runtime_closure`,
+   etc.); adding `pyright[nodejs]` to the lock would change `uv.lock` and break the
+   frozen-lockfile assumptions of M1–M4; pre-cached node is unreachable under
+   `HOME=/dev/null`; and editing the harness to relax the hermetic env would be
+   gaming the gate. **Run `verify-software` on a machine with DIRECT network
+   egress** (so `nodeenv` can fetch node during the hermetic pyright check) with a
+   **clean locked venv** — that is the environment the project's design assumes.
+   The type check itself is clean here (direct `pyright` = 0 errors); only the
+   hermetic node fetch is blocked.
 
 ## 2. Why the authoritative release cannot complete in this environment
 
